@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,7 +22,7 @@ import {
 } from "@/components/ui/sheet";
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { useMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 type DashboardLayoutProps = {
   children: React.ReactNode;
@@ -32,7 +31,7 @@ type DashboardLayoutProps = {
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const [user, setUser] = useState<any>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { toast } = useToast();
 
