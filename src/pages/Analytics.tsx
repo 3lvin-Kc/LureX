@@ -18,7 +18,8 @@ import {
   ArrowDownRight,
   Target,
   ShieldAlert,
-  Mail
+  Mail,
+  Search
 } from 'lucide-react';
 
 const Analytics = () => {

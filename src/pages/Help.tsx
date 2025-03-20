@@ -15,7 +15,10 @@ import {
   Mail,
   ChevronDown,
   ChevronRight,
-  Search
+  Search,
+  Clock,
+  Download,
+  Users
 } from 'lucide-react';
 
 const Help = () => {
