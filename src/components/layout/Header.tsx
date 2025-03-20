@@ -50,14 +50,21 @@ const Header = () => {
           <Link to="/templates" className="text-sm font-medium transition-colors hover:text-primary">
             Templates
           </Link>
-          <Link to="/pricing" className="text-sm font-medium transition-colors hover:text-primary">
-            Pricing
+          <Link to="/dashboard" className="text-sm font-medium transition-colors hover:text-primary">
+            Dashboard
+          </Link>
+          <Link to="/analytics" className="text-sm font-medium transition-colors hover:text-primary">
+            Analytics
           </Link>
         </nav>
 
         <div className="hidden md:flex items-center space-x-4">
-          <Button variant="outline" size="sm">Log In</Button>
-          <Button size="sm">Get Started</Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/help">Help</Link>
+          </Button>
+          <Button asChild size="sm">
+            <Link to="/dashboard">Get Started</Link>
+          </Button>
         </div>
 
         {/* Mobile Menu Toggle */}
@@ -108,15 +115,26 @@ const Header = () => {
               Templates
             </Link>
             <Link 
-              to="/pricing" 
+              to="/dashboard" 
               className="text-sm font-medium transition-colors hover:text-primary py-2"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Pricing
+              Dashboard
+            </Link>
+            <Link 
+              to="/analytics" 
+              className="text-sm font-medium transition-colors hover:text-primary py-2"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Analytics
             </Link>
             <div className="flex flex-col space-y-2 pt-2">
-              <Button variant="outline" size="sm" className="w-full">Log In</Button>
-              <Button size="sm" className="w-full">Get Started</Button>
+              <Button asChild variant="outline" size="sm" className="w-full">
+                <Link to="/help" onClick={() => setMobileMenuOpen(false)}>Help</Link>
+              </Button>
+              <Button asChild size="sm" className="w-full">
+                <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>Get Started</Link>
+              </Button>
             </div>
           </nav>
         </div>
