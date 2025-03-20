@@ -88,21 +88,19 @@ const CampaignForm = () => {
         
       const templateVersion = templateData?.version || 1;
       
-      // Create campaign
+      // Create campaign - Fixed: passing a single object instead of an array and converting Date to ISO string
       const { data, error } = await supabase
         .from('campaigns')
-        .insert([
-          {
-            name,
-            description,
-            template_id: templateId,
-            template_version: templateVersion,
-            target_list_id: targetListId,
-            provider_id: providerId,
-            status: 'draft',
-            schedule_time: scheduledDate,
-          },
-        ])
+        .insert({
+          name,
+          description,
+          template_id: templateId,
+          template_version: templateVersion,
+          target_list_id: targetListId,
+          provider_id: providerId,
+          status: 'draft',
+          schedule_time: scheduledDate ? scheduledDate.toISOString() : null,
+        })
         .select()
         .single();
         
