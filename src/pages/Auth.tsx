@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -18,9 +18,16 @@ const Auth = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // Prevent multiple auth requests
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (isAuthenticating) return;
+    
     setLoading(true);
+    setIsAuthenticating(true);
     
     try {
       const { error } = await supabase.auth.signInWithPassword({
@@ -37,6 +44,7 @@ const Auth = () => {
       
       navigate("/dashboard");
     } catch (error: any) {
+      console.error("Login error:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to login",
@@ -44,12 +52,17 @@ const Auth = () => {
       });
     } finally {
       setLoading(false);
+      setIsAuthenticating(false);
     }
   };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (isAuthenticating) return;
+    
     setLoading(true);
+    setIsAuthenticating(true);
     
     try {
       const { error } = await supabase.auth.signUp({
@@ -64,6 +77,7 @@ const Auth = () => {
         description: "Registration successful. Please check your email for verification.",
       });
     } catch (error: any) {
+      console.error("Signup error:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to sign up",
@@ -71,8 +85,25 @@ const Auth = () => {
       });
     } finally {
       setLoading(false);
+      setIsAuthenticating(false);
     }
   };
+
+  // Check if user is already authenticated
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          navigate("/dashboard");
+        }
+      } catch (error) {
+        console.error("Auth check error:", error);
+      }
+    };
+    
+    checkAuth();
+  }, [navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
@@ -103,6 +134,7 @@ const Auth = () => {
                         onChange={(e) => setEmail(e.target.value)}
                         className="pl-10"
                         required
+                        disabled={loading}
                       />
                     </div>
                   </div>
@@ -116,18 +148,25 @@ const Auth = () => {
                         onChange={(e) => setPassword(e.target.value)}
                         className="pl-10 pr-10"
                         required
+                        disabled={loading}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                        disabled={loading}
                       >
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
                     </div>
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Logging in..." : "Login"}
+                    {loading ? (
+                      <div className="flex items-center">
+                        <div className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-white rounded-full"></div>
+                        Logging in...
+                      </div>
+                    ) : "Login"}
                   </Button>
                 </form>
               </CardContent>
@@ -154,6 +193,7 @@ const Auth = () => {
                         onChange={(e) => setEmail(e.target.value)}
                         className="pl-10"
                         required
+                        disabled={loading}
                       />
                     </div>
                   </div>
@@ -167,18 +207,25 @@ const Auth = () => {
                         onChange={(e) => setPassword(e.target.value)}
                         className="pl-10 pr-10"
                         required
+                        disabled={loading}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                        disabled={loading}
                       >
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
                     </div>
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Creating account..." : "Register"}
+                    {loading ? (
+                      <div className="flex items-center">
+                        <div className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-white rounded-full"></div>
+                        Creating account...
+                      </div>
+                    ) : "Register"}
                   </Button>
                 </form>
               </CardContent>

@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -23,37 +22,63 @@ const queryClient = new QueryClient();
 const App = () => {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user || null);
-      setLoading(false);
-    });
+    // One-time check for existing session
+    const checkSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setUser(session?.user || null);
+      } catch (error) {
+        console.error("Error checking auth session:", error);
+      } finally {
+        setLoading(false);
+        setAuthChecked(true);
+      }
+    };
 
     // Set up auth listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log("Auth state changed:", event);
         setUser(session?.user || null);
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+          setLoading(false);
+        }
       }
     );
+
+    checkSession();
 
     return () => subscription.unsubscribe();
   }, []);
 
-  // Define protected route component
+  // Define protected route component - optimized to prevent unnecessary renders
   const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-    if (loading) return <div className="w-full h-screen flex items-center justify-center">Loading...</div>;
+    if (!authChecked) return <LoadingScreen />;
+    if (loading) return <LoadingScreen />;
     if (!user) return <Navigate to="/auth" replace />;
     return <>{children}</>;
   };
 
-  // Define public route component (accessible only when NOT logged in)
+  // Define public route component - with same optimizations
   const PublicRoute = ({ children }: { children: React.ReactNode }) => {
-    if (loading) return <div className="w-full h-screen flex items-center justify-center">Loading...</div>;
+    if (!authChecked) return <LoadingScreen />;
+    if (loading) return <LoadingScreen />;
     if (user) return <Navigate to="/dashboard" replace />;
     return <>{children}</>;
   };
+
+  // Separate loading component to keep the code DRY
+  const LoadingScreen = () => (
+    <div className="w-full h-screen flex items-center justify-center">
+      <div className="flex flex-col items-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+        <p className="text-gray-600">Loading application...</p>
+      </div>
+    </div>
+  );
 
   return (
     <QueryClientProvider client={queryClient}>

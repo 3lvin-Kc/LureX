@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -31,14 +32,19 @@ type DashboardLayoutProps = {
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const [user, setUser] = useState<any>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
     const getUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      setUser(data.user);
+      try {
+        const { data } = await supabase.auth.getUser();
+        setUser(data.user);
+      } catch (error) {
+        console.error("Error fetching user:", error);
+      }
     };
 
     getUser();
@@ -61,25 +67,37 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
 
   useEffect(() => {
     if (user === null) {
-      navigate('/auth');
+      // Don't redirect here to prevent potential loop - App.tsx handles this
+      console.log("No user detected in DashboardLayout");
     }
-  }, [user, navigate]);
+  }, [user]);
 
   const handleLogout = async () => {
     try {
+      setIsLoading(true);
       await supabase.auth.signOut();
-      navigate('/auth');
       toast({
         title: 'Logged out',
         description: 'You have been successfully logged out',
       });
+      navigate('/auth');
     } catch (error: any) {
       toast({
         title: 'Error',
         description: error.message || 'Failed to log out',
         variant: 'destructive',
       });
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const handleNavigation = (path: string) => {
+    setIsLoading(true);
+    navigate(path);
+    setSidebarOpen(false);
+    // Use a short timeout to allow for navigation to complete
+    setTimeout(() => setIsLoading(false), 300);
   };
 
   const NavItems = () => (
@@ -87,10 +105,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       <Button
         variant="ghost"
         className="w-full justify-start"
-        onClick={() => {
-          navigate('/dashboard');
-          setSidebarOpen(false);
-        }}
+        onClick={() => handleNavigation('/dashboard')}
+        disabled={isLoading}
       >
         <Home className="mr-2 h-5 w-5" />
         Dashboard
@@ -98,10 +114,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       <Button
         variant="ghost"
         className="w-full justify-start"
-        onClick={() => {
-          navigate('/campaigns');
-          setSidebarOpen(false);
-        }}
+        onClick={() => handleNavigation('/campaigns')}
+        disabled={isLoading}
       >
         <Mail className="mr-2 h-5 w-5" />
         Campaigns
@@ -109,10 +123,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       <Button
         variant="ghost"
         className="w-full justify-start"
-        onClick={() => {
-          navigate('/templates');
-          setSidebarOpen(false);
-        }}
+        onClick={() => handleNavigation('/templates')}
+        disabled={isLoading}
       >
         <FileText className="mr-2 h-5 w-5" />
         Templates
@@ -120,10 +132,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       <Button
         variant="ghost"
         className="w-full justify-start"
-        onClick={() => {
-          navigate('/target-lists');
-          setSidebarOpen(false);
-        }}
+        onClick={() => handleNavigation('/target-lists')}
+        disabled={isLoading}
       >
         <Users className="mr-2 h-5 w-5" />
         Target Lists
@@ -131,22 +141,18 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       <Button
         variant="ghost"
         className="w-full justify-start"
-        onClick={() => {
-          navigate('/reports');
-          setSidebarOpen(false);
-        }}
+        onClick={() => handleNavigation('/analytics')}
+        disabled={isLoading}
       >
         <BarChart3 className="mr-2 h-5 w-5" />
-        Reports
+        Analytics
       </Button>
       <Separator className="my-4" />
       <Button
         variant="ghost"
         className="w-full justify-start"
-        onClick={() => {
-          navigate('/settings');
-          setSidebarOpen(false);
-        }}
+        onClick={() => handleNavigation('/settings')}
+        disabled={isLoading}
       >
         <Settings className="mr-2 h-5 w-5" />
         Settings
@@ -155,6 +161,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         variant="ghost"
         className="w-full justify-start text-red-500 hover:text-red-700 hover:bg-red-100"
         onClick={handleLogout}
+        disabled={isLoading}
       >
         <LogOut className="mr-2 h-5 w-5" />
         Logout
@@ -162,8 +169,16 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     </div>
   );
 
-  if (!user) {
-    return null; // Or a loading spinner
+  // Show a basic loading state if user data is still loading
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="flex flex-col items-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -201,7 +216,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           <div className="flex items-center">
             <span className="text-sm mr-4">{user?.email}</span>
             {!isMobile && (
-              <Button variant="outline" size="sm" onClick={handleLogout}>
+              <Button variant="outline" size="sm" onClick={handleLogout} disabled={isLoading}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Logout
               </Button>
