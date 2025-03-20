@@ -2,8 +2,44 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import GlassPanel from '../ui/GlassPanel';
+import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useEffect, useState } from 'react';
 
 const Hero = () => {
+  const navigate = useNavigate();
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Check current auth state
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user || null);
+      setLoading(false);
+    });
+
+    // Set up auth listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user || null);
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleGetStarted = () => {
+    if (user) {
+      navigate('/dashboard');
+    } else {
+      navigate('/auth');
+    }
+  };
+
+  const handleViewDemo = () => {
+    navigate('/templates');
+  };
+
   return (
     <section className="relative pt-24 pb-20 md:pt-32 md:pb-32 overflow-hidden">
       {/* Background gradient */}
@@ -25,10 +61,10 @@ const Hero = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row justify-center gap-4 animate-fade-up animate-delay-200">
-            <Button size="lg" className="rounded-full px-8">
-              Get Started
+            <Button size="lg" className="rounded-full px-8" onClick={handleGetStarted}>
+              {loading ? "Loading..." : (user ? "Go to Dashboard" : "Get Started")}
             </Button>
-            <Button size="lg" variant="outline" className="rounded-full px-8">
+            <Button size="lg" variant="outline" className="rounded-full px-8" onClick={handleViewDemo}>
               View Demo
             </Button>
           </div>

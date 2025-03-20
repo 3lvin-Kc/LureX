@@ -1,14 +1,30 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { supabase } from '@/integrations/supabase/client';
+import { LogOut } from 'lucide-react';
 
 const Header = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
+    // Check current auth state
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user || null);
+    });
+
+    // Set up auth listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user || null);
+      }
+    );
+
     const handleScroll = () => {
       const isScrolled = window.scrollY > 10;
       if (isScrolled !== scrolled) {
@@ -17,13 +33,28 @@ const Header = () => {
     };
 
     window.addEventListener('scroll', handleScroll);
+    
     return () => {
       window.removeEventListener('scroll', handleScroll);
+      subscription.unsubscribe();
     };
   }, [scrolled]);
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/');
+  };
+
+  const handleGetStarted = () => {
+    if (user) {
+      navigate('/dashboard');
+    } else {
+      navigate('/auth');
+    }
   };
 
   return (
@@ -47,24 +78,42 @@ const Header = () => {
           <Link to="/features" className="text-sm font-medium transition-colors hover:text-primary">
             Features
           </Link>
-          <Link to="/templates" className="text-sm font-medium transition-colors hover:text-primary">
-            Templates
-          </Link>
-          <Link to="/dashboard" className="text-sm font-medium transition-colors hover:text-primary">
-            Dashboard
-          </Link>
-          <Link to="/analytics" className="text-sm font-medium transition-colors hover:text-primary">
-            Analytics
-          </Link>
+          {user && (
+            <>
+              <Link to="/templates" className="text-sm font-medium transition-colors hover:text-primary">
+                Templates
+              </Link>
+              <Link to="/dashboard" className="text-sm font-medium transition-colors hover:text-primary">
+                Dashboard
+              </Link>
+              <Link to="/analytics" className="text-sm font-medium transition-colors hover:text-primary">
+                Analytics
+              </Link>
+            </>
+          )}
         </nav>
 
         <div className="hidden md:flex items-center space-x-4">
           <Button asChild variant="outline" size="sm">
             <Link to="/help">Help</Link>
           </Button>
-          <Button asChild size="sm">
-            <Link to="/dashboard">Get Started</Link>
-          </Button>
+          
+          {user ? (
+            <Button variant="outline" size="sm" onClick={handleLogout} className="flex items-center gap-1">
+              <LogOut className="h-4 w-4" />
+              Logout
+            </Button>
+          ) : (
+            <Button asChild size="sm">
+              <Link to="/auth">Login</Link>
+            </Button>
+          )}
+          
+          {user && (
+            <Button asChild size="sm">
+              <Link to="/dashboard">Dashboard</Link>
+            </Button>
+          )}
         </div>
 
         {/* Mobile Menu Toggle */}
@@ -107,34 +156,52 @@ const Header = () => {
             >
               Features
             </Link>
-            <Link 
-              to="/templates" 
-              className="text-sm font-medium transition-colors hover:text-primary py-2"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Templates
-            </Link>
-            <Link 
-              to="/dashboard" 
-              className="text-sm font-medium transition-colors hover:text-primary py-2"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Dashboard
-            </Link>
-            <Link 
-              to="/analytics" 
-              className="text-sm font-medium transition-colors hover:text-primary py-2"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Analytics
-            </Link>
+            
+            {user && (
+              <>
+                <Link 
+                  to="/templates" 
+                  className="text-sm font-medium transition-colors hover:text-primary py-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Templates
+                </Link>
+                <Link 
+                  to="/dashboard" 
+                  className="text-sm font-medium transition-colors hover:text-primary py-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Dashboard
+                </Link>
+                <Link 
+                  to="/analytics" 
+                  className="text-sm font-medium transition-colors hover:text-primary py-2"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Analytics
+                </Link>
+              </>
+            )}
+            
             <div className="flex flex-col space-y-2 pt-2">
               <Button asChild variant="outline" size="sm" className="w-full">
                 <Link to="/help" onClick={() => setMobileMenuOpen(false)}>Help</Link>
               </Button>
-              <Button asChild size="sm" className="w-full">
-                <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>Get Started</Link>
-              </Button>
+              
+              {user ? (
+                <>
+                  <Button variant="outline" size="sm" className="w-full" onClick={handleLogout}>
+                    Logout
+                  </Button>
+                  <Button asChild size="sm" className="w-full">
+                    <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>Dashboard</Link>
+                  </Button>
+                </>
+              ) : (
+                <Button asChild size="sm" className="w-full">
+                  <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>Login</Link>
+                </Button>
+              )}
             </div>
           </nav>
         </div>

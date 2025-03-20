@@ -1,7 +1,6 @@
 
 import React from 'react';
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import GlassPanel from '@/components/ui/GlassPanel';
@@ -19,13 +18,14 @@ import {
   Clock,
   AlertCircle
 } from 'lucide-react';
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      
-      <main className="flex-grow pt-24">
+    <DashboardLayout>
+      <main className="flex-grow pt-6">
         {/* Dashboard Header */}
         <section className="py-8">
           <div className="max-w-7xl mx-auto px-6 md:px-10">
@@ -38,7 +38,10 @@ const Dashboard = () => {
                   Manage and monitor your phishing simulation campaigns
                 </p>
               </div>
-              <Button className="flex items-center gap-2">
+              <Button 
+                className="flex items-center gap-2"
+                onClick={() => navigate('/campaign/new')}
+              >
                 <PlusCircle className="h-4 w-4" />
                 Create Campaign
               </Button>
@@ -550,9 +553,7 @@ const Dashboard = () => {
           </div>
         </section>
       </main>
-      
-      <Footer />
-    </div>
+    </DashboardLayout>
   );
 };
 

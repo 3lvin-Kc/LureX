@@ -1,13 +1,11 @@
-
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { PlusCircle, BarChart3, Send, Clock, AlertCircle, CheckCircle, Edit, Trash2, ExternalLink } from "lucide-react";
+import { PlusCircle, BarChart3, Send, Clock, AlertCircle, CheckCircle, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
