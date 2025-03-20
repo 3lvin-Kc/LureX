@@ -11,6 +11,9 @@ import Dashboard from "./pages/Dashboard";
 import Analytics from "./pages/Analytics";
 import Help from "./pages/Help";
 import NotFound from "./pages/NotFound";
+import Auth from "./pages/Auth";
+import Campaigns from "./pages/Campaigns";
+import TargetLists from "./pages/TargetLists";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +30,9 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/help" element={<Help />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/campaigns" element={<Campaigns />} />
+          <Route path="/target-lists" element={<TargetLists />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
