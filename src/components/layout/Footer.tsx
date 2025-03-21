@@ -19,7 +19,7 @@ const Footer = () => {
 
           <div>
             <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-900 dark:text-gray-100">
-              Product
+              PRODUCT
             </h3>
             <ul className="mt-4 space-y-2">
               <li>
@@ -47,7 +47,7 @@ const Footer = () => {
 
           <div>
             <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-900 dark:text-gray-100">
-              Company
+              COMPANY
             </h3>
             <ul className="mt-4 space-y-2">
               <li>
@@ -70,7 +70,7 @@ const Footer = () => {
 
           <div>
             <h3 className="text-sm font-semibold uppercase tracking-wider text-gray-900 dark:text-gray-100">
-              Legal
+              LEGAL
             </h3>
             <ul className="mt-4 space-y-2">
               <li>

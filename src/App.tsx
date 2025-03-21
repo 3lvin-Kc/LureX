@@ -21,6 +21,14 @@ import PhishingPages from "./pages/PhishingPages";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import AdminPanel from "./pages/AdminPanel";
+import About from "./pages/About";
+import Contact from "./pages/Contact";
+import Blog from "./pages/Blog";
+import Pricing from "./pages/Pricing";
+import Compliance from "./pages/Compliance";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import GDPRCompliance from "./pages/GDPRCompliance";
 
 const queryClient = new QueryClient();
 
@@ -99,6 +107,20 @@ const App = () => {
             <Route path="/" element={<Index />} />
             <Route path="/features" element={<Features />} />
             <Route path="/help" element={<Help />} />
+            
+            {/* Public product pages */}
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/compliance" element={<Compliance />} />
+            
+            {/* Public company pages */}
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/blog" element={<Blog />} />
+            
+            {/* Legal pages */}
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/gdpr" element={<GDPRCompliance />} />
             
             {/* Protected routes (require authentication) */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
