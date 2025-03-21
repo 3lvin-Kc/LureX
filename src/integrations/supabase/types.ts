@@ -421,6 +421,45 @@ export type Database = {
           },
         ]
       }
+      phishing_pages: {
+        Row: {
+          category: string | null
+          created_at: string
+          css_content: string | null
+          html_content: string
+          id: string
+          is_custom: boolean
+          js_content: string | null
+          name: string
+          source_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          css_content?: string | null
+          html_content: string
+          id?: string
+          is_custom?: boolean
+          js_content?: string | null
+          name: string
+          source_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          css_content?: string | null
+          html_content?: string
+          id?: string
+          is_custom?: boolean
+          js_content?: string | null
+          name?: string
+          source_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       target_lists: {
         Row: {
           created_at: string | null

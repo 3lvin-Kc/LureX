@@ -1,6 +1,6 @@
 
-import React from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PlusCircle, Globe, Edit, Trash2, Copy, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,40 +16,113 @@ import { format } from "date-fns";
 const PhishingPages = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
-  // Mock data for now - would be replaced with actual API call
+  // Fetch phishing pages from Supabase
   const { data: phishingPages, isLoading } = useQuery({
     queryKey: ["phishing-pages"],
     queryFn: async () => {
-      // This is just mock data since we don't have the actual table yet
-      return [
-        {
-          id: "1",
-          name: "Microsoft 365 Login",
-          category: "Corporate",
-          source_url: "https://office.com",
-          created_at: new Date().toISOString(),
-          is_custom: false
-        },
-        {
-          id: "2",
-          name: "Google Drive Share",
-          category: "Cloud Storage",
-          source_url: "https://drive.google.com",
-          created_at: new Date().toISOString(),
-          is_custom: false
-        },
-        {
-          id: "3",
-          name: "Company Portal",
-          category: "Custom",
-          source_url: null,
-          created_at: new Date().toISOString(),
-          is_custom: true
-        },
-      ];
+      const { data, error } = await supabase
+        .from("phishing_pages")
+        .select("*")
+        .order("created_at", { ascending: false });
+      
+      if (error) {
+        toast({
+          title: "Error fetching pages",
+          description: error.message,
+          variant: "destructive"
+        });
+        return [];
+      }
+      
+      return data || [];
     },
   });
+
+  // Delete phishing page mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      setIsDeleting(id);
+      const { error } = await supabase
+        .from("phishing_pages")
+        .delete()
+        .eq("id", id);
+      
+      if (error) throw error;
+      return id;
+    },
+    onSuccess: (id) => {
+      queryClient.invalidateQueries({ queryKey: ["phishing-pages"] });
+      toast({
+        title: "Page deleted",
+        description: "Phishing page has been deleted successfully"
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error deleting page",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive"
+      });
+    },
+    onSettled: () => {
+      setIsDeleting(null);
+    }
+  });
+
+  const handleDeletePage = (id: string) => {
+    deleteMutation.mutate(id);
+  };
+
+  const handleDuplicatePage = async (pageId: string) => {
+    try {
+      // First, get the page to duplicate
+      const { data: pageData, error: fetchError } = await supabase
+        .from("phishing_pages")
+        .select("*")
+        .eq("id", pageId)
+        .single();
+      
+      if (fetchError) throw fetchError;
+      
+      // Create a duplicate without the id field
+      const { name, category, source_url, html_content, css_content, js_content, is_custom } = pageData;
+      const newName = `${name} (Copy)`;
+      
+      const { data: newPage, error: insertError } = await supabase
+        .from("phishing_pages")
+        .insert([
+          { 
+            name: newName, 
+            category, 
+            source_url, 
+            html_content, 
+            css_content, 
+            js_content, 
+            is_custom 
+          }
+        ])
+        .select()
+        .single();
+      
+      if (insertError) throw insertError;
+      
+      queryClient.invalidateQueries({ queryKey: ["phishing-pages"] });
+      toast({
+        title: "Page duplicated",
+        description: `"${name}" has been duplicated successfully`
+      });
+      
+    } catch (error) {
+      toast({
+        title: "Error duplicating page",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive"
+      });
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -165,7 +238,7 @@ const PhishingPages = () => {
                                 <Button
                                   variant="outline"
                                   size="icon"
-                                  onClick={() => navigate(`/phishing-pages/${page.id}/duplicate`)}
+                                  onClick={() => handleDuplicatePage(page.id)}
                                 >
                                   <Copy size={16} />
                                 </Button>
@@ -178,12 +251,8 @@ const PhishingPages = () => {
                                 <Button
                                   variant="outline"
                                   size="icon"
-                                  onClick={() => {
-                                    toast({
-                                      title: "Page deleted",
-                                      description: "Phishing page has been deleted successfully"
-                                    });
-                                  }}
+                                  disabled={isDeleting === page.id}
+                                  onClick={() => handleDeletePage(page.id)}
                                 >
                                   <Trash2 size={16} />
                                 </Button>

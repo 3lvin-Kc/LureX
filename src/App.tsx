@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -29,6 +28,9 @@ import Compliance from "./pages/Compliance";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import GDPRCompliance from "./pages/GDPRCompliance";
+import CreatePhishingPage from "./pages/CreatePhishingPage";
+import CloneWebsitePage from "./pages/CloneWebsitePage";
+import PhishingPagePreview from "./pages/PhishingPagePreview";
 
 const queryClient = new QueryClient();
 
@@ -38,7 +40,6 @@ const App = () => {
   const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
-    // One-time check for existing session
     const checkSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -51,7 +52,6 @@ const App = () => {
       }
     };
 
-    // Set up auth listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log("Auth state changed:", event);
@@ -67,7 +67,6 @@ const App = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Define protected route component - optimized to prevent unnecessary renders
   const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     if (!authChecked) return <LoadingScreen />;
     if (loading) return <LoadingScreen />;
@@ -75,7 +74,6 @@ const App = () => {
     return <>{children}</>;
   };
 
-  // Define public route component - with same optimizations
   const PublicRoute = ({ children }: { children: React.ReactNode }) => {
     if (!authChecked) return <LoadingScreen />;
     if (loading) return <LoadingScreen />;
@@ -83,7 +81,6 @@ const App = () => {
     return <>{children}</>;
   };
 
-  // Separate loading component to keep the code DRY
   const LoadingScreen = () => (
     <div className="w-full h-screen flex items-center justify-center">
       <div className="flex flex-col items-center">
@@ -100,29 +97,18 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <Routes>
-            {/* Public routes (redirect to dashboard if logged in) */}
             <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
-            
-            {/* Landing pages (accessible to all, but with login prompt for features) */}
             <Route path="/" element={<Index />} />
             <Route path="/features" element={<Features />} />
             <Route path="/help" element={<Help />} />
-            
-            {/* Public product pages */}
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/compliance" element={<Compliance />} />
-            
-            {/* Public company pages */}
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/blog" element={<Blog />} />
-            
-            {/* Legal pages */}
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/gdpr" element={<GDPRCompliance />} />
-            
-            {/* Protected routes (require authentication) */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
             <Route path="/campaign/new" element={<ProtectedRoute><CreateCampaign /></ProtectedRoute>} />
@@ -133,8 +119,9 @@ const App = () => {
             <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
-            
-            {/* 404 page */}
+            <Route path="/phishing-pages/new" element={<CreatePhishingPage />} />
+            <Route path="/phishing-pages/create-from-url" element={<CloneWebsitePage />} />
+            <Route path="/phishing-pages/:id/preview" element={<PhishingPagePreview />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
