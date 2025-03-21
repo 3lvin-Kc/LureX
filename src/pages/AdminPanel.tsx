@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { PlusCircle, Shield, UserPlus, Users, Trash2, Edit, Key } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -34,7 +33,6 @@ const AdminPanel = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("users");
   
-  // Mock users data
   const [users] = useState([
     {
       id: "1",
@@ -84,7 +82,6 @@ const AdminPanel = () => {
   });
 
   const handleAddUser = () => {
-    // Would normally add to database here
     toast({
       title: "User Added",
       description: `${newUser.name} has been added successfully.`
@@ -213,7 +210,7 @@ const AdminPanel = () => {
                   <TableCell>{user.department}</TableCell>
                   <TableCell>{format(new Date(user.last_login), "MMM d, yyyy HH:mm")}</TableCell>
                   <TableCell>
-                    <Badge variant={user.status === "Active" ? "success" : "outline"}>
+                    <Badge variant={user.status === "Active" ? "default" : "outline"}>
                       {user.status}
                     </Badge>
                   </TableCell>

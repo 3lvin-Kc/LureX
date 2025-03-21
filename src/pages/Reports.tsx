@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Download, FileDown, Filter, Printer, RefreshCw } from "lucide-react";
@@ -13,7 +12,6 @@ import { format } from "date-fns";
 const Reports = () => {
   const [activeTab, setActiveTab] = useState("campaign-reports");
 
-  // Mock data for campaign reports
   const { data: campaignReports, isLoading: isLoadingCampaigns } = useQuery({
     queryKey: ["campaign-reports"],
     queryFn: async () => {
@@ -58,7 +56,6 @@ const Reports = () => {
     },
   });
 
-  // Mock data for user activity logs
   const { data: userLogs, isLoading: isLoadingLogs } = useQuery({
     queryKey: ["user-logs"],
     queryFn: async () => {
@@ -214,7 +211,7 @@ const Reports = () => {
                     variant={
                       log.action === "Submitted Credentials" ? "destructive" :
                       log.action === "Clicked Link" ? "default" :
-                      log.action === "Reported Phishing" ? "success" : "secondary"
+                      log.action === "Reported Phishing" ? "secondary" : "outline"
                     }
                   >
                     {log.action}

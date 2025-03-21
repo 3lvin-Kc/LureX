@@ -13,7 +13,7 @@ import {
   Home,
   GanttChart,
   MonitorPlay,
-  FileReport,
+  FileText as FileDocument,
   ShieldAlert,
   UserCog
 } from 'lucide-react';
@@ -111,7 +111,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     { path: '/phishing-pages', label: 'Phishing Pages', icon: MonitorPlay },
     { path: '/templates', label: 'Email Templates', icon: Mail },
     { path: '/target-lists', label: 'Target Lists', icon: Users },
-    { path: '/reports', label: 'Reports & Logs', icon: FileReport },
+    { path: '/reports', label: 'Reports & Logs', icon: FileDocument },
     { path: '/analytics', label: 'Analytics', icon: BarChart3 },
     { path: '/settings', label: 'Settings', icon: Settings },
     { path: '/admin', label: 'Admin Panel', icon: UserCog },
