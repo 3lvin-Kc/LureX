@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   BarChart3, 
@@ -10,8 +10,12 @@ import {
   Settings, 
   LogOut, 
   Menu, 
-  X, 
-  Home 
+  Home,
+  GanttChart,
+  MonitorPlay,
+  FileReport,
+  ShieldAlert,
+  UserCog
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -33,8 +37,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const [user, setUser] = useState<any>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -66,11 +72,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   }, [navigate]);
 
   useEffect(() => {
-    if (user === null) {
-      // Don't redirect here to prevent potential loop - App.tsx handles this
-      console.log("No user detected in DashboardLayout");
-    }
-  }, [user]);
+    // Reset navigation state when location changes
+    setIsNavigating(false);
+  }, [location.pathname]);
 
   const handleLogout = async () => {
     try {
@@ -93,70 +97,41 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   };
 
   const handleNavigation = (path: string) => {
+    if (isNavigating || path === location.pathname) return;
+    
+    setIsNavigating(true);
     setIsLoading(true);
     navigate(path);
     setSidebarOpen(false);
-    // Use a short timeout to allow for navigation to complete
-    setTimeout(() => setIsLoading(false), 300);
   };
+
+  const navItems = [
+    { path: '/dashboard', label: 'Dashboard', icon: Home },
+    { path: '/campaigns', label: 'Campaigns', icon: GanttChart },
+    { path: '/phishing-pages', label: 'Phishing Pages', icon: MonitorPlay },
+    { path: '/templates', label: 'Email Templates', icon: Mail },
+    { path: '/target-lists', label: 'Target Lists', icon: Users },
+    { path: '/reports', label: 'Reports & Logs', icon: FileReport },
+    { path: '/analytics', label: 'Analytics', icon: BarChart3 },
+    { path: '/settings', label: 'Settings', icon: Settings },
+    { path: '/admin', label: 'Admin Panel', icon: UserCog },
+  ];
 
   const NavItems = () => (
     <div className="space-y-2">
-      <Button
-        variant="ghost"
-        className="w-full justify-start"
-        onClick={() => handleNavigation('/dashboard')}
-        disabled={isLoading}
-      >
-        <Home className="mr-2 h-5 w-5" />
-        Dashboard
-      </Button>
-      <Button
-        variant="ghost"
-        className="w-full justify-start"
-        onClick={() => handleNavigation('/campaigns')}
-        disabled={isLoading}
-      >
-        <Mail className="mr-2 h-5 w-5" />
-        Campaigns
-      </Button>
-      <Button
-        variant="ghost"
-        className="w-full justify-start"
-        onClick={() => handleNavigation('/templates')}
-        disabled={isLoading}
-      >
-        <FileText className="mr-2 h-5 w-5" />
-        Templates
-      </Button>
-      <Button
-        variant="ghost"
-        className="w-full justify-start"
-        onClick={() => handleNavigation('/target-lists')}
-        disabled={isLoading}
-      >
-        <Users className="mr-2 h-5 w-5" />
-        Target Lists
-      </Button>
-      <Button
-        variant="ghost"
-        className="w-full justify-start"
-        onClick={() => handleNavigation('/analytics')}
-        disabled={isLoading}
-      >
-        <BarChart3 className="mr-2 h-5 w-5" />
-        Analytics
-      </Button>
+      {navItems.map((item) => (
+        <Button
+          key={item.path}
+          variant={location.pathname === item.path ? "secondary" : "ghost"}
+          className="w-full justify-start"
+          onClick={() => handleNavigation(item.path)}
+          disabled={isLoading || isNavigating}
+        >
+          <item.icon className="mr-2 h-5 w-5" />
+          {item.label}
+        </Button>
+      ))}
       <Separator className="my-4" />
-      <Button
-        variant="ghost"
-        className="w-full justify-start"
-        onClick={() => handleNavigation('/settings')}
-        disabled={isLoading}
-      >
-        <Settings className="mr-2 h-5 w-5" />
-        Settings
-      </Button>
       <Button
         variant="ghost"
         className="w-full justify-start text-red-500 hover:text-red-700 hover:bg-red-100"
@@ -170,7 +145,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   );
 
   // Show a basic loading state if user data is still loading
-  if (isLoading) {
+  if (isLoading && !children) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="flex flex-col items-center">
@@ -224,9 +199,18 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           </div>
         </header>
 
-        {/* Page content */}
+        {/* Page content with loading indicator */}
         <main className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
-          {children}
+          {isNavigating ? (
+            <div className="flex h-full items-center justify-center">
+              <div className="flex flex-col items-center">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mb-4"></div>
+                <p className="text-gray-600 dark:text-gray-400">Loading page...</p>
+              </div>
+            </div>
+          ) : (
+            children
+          )}
         </main>
       </div>
     </div>
