@@ -31,6 +31,7 @@ import GDPRCompliance from "./pages/GDPRCompliance";
 import CreatePhishingPage from "./pages/CreatePhishingPage";
 import CloneWebsitePage from "./pages/CloneWebsitePage";
 import PhishingPagePreview from "./pages/PhishingPagePreview";
+import CreateTemplate from "./pages/CreateTemplate";
 
 const queryClient = new QueryClient();
 
@@ -113,6 +114,11 @@ const App = () => {
             <Route path="/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
             <Route path="/campaign/new" element={<ProtectedRoute><CreateCampaign /></ProtectedRoute>} />
             <Route path="/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
+            <Route path="/template/new" element={<ProtectedRoute><CreateTemplate /></ProtectedRoute>} />
+            <Route path="/template/:id/edit" element={<ProtectedRoute><CreateTemplate /></ProtectedRoute>} />
+            <Route path="/template/:id/preview" element={<ProtectedRoute><CreateTemplate /></ProtectedRoute>} />
+            <Route path="/template/:id/duplicate" element={<ProtectedRoute><CreateTemplate /></ProtectedRoute>} />
+            <Route path="/template/:id/versions" element={<ProtectedRoute><CreateTemplate /></ProtectedRoute>} />
             <Route path="/phishing-pages" element={<ProtectedRoute><PhishingPages /></ProtectedRoute>} />
             <Route path="/target-lists" element={<ProtectedRoute><TargetLists /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />

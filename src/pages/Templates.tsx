@@ -1,8 +1,8 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { PlusCircle, Copy, Eye, Edit, Trash2, FolderOpen } from "lucide-react";
+import { PlusCircle, Copy, Eye, Edit, Trash2, FolderOpen, Globe, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -16,19 +16,97 @@ import { format } from "date-fns";
 const Templates = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  const { data: templates, isLoading, error } = useQuery({
-    queryKey: ["templates"],
+  const { data: templates, isLoading, error, refetch } = useQuery({
+    queryKey: ["templates", selectedCategory],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("email_templates")
         .select("*")
         .order("created_at", { ascending: false });
+      
+      if (selectedCategory) {
+        query = query.eq("category", selectedCategory);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return data;
     },
   });
+
+  const { data: categories } = useQuery({
+    queryKey: ["template-categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("email_templates")
+        .select("category")
+        .not("category", "is", null);
+
+      if (error) throw error;
+      
+      // Extract unique categories
+      const uniqueCategories = Array.from(
+        new Set(data.map(item => item.category).filter(Boolean))
+      );
+      
+      return uniqueCategories;
+    },
+  });
+
+  const handleDeleteTemplate = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("email_templates")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Template deleted",
+        description: "The template has been successfully deleted.",
+      });
+
+      refetch();
+    } catch (error) {
+      console.error("Error deleting template:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete template",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleMakePublic = async (id: string, isPublic: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("email_templates")
+        .update({ is_public: !isPublic })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast({
+        title: isPublic ? "Template set to private" : "Template made public",
+        description: isPublic 
+          ? "The template is now private and only accessible to you" 
+          : "The template is now public and can be used by others",
+      });
+
+      refetch();
+    } catch (error) {
+      console.error("Error updating template visibility:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update template visibility",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (error) {
     toast({
@@ -44,22 +122,45 @@ const Templates = () => {
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-bold">Email Templates</h1>
-            <p className="text-muted-foreground">Manage your phishing email templates</p>
+            <p className="text-muted-foreground">Create and manage reusable phishing email templates</p>
           </div>
           <Button 
             onClick={() => navigate("/template/new")}
             className="flex items-center gap-2"
           >
             <PlusCircle size={16} />
-            New Template
+            Create Template
           </Button>
+        </div>
+
+        <div className="mb-6">
+          <div className="flex flex-wrap gap-2">
+            <Button 
+              variant={selectedCategory === null ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSelectedCategory(null)}
+            >
+              All Templates
+            </Button>
+            {categories?.map(category => (
+              <Button
+                key={category}
+                variant={selectedCategory === category ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedCategory(category)}
+                className="capitalize"
+              >
+                {category}
+              </Button>
+            ))}
+          </div>
         </div>
 
         <Card>
           <CardHeader className="pb-3">
             <CardTitle>Template Library</CardTitle>
             <CardDescription>
-              Browse and manage your phishing email templates
+              Browse and manage your phishing email templates. Templates can include links to phishing pages and file attachments.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -84,6 +185,7 @@ const Templates = () => {
                     <TableHead>Category</TableHead>
                     <TableHead>Version</TableHead>
                     <TableHead>Created</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -103,6 +205,11 @@ const Templates = () => {
                       <TableCell>v{template.version}</TableCell>
                       <TableCell>
                         {format(new Date(template.created_at), "MMM d, yyyy")}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={template.is_public ? "secondary" : "outline"}>
+                          {template.is_public ? "Public" : "Private"}
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
@@ -157,6 +264,38 @@ const Templates = () => {
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>View Versions</TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => handleMakePublic(template.id, template.is_public)}
+                                >
+                                  {template.is_public ? <Lock size={16} /> : <Globe size={16} />}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {template.is_public ? "Make Private" : "Make Public"}
+                              </TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => {
+                                    if (confirm("Are you sure you want to delete this template?")) {
+                                      handleDeleteTemplate(template.id);
+                                    }
+                                  }}
+                                >
+                                  <Trash2 size={16} />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Delete</TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
                         </div>
