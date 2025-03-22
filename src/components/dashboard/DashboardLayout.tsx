@@ -132,7 +132,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       {!isMobile && (
         <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4 hidden md:block">
           <div className="flex items-center justify-center h-16 mb-8">
-            <h1 className="text-xl font-bold">Phishing Platform</h1>
+            <Link to="/dashboard" className="text-xl font-bold">Phishing Platform</Link>
           </div>
           <NavItems />
         </div>
@@ -149,13 +149,19 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
               </SheetTrigger>
               <SheetContent side="left" className="w-64">
                 <SheetHeader className="mb-6">
-                  <SheetTitle>Phishing Platform</SheetTitle>
+                  <SheetTitle>
+                    <Link to="/dashboard" onClick={() => setSidebarOpen(false)}>
+                      Phishing Platform
+                    </Link>
+                  </SheetTitle>
                 </SheetHeader>
                 <NavItems />
               </SheetContent>
             </Sheet>
           )}
-          <div className="md:hidden font-bold text-lg">Phishing Platform</div>
+          <div className="md:hidden font-bold text-lg">
+            <Link to="/dashboard">Phishing Platform</Link>
+          </div>
           <div className="flex items-center">
             <span className="text-sm mr-4">{user?.email}</span>
           </div>

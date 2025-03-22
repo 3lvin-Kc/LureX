@@ -208,7 +208,7 @@ const Dashboard = () => {
                         </div>
                         
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm">View</Button>
+                          <Button variant="outline" size="sm" onClick={() => navigate(`/campaign/${index+1}`)}>View</Button>
                           <Button variant="outline" size="icon" className="h-8 w-8">
                             <Pause className="h-4 w-4" />
                           </Button>
@@ -269,7 +269,7 @@ const Dashboard = () => {
                         </div>
                         
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm">Edit</Button>
+                          <Button variant="outline" size="sm" onClick={() => navigate(`/campaign/edit/${index+5}`)}>Edit</Button>
                           <Button variant="outline" size="icon" className="h-8 w-8 text-red-500">
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -348,8 +348,8 @@ const Dashboard = () => {
                         </div>
                         
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm">Report</Button>
-                          <Button variant="outline" size="sm">Clone</Button>
+                          <Button variant="outline" size="sm" onClick={() => navigate(`/reports/${index+7}`)}>Report</Button>
+                          <Button variant="outline" size="sm" onClick={() => navigate(`/campaign/clone/${index+7}`)}>Clone</Button>
                         </div>
                       </div>
                     </GlassPanel>
@@ -399,8 +399,8 @@ const Dashboard = () => {
                         </div>
                         
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm">Edit</Button>
-                          <Button size="sm">Finalize</Button>
+                          <Button variant="outline" size="sm" onClick={() => navigate(`/campaign/edit/${index+9}`)}>Edit</Button>
+                          <Button size="sm" onClick={() => navigate(`/campaign/finalize/${index+9}`)}>Finalize</Button>
                         </div>
                       </div>
                     </GlassPanel>
@@ -507,48 +507,6 @@ const Dashboard = () => {
                   </div>
                 </AnimatedCard>
               </div>
-            </div>
-          </div>
-        </section>
-        
-        {/* Quick Actions */}
-        <section className="py-6">
-          <div className="max-w-7xl mx-auto px-6 md:px-10 mb-6">
-            <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                {
-                  title: "New Campaign",
-                  icon: PlusCircle,
-                  color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                },
-                {
-                  title: "View Analytics",
-                  icon: BarChart,
-                  color: "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
-                },
-                {
-                  title: "Manage Templates",
-                  icon: Mail,
-                  color: "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
-                },
-                {
-                  title: "User Groups",
-                  icon: Users,
-                  color: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400"
-                }
-              ].map((action, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  className="h-auto py-6 flex flex-col items-center gap-3 border border-gray-200 dark:border-gray-800"
-                >
-                  <div className={`rounded-full p-3 ${action.color}`}>
-                    <action.icon className="h-5 w-5" />
-                  </div>
-                  <span>{action.title}</span>
-                </Button>
-              ))}
             </div>
           </div>
         </section>
