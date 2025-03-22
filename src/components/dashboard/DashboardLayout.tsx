@@ -35,7 +35,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const [user, setUser] = useState<any>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isNavigating, setIsNavigating] = useState(false);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const location = useLocation();
@@ -68,10 +67,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
       authListener.subscription.unsubscribe();
     };
   }, [navigate]);
-
-  useEffect(() => {
-    setIsNavigating(false);
-  }, [location.pathname]);
 
   const handleLogout = async () => {
     try {
@@ -132,17 +127,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     </div>
   );
 
-  if (isLoading && !children) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="flex flex-col items-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
       {!isMobile && (
@@ -174,12 +158,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           <div className="md:hidden font-bold text-lg">Phishing Platform</div>
           <div className="flex items-center">
             <span className="text-sm mr-4">{user?.email}</span>
-            {!isMobile && (
-              <Button variant="outline" size="sm" onClick={handleLogout} disabled={isLoading}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Logout
-              </Button>
-            )}
           </div>
         </header>
 

@@ -70,7 +70,7 @@ const Header = () => {
           <span className="text-xl font-bold">Guardian</span>
         </Link>
 
-        {/* Desktop Navigation */}
+        {/* Desktop Navigation - Only Home and Features */}
         <nav className="hidden md:flex items-center space-x-8">
           <Link to="/" className="text-sm font-medium transition-colors hover:text-primary">
             Home
@@ -78,19 +78,6 @@ const Header = () => {
           <Link to="/features" className="text-sm font-medium transition-colors hover:text-primary">
             Features
           </Link>
-          {user && (
-            <>
-              <Link to="/templates" className="text-sm font-medium transition-colors hover:text-primary">
-                Templates
-              </Link>
-              <Link to="/dashboard" className="text-sm font-medium transition-colors hover:text-primary">
-                Dashboard
-              </Link>
-              <Link to="/analytics" className="text-sm font-medium transition-colors hover:text-primary">
-                Analytics
-              </Link>
-            </>
-          )}
         </nav>
 
         <div className="hidden md:flex items-center space-x-4">
@@ -109,9 +96,10 @@ const Header = () => {
             </Button>
           )}
           
-          {user && (
+          {/* Removed Dashboard button, leaving only Get Started for dashboard access */}
+          {!user && (
             <Button asChild size="sm">
-              <Link to="/dashboard">Dashboard</Link>
+              <Link to="/auth" onClick={handleGetStarted}>Get Started</Link>
             </Button>
           )}
         </div>
@@ -138,7 +126,7 @@ const Header = () => {
         </button>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu - Only Home and Features */}
       {mobileMenuOpen && (
         <div className="md:hidden absolute top-16 left-0 w-full bg-white dark:bg-gray-900 shadow-md py-4 px-6 animate-fade-down">
           <nav className="flex flex-col space-y-4">
@@ -157,50 +145,27 @@ const Header = () => {
               Features
             </Link>
             
-            {user && (
-              <>
-                <Link 
-                  to="/templates" 
-                  className="text-sm font-medium transition-colors hover:text-primary py-2"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Templates
-                </Link>
-                <Link 
-                  to="/dashboard" 
-                  className="text-sm font-medium transition-colors hover:text-primary py-2"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Dashboard
-                </Link>
-                <Link 
-                  to="/analytics" 
-                  className="text-sm font-medium transition-colors hover:text-primary py-2"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Analytics
-                </Link>
-              </>
-            )}
-            
             <div className="flex flex-col space-y-2 pt-2">
               <Button asChild variant="outline" size="sm" className="w-full">
                 <Link to="/help" onClick={() => setMobileMenuOpen(false)}>Help</Link>
               </Button>
               
               {user ? (
+                <Button variant="outline" size="sm" className="w-full" onClick={handleLogout}>
+                  Logout
+                </Button>
+              ) : (
                 <>
-                  <Button variant="outline" size="sm" className="w-full" onClick={handleLogout}>
-                    Logout
-                  </Button>
                   <Button asChild size="sm" className="w-full">
-                    <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>Dashboard</Link>
+                    <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>Login</Link>
+                  </Button>
+                  
+                  <Button asChild size="sm" className="w-full">
+                    <Link to="/auth" onClick={() => { setMobileMenuOpen(false); handleGetStarted(); }}>
+                      Get Started
+                    </Link>
                   </Button>
                 </>
-              ) : (
-                <Button asChild size="sm" className="w-full">
-                  <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>Login</Link>
-                </Button>
               )}
             </div>
           </nav>

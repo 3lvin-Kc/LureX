@@ -1,8 +1,8 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { PlusCircle, Users, FileUp, Edit, Trash2 } from "lucide-react";
+import { PlusCircle, Users, FileUp, Edit, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -11,10 +11,27 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { format } from "date-fns";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 const TargetLists = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [newListData, setNewListData] = useState({ name: "", description: "" });
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: targetLists, isLoading, error, refetch } = useQuery({
     queryKey: ["targetLists"],
@@ -47,6 +64,180 @@ const TargetLists = () => {
       return listsWithCounts;
     },
   });
+
+  const handleCreateList = async () => {
+    try {
+      setIsSubmitting(true);
+      
+      if (!newListData.name) {
+        toast({
+          title: "Error",
+          description: "List name is required",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      const { data, error } = await supabase
+        .from("target_lists")
+        .insert([{ 
+          name: newListData.name, 
+          description: newListData.description
+        }])
+        .select();
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Target list created successfully",
+      });
+
+      setNewListData({ name: "", description: "" });
+      setIsCreateDialogOpen(false);
+      refetch();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create target list",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleImportList = async () => {
+    try {
+      setIsSubmitting(true);
+      
+      if (!csvFile) {
+        toast({
+          title: "Error",
+          description: "Please select a CSV file to import",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (!newListData.name) {
+        toast({
+          title: "Error",
+          description: "List name is required",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // First create the list
+      const { data: listData, error: listError } = await supabase
+        .from("target_lists")
+        .insert([{ 
+          name: newListData.name, 
+          description: newListData.description
+        }])
+        .select();
+
+      if (listError) throw listError;
+      
+      const listId = listData[0].id;
+      
+      // Then parse and import the CSV data
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const content = e.target?.result as string;
+          const rows = content.split("\n");
+          
+          // Skip header row and parse CSV
+          const header = rows[0].split(",");
+          const emailIndex = header.findIndex(col => col.toLowerCase().includes("email"));
+          const firstNameIndex = header.findIndex(col => col.toLowerCase().includes("first") || col.toLowerCase().includes("fname"));
+          const lastNameIndex = header.findIndex(col => col.toLowerCase().includes("last") || col.toLowerCase().includes("lname"));
+          
+          if (emailIndex === -1) {
+            throw new Error("CSV must contain an email column");
+          }
+          
+          const targets = [];
+          
+          // Start from row 1 to skip header
+          for (let i = 1; i < rows.length; i++) {
+            if (!rows[i].trim()) continue; // Skip empty rows
+            
+            const columns = rows[i].split(",");
+            
+            if (columns.length > emailIndex) {
+              const email = columns[emailIndex].trim();
+              
+              if (email) { // Only add if email exists
+                const target = {
+                  list_id: listId,
+                  email,
+                  first_name: firstNameIndex !== -1 && columns.length > firstNameIndex ? columns[firstNameIndex].trim() : null,
+                  last_name: lastNameIndex !== -1 && columns.length > lastNameIndex ? columns[lastNameIndex].trim() : null,
+                };
+                
+                targets.push(target);
+              }
+            }
+          }
+          
+          if (targets.length === 0) {
+            throw new Error("No valid targets found in CSV");
+          }
+          
+          // Insert targets in batches of 100
+          const batchSize = 100;
+          for (let i = 0; i < targets.length; i += batchSize) {
+            const batch = targets.slice(i, i + batchSize);
+            const { error: insertError } = await supabase
+              .from("targets")
+              .insert(batch);
+              
+            if (insertError) throw insertError;
+          }
+          
+          toast({
+            title: "Success",
+            description: `Imported ${targets.length} targets to "${newListData.name}"`,
+          });
+          
+          setNewListData({ name: "", description: "" });
+          setCsvFile(null);
+          setIsImportDialogOpen(false);
+          refetch();
+        } catch (error: any) {
+          toast({
+            title: "Import Error",
+            description: error.message || "Failed to import targets",
+            variant: "destructive",
+          });
+        } finally {
+          setIsSubmitting(false);
+        }
+      };
+      
+      reader.onerror = () => {
+        toast({
+          title: "File Error",
+          description: "Failed to read CSV file",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+      };
+      
+      reader.readAsText(csvFile);
+      
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to import target list",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+    }
+  };
 
   const handleDeleteList = async (id: string) => {
     try {
@@ -91,14 +282,14 @@ const TargetLists = () => {
           <div className="flex gap-2">
             <Button 
               variant="outline"
-              onClick={() => navigate("/targets/import")}
+              onClick={() => setIsImportDialogOpen(true)}
               className="flex items-center gap-2"
             >
               <FileUp size={16} />
               Import List
             </Button>
             <Button 
-              onClick={() => navigate("/targets/new")}
+              onClick={() => setIsCreateDialogOpen(true)}
               className="flex items-center gap-2"
             >
               <PlusCircle size={16} />
@@ -123,7 +314,7 @@ const TargetLists = () => {
                 <Button 
                   variant="outline" 
                   className="mt-4"
-                  onClick={() => navigate("/targets/new")}
+                  onClick={() => setIsCreateDialogOpen(true)}
                 >
                   Create Target List
                 </Button>
@@ -204,6 +395,106 @@ const TargetLists = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Create New List Dialog */}
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create New Target List</DialogTitle>
+              <DialogDescription>
+                Add a new list to organize your phishing campaign targets
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label htmlFor="list-name">List Name</Label>
+                <Input 
+                  id="list-name" 
+                  placeholder="HR Department Targets" 
+                  value={newListData.name}
+                  onChange={(e) => setNewListData(prev => ({ ...prev, name: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="list-description">Description (Optional)</Label>
+                <Textarea 
+                  id="list-description" 
+                  placeholder="Targets for the HR department phishing campaign" 
+                  value={newListData.description}
+                  onChange={(e) => setNewListData(prev => ({ ...prev, description: e.target.value }))}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>Cancel</Button>
+              <Button onClick={handleCreateList} disabled={isSubmitting}>
+                {isSubmitting ? "Creating..." : "Create List"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Import List Dialog */}
+        <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Import Target List</DialogTitle>
+              <DialogDescription>
+                Import targets from a CSV file
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label htmlFor="import-list-name">List Name</Label>
+                <Input 
+                  id="import-list-name" 
+                  placeholder="Imported Targets" 
+                  value={newListData.name}
+                  onChange={(e) => setNewListData(prev => ({ ...prev, name: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="import-list-description">Description (Optional)</Label>
+                <Textarea 
+                  id="import-list-description" 
+                  placeholder="Targets imported from CSV" 
+                  value={newListData.description}
+                  onChange={(e) => setNewListData(prev => ({ ...prev, description: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="csv-file">CSV File</Label>
+                <div className="flex items-center gap-2">
+                  <Input 
+                    id="csv-file" 
+                    type="file" 
+                    accept=".csv" 
+                    onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
+                  />
+                  {csvFile && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8" 
+                      onClick={() => setCsvFile(null)}
+                    >
+                      <X size={16} />
+                    </Button>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  CSV must include column for email (required), first name and last name (optional)
+                </p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsImportDialogOpen(false)}>Cancel</Button>
+              <Button onClick={handleImportList} disabled={isSubmitting || !csvFile}>
+                {isSubmitting ? "Importing..." : "Import List"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
