@@ -30,7 +30,8 @@ serve(async (req) => {
     );
 
     // Get the request body
-    const { url, name, category } = await req.json();
+    const requestData = await req.json();
+    const { url, name, category, customizations, advancedCloning, template } = requestData;
 
     if (!url) {
       return new Response(
@@ -43,33 +44,53 @@ serve(async (req) => {
     }
 
     console.log(`Attempting to clone website: ${url}`);
+    console.log(`Advanced cloning mode: ${advancedCloning ? 'enabled' : 'disabled'}`);
+    
+    // Build enhanced browser-like headers
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Cache-Control': 'max-age=0',
+      'Sec-Fetch-Site': 'none',
+      'Sec-Fetch-Mode': 'navigate',
+      'Sec-Fetch-User': '?1',
+      'Sec-Fetch-Dest': 'document',
+      'Sec-Ch-Ua': '"Chromium";v="115", "Not/A)Brand";v="99"',
+      'Sec-Ch-Ua-Mobile': '?0',
+      'Sec-Ch-Ua-Platform': '"Windows"',
+      'Upgrade-Insecure-Requests': '1',
+      'Priority': 'u=0, i',
+    };
+    
+    // For some sites, add a referer which may help bypass security checks
+    if (url.includes('google.com') || url.includes('microsoft.com') || 
+        url.includes('facebook.com') || url.includes('linkedin.com') || 
+        url.includes('amazon.com')) {
+      headers['Referer'] = new URL(url).origin;
+    }
 
     // Try to fetch the target website with enhanced browser-like headers
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Cache-Control': 'max-age=0',
-        'Sec-Fetch-Site': 'none',
-        'Sec-Fetch-Mode': 'navigate',
-        'Sec-Fetch-User': '?1',
-        'Sec-Fetch-Dest': 'document',
-        'Sec-Ch-Ua': '"Chromium";v="115", "Not/A)Brand";v="99"',
-        'Sec-Ch-Ua-Mobile': '?0',
-        'Sec-Ch-Ua-Platform': '"Windows"',
-        'Upgrade-Insecure-Requests': '1',
-        'Priority': 'u=0, i',
-      },
-    }).catch(error => {
+    const response = await fetch(url, { headers }).catch(error => {
       console.error(`Fetch error: ${error.message}`);
       throw new Error(`Failed to fetch website: ${error.message}`);
     });
 
     if (!response.ok) {
       console.error(`Failed to fetch website with status: ${response.status} ${response.statusText}`);
+      
+      // For certain response codes, provide more targeted error messages
+      let errorMessage = `Failed to fetch website: ${response.statusText} (${response.status})`;
+      if (response.status === 403) {
+        errorMessage = "This website has anti-scraping protections in place. Try a different URL or website.";
+      } else if (response.status === 429) {
+        errorMessage = "Too many requests to this website. Please wait a moment and try again.";
+      } else if (response.status === 404) {
+        errorMessage = "The URL provided could not be found. Please check the URL and try again.";
+      }
+      
       return new Response(
-        JSON.stringify({ error: `Failed to fetch website: ${response.statusText} (${response.status})` }),
+        JSON.stringify({ error: errorMessage }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 502,
@@ -122,9 +143,38 @@ serve(async (req) => {
       // Process and update all <form> elements to capture credentials
       const forms = document.querySelectorAll("form");
       if (forms && forms.length > 0) {
+        console.log(`Found ${forms.length} forms to modify for credential capture`);
         for (let i = 0; i < forms.length; i++) {
           forms[i].setAttribute("onsubmit", "captureCredentials(event); return false;");
+          
+          // Add data-original-action to preserve the original form action
+          const originalAction = forms[i].getAttribute("action");
+          if (originalAction) {
+            forms[i].setAttribute("data-original-action", originalAction);
+          }
+          
+          // Make sure all form fields have proper names for capturing
+          const inputs = forms[i].querySelectorAll("input");
+          for (let j = 0; j < inputs.length; j++) {
+            const input = inputs[j];
+            const type = input.getAttribute("type")?.toLowerCase();
+            
+            // For password and text/email fields without names, add appropriate names
+            if (type === "password" && !input.getAttribute("name")) {
+              input.setAttribute("name", "password");
+            } else if ((type === "text" || type === "email") && !input.getAttribute("name")) {
+              if (input.getAttribute("placeholder")?.toLowerCase().includes("email") || 
+                  input.getAttribute("id")?.toLowerCase().includes("email")) {
+                input.setAttribute("name", "email");
+              } else if (input.getAttribute("placeholder")?.toLowerCase().includes("user") || 
+                        input.getAttribute("id")?.toLowerCase().includes("user")) {
+                input.setAttribute("name", "username");
+              }
+            }
+          }
         }
+      } else {
+        console.log("No forms found in the HTML document, will use backup method");
       }
       
       // Add credential capture script to HTML
@@ -139,25 +189,75 @@ serve(async (req) => {
               data[key] = value;
             });
             
-            // Log credentials (this would actually send to your backend in a real scenario)
-            console.log('Captured credentials:', data);
-            alert('Login attempt recorded. This was a security awareness test.');
+            // Log captured credentials for security awareness demonstration
+            console.log('Security awareness test - credentials captured:', data);
             
-            // In a real phishing page, you would send this data to your backend
-            // fetch('/api/store-credentials', {
-            //   method: 'POST',
-            //   headers: { 'Content-Type': 'application/json' },
-            //   body: JSON.stringify(data)
-            // });
+            // Store information in localStorage for reporting
+            const interactionData = {
+              timestamp: new Date().toISOString(),
+              data: data,
+              page: window.location.href
+            };
+            
+            try {
+              // Store interaction data locally
+              let interactions = JSON.parse(localStorage.getItem('phishing_interactions') || '[]');
+              interactions.push(interactionData);
+              localStorage.setItem('phishing_interactions', JSON.stringify(interactions));
+              
+              // You could post this data to your backend in a real environment
+              // fetch('/api/record-phishing-test', {
+              //   method: 'POST',
+              //   headers: { 'Content-Type': 'application/json' },
+              //   body: JSON.stringify(interactionData)
+              // });
+            } catch(e) {
+              console.error('Error storing interaction data:', e);
+            }
+            
+            // Show security awareness message
+            const messageContainer = document.createElement('div');
+            messageContainer.style.position = 'fixed';
+            messageContainer.style.top = '0';
+            messageContainer.style.left = '0';
+            messageContainer.style.width = '100%';
+            messageContainer.style.padding = '20px';
+            messageContainer.style.backgroundColor = '#f44336';
+            messageContainer.style.color = 'white';
+            messageContainer.style.textAlign = 'center';
+            messageContainer.style.fontWeight = 'bold';
+            messageContainer.style.zIndex = '9999';
+            messageContainer.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+            messageContainer.innerHTML = 'This was a security awareness test. In a real attack, your credentials could have been stolen.';
+            document.body.appendChild(messageContainer);
             
             return false;
           }
+          
+          // Add listeners to all forms on page load
+          document.addEventListener('DOMContentLoaded', function() {
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+              if (!form.getAttribute('onsubmit')) {
+                form.setAttribute('onsubmit', 'captureCredentials(event); return false;');
+              }
+            });
+            
+            // Make all password fields visible
+            const passwordFields = document.querySelectorAll('input[type="password"]');
+            passwordFields.forEach(field => {
+              field.style.display = 'inline-block';
+              field.style.visibility = 'visible';
+              field.style.opacity = '1';
+            });
+          });
         </script>
       `;
       
       // Extract all external CSS
       const externalStyles = document.querySelectorAll("link[rel='stylesheet']");
       if (externalStyles && externalStyles.length > 0) {
+        console.log(`Found ${externalStyles.length} external stylesheets to fetch`);
         for (let i = 0; i < externalStyles.length; i++) {
           const href = externalStyles[i].getAttribute("href");
           if (href) {
@@ -201,6 +301,7 @@ serve(async (req) => {
       // Extract all inline styles
       const styleElements = document.querySelectorAll("style");
       if (styleElements && styleElements.length > 0) {
+        console.log(`Found ${styleElements.length} inline style elements`);
         for (let i = 0; i < styleElements.length; i++) {
           const styleContent = styleElements[i].textContent || "";
           cssContent += `/* Inline style ${i + 1} */\n${styleContent}\n\n`;
@@ -212,6 +313,7 @@ serve(async (req) => {
       const essentialScriptPatterns = [/jquery/i, /login/i, /auth/i, /validation/i, /form/i];
       
       if (externalScripts && externalScripts.length > 0) {
+        console.log(`Found ${externalScripts.length} external scripts`);
         for (let i = 0; i < externalScripts.length; i++) {
           const src = externalScripts[i].getAttribute("src");
           if (src) {
@@ -257,11 +359,97 @@ serve(async (req) => {
       // Extract all inline scripts
       const scriptElements = document.querySelectorAll("script:not([src])");
       if (scriptElements && scriptElements.length > 0) {
+        console.log(`Found ${scriptElements.length} inline script elements`);
         for (let i = 0; i < scriptElements.length; i++) {
           const scriptContent = scriptElements[i].textContent || "";
           if (scriptContent.trim()) {
             jsContent += `/* Inline script ${i + 1} */\n${scriptContent}\n\n`;
           }
+        }
+      }
+      
+      // Apply enterprise customizations if provided
+      if (customizations && advancedCloning) {
+        console.log("Applying enterprise customizations to cloned page");
+        
+        const { companyName, companyLogo, primaryColor, secondaryColor } = customizations;
+        
+        // Add a custom style block for customizations
+        let customCSS = "\n/* Enterprise Customizations */\n";
+        
+        if (primaryColor) {
+          customCSS += `
+            :root {
+              --custom-primary-color: ${primaryColor};
+            }
+            .btn-primary, button[type="submit"], input[type="submit"], .primary-button {
+              background-color: var(--custom-primary-color) !important;
+              border-color: var(--custom-primary-color) !important;
+            }
+          `;
+        }
+        
+        if (secondaryColor) {
+          customCSS += `
+            :root {
+              --custom-secondary-color: ${secondaryColor};
+            }
+            .btn-secondary, .secondary-button, a.btn:not(.btn-primary) {
+              background-color: var(--custom-secondary-color) !important;
+              border-color: var(--custom-secondary-color) !important;
+            }
+          `;
+        }
+        
+        // Add the custom CSS to our content
+        cssContent += customCSS;
+        
+        // Replace logos if provided
+        if (companyLogo) {
+          const logos = document.querySelectorAll("img[src*='logo'], img[alt*='logo'], img.logo, .logo img");
+          if (logos && logos.length > 0) {
+            console.log(`Found ${logos.length} potential logo images to replace`);
+            for (let i = 0; i < logos.length; i++) {
+              logos[i].setAttribute("src", companyLogo);
+              logos[i].setAttribute("data-original-src", logos[i].getAttribute("src") || "");
+            }
+          }
+        }
+        
+        // Replace company name if provided
+        if (companyName) {
+          // Look for common company name locations
+          const titleElement = document.querySelector("title");
+          if (titleElement) {
+            const originalTitle = titleElement.textContent;
+            titleElement.textContent = originalTitle?.replace(/((log|sign)\s*(in|on))/i, `$1 - ${companyName}`);
+          }
+          
+          // Add a custom script to replace text nodes containing common company names
+          jsContent += `
+            /* Company Name Replacement Script */
+            document.addEventListener('DOMContentLoaded', function() {
+              const companyName = "${companyName}";
+              const companyNameRegex = /(Google|Microsoft|Facebook|LinkedIn|Twitter|Amazon)/gi;
+              
+              function replaceTextInNode(node) {
+                if (node.nodeType === 3) { // Text node
+                  const text = node.nodeValue;
+                  const newText = text.replace(companyNameRegex, companyName);
+                  if (text !== newText) {
+                    node.nodeValue = newText;
+                  }
+                } else if (node.nodeType === 1) { // Element node
+                  const children = node.childNodes;
+                  for (let i = 0; i < children.length; i++) {
+                    replaceTextInNode(children[i]);
+                  }
+                }
+              }
+              
+              replaceTextInNode(document.body);
+            });
+          `;
         }
       }
       
@@ -313,8 +501,24 @@ serve(async (req) => {
               formData.forEach((value, key) => {
                 data[key] = value;
               });
-              console.log('Captured credentials:', data);
-              alert('Login attempt recorded. This was a security awareness test.');
+              console.log('Security awareness test - credentials captured:', data);
+              
+              // Create a visual alert
+              const messageContainer = document.createElement('div');
+              messageContainer.style.position = 'fixed';
+              messageContainer.style.top = '0';
+              messageContainer.style.left = '0';
+              messageContainer.style.width = '100%';
+              messageContainer.style.padding = '20px';
+              messageContainer.style.backgroundColor = '#f44336';
+              messageContainer.style.color = 'white';
+              messageContainer.style.textAlign = 'center';
+              messageContainer.style.fontWeight = 'bold';
+              messageContainer.style.zIndex = '9999';
+              messageContainer.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+              messageContainer.innerHTML = 'This was a security awareness test. In a real attack, your credentials could have been stolen.';
+              document.body.appendChild(messageContainer);
+              
               return false;
             });
           });
@@ -364,10 +568,25 @@ serve(async (req) => {
           visibility: visible !important;
           opacity: 1 !important;
         }
+        /* Make sure password fields are visible */
+        input[type="password"] {
+          display: inline-block !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+        }
       </style>
       `;
       
       processedHtml = processedHtml.replace(/<\/head>/i, `${cssOverride}\n</head>`);
+      
+      // Add security banner
+      const securityBanner = `
+      <div style="position: fixed; bottom: 0; left: 0; width: 100%; background-color: rgba(0,0,0,0.7); color: white; text-align: center; padding: 8px; font-size: 12px; z-index: 999999;">
+        This is a security awareness training page - No real credentials are being collected
+      </div>
+      `;
+      
+      processedHtml = processedHtml.replace(/<\/body>/i, `${securityBanner}\n</body>`);
       
     } catch (error) {
       console.error("Error processing HTML URLs:", error);
