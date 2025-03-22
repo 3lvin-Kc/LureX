@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,8 +13,6 @@ import {
   GanttChart,
   MonitorPlay,
   FileText as FileDocument,
-  ShieldAlert,
-  UserCog
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -72,7 +69,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   }, [navigate]);
 
   useEffect(() => {
-    // Reset navigation state when location changes
     setIsNavigating(false);
   }, [location.pathname]);
 
@@ -112,9 +108,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     { path: '/templates', label: 'Email Templates', icon: Mail },
     { path: '/target-lists', label: 'Target Lists', icon: Users },
     { path: '/reports', label: 'Reports & Logs', icon: FileDocument },
-    { path: '/analytics', label: 'Analytics', icon: BarChart3 },
     { path: '/settings', label: 'Settings', icon: Settings },
-    { path: '/admin', label: 'Admin Panel', icon: UserCog },
   ];
 
   const NavItems = () => (
@@ -144,7 +138,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     </div>
   );
 
-  // Show a basic loading state if user data is still loading
   if (isLoading && !children) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -158,7 +151,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Sidebar for desktop */}
       {!isMobile && (
         <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4 hidden md:block">
           <div className="flex items-center justify-center h-16 mb-8">
@@ -168,9 +160,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         </div>
       )}
 
-      {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top navigation bar */}
         <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
           {isMobile && (
             <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
@@ -199,7 +189,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           </div>
         </header>
 
-        {/* Page content with loading indicator */}
         <main className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
           {isNavigating ? (
             <div className="flex h-full items-center justify-center">

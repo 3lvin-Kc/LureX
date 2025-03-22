@@ -9,7 +9,6 @@ import Index from "./pages/Index";
 import Features from "./pages/Features";
 import Templates from "./pages/Templates";
 import Dashboard from "./pages/Dashboard";
-import Analytics from "./pages/Analytics";
 import Help from "./pages/Help";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
@@ -19,7 +18,6 @@ import TargetLists from "./pages/TargetLists";
 import PhishingPages from "./pages/PhishingPages";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
-import AdminPanel from "./pages/AdminPanel";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Blog from "./pages/Blog";
@@ -31,6 +29,7 @@ import GDPRCompliance from "./pages/GDPRCompliance";
 import CreatePhishingPage from "./pages/CreatePhishingPage";
 import CloneWebsitePage from "./pages/CloneWebsitePage";
 import PhishingPagePreview from "./pages/PhishingPagePreview";
+import EditPhishingPage from "./pages/EditPhishingPage";
 import CreateTemplate from "./pages/CreateTemplate";
 
 const queryClient = new QueryClient();
@@ -122,12 +121,11 @@ const App = () => {
             <Route path="/phishing-pages" element={<ProtectedRoute><PhishingPages /></ProtectedRoute>} />
             <Route path="/target-lists" element={<ProtectedRoute><TargetLists /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-            <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-            <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
             <Route path="/phishing-pages/new" element={<CreatePhishingPage />} />
             <Route path="/phishing-pages/create-from-url" element={<CloneWebsitePage />} />
             <Route path="/phishing-pages/:id/preview" element={<PhishingPagePreview />} />
+            <Route path="/phishing-pages/:id/edit" element={<ProtectedRoute><EditPhishingPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
