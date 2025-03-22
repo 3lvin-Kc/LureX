@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { PlusCircle, Copy, Eye, Edit, Trash2, FolderOpen, Globe, Lock } from "lucide-react";
+import { PlusCircle, Copy, Eye, Edit, Trash2, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -76,33 +76,6 @@ const Templates = () => {
       toast({
         title: "Error",
         description: "Failed to delete template",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleMakePublic = async (id: string, isPublic: boolean) => {
-    try {
-      const { error } = await supabase
-        .from("email_templates")
-        .update({ is_public: !isPublic })
-        .eq("id", id);
-
-      if (error) throw error;
-
-      toast({
-        title: isPublic ? "Template set to private" : "Template made public",
-        description: isPublic 
-          ? "The template is now private and only accessible to you" 
-          : "The template is now public and can be used by others",
-      });
-
-      refetch();
-    } catch (error) {
-      console.error("Error updating template visibility:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update template visibility",
         variant: "destructive",
       });
     }
@@ -185,7 +158,6 @@ const Templates = () => {
                     <TableHead>Category</TableHead>
                     <TableHead>Version</TableHead>
                     <TableHead>Created</TableHead>
-                    <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -205,11 +177,6 @@ const Templates = () => {
                       <TableCell>v{template.version}</TableCell>
                       <TableCell>
                         {format(new Date(template.created_at), "MMM d, yyyy")}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={template.is_public ? "secondary" : "outline"}>
-                          {template.is_public ? "Public" : "Private"}
-                        </Badge>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
@@ -264,21 +231,6 @@ const Templates = () => {
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>View Versions</TooltipContent>
-                            </Tooltip>
-
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  onClick={() => handleMakePublic(template.id, template.is_public)}
-                                >
-                                  {template.is_public ? <Lock size={16} /> : <Globe size={16} />}
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                {template.is_public ? "Make Private" : "Make Public"}
-                              </TooltipContent>
                             </Tooltip>
 
                             <Tooltip>

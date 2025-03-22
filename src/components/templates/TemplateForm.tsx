@@ -22,7 +22,7 @@ const templateSchema = z.object({
   category: z.string().optional(),
   htmlContent: z.string().min(1, "Email content is required"),
   textContent: z.string().optional(),
-  isPublic: z.boolean().default(false),
+  description: z.string().optional(),
 });
 
 type TemplateFormValues = z.infer<typeof templateSchema>;
@@ -45,7 +45,7 @@ const TemplateForm: React.FC<TemplateFormProps> = ({ templateId }) => {
       category: "",
       htmlContent: "",
       textContent: "",
-      isPublic: false,
+      description: "",
     },
   });
 
@@ -89,7 +89,7 @@ const TemplateForm: React.FC<TemplateFormProps> = ({ templateId }) => {
         category: templateData.category || "",
         htmlContent: templateData.html_content,
         textContent: templateData.text_content || "",
-        isPublic: templateData.is_public || false,
+        description: templateData.description || "",
       });
     }
   }, [templateData, form]);
@@ -106,7 +106,7 @@ const TemplateForm: React.FC<TemplateFormProps> = ({ templateId }) => {
         category: values.category || null,
         html_content: values.htmlContent,
         text_content: values.textContent || null,
-        is_public: values.isPublic,
+        description: values.description || null,
       };
 
       let templateResult;
@@ -252,21 +252,16 @@ const TemplateForm: React.FC<TemplateFormProps> = ({ templateId }) => {
           
           <FormField
             control={form.control}
-            name="isPublic"
+            name="description"
             render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                <div className="space-y-0.5">
-                  <FormLabel className="text-base">Make Template Public</FormLabel>
-                  <FormDescription>
-                    Public templates can be used by other users in your organization
-                  </FormDescription>
-                </div>
+              <FormItem>
+                <FormLabel>Description (Optional)</FormLabel>
                 <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
+                  <Input placeholder="Brief description of this template" {...field} />
                 </FormControl>
+                <FormDescription>
+                  Provide a short description to help identify this template's purpose
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
