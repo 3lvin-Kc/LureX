@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -32,7 +33,15 @@ import PhishingPagePreview from "./pages/PhishingPagePreview";
 import EditPhishingPage from "./pages/EditPhishingPage";
 import CreateTemplate from "./pages/CreateTemplate";
 
-const queryClient = new QueryClient();
+// Create a persistent query client that won't reset on page changes
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+  },
+});
 
 const App = () => {
   const [user, setUser] = useState<any>(null);
@@ -67,6 +76,16 @@ const App = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Create a loading component that preserves UI context
+  const LoadingScreen = () => (
+    <div className="w-full h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="flex flex-col items-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+        <p className="text-gray-600 dark:text-gray-400">Loading application...</p>
+      </div>
+    </div>
+  );
+
   const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     if (!authChecked) return <LoadingScreen />;
     if (loading) return <LoadingScreen />;
@@ -80,15 +99,6 @@ const App = () => {
     if (user) return <Navigate to="/dashboard" replace />;
     return <>{children}</>;
   };
-
-  const LoadingScreen = () => (
-    <div className="w-full h-screen flex items-center justify-center">
-      <div className="flex flex-col items-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
-        <p className="text-gray-600">Loading application...</p>
-      </div>
-    </div>
-  );
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -122,9 +132,9 @@ const App = () => {
             <Route path="/target-lists" element={<ProtectedRoute><TargetLists /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-            <Route path="/phishing-pages/new" element={<CreatePhishingPage />} />
-            <Route path="/phishing-pages/create-from-url" element={<CloneWebsitePage />} />
-            <Route path="/phishing-pages/:id/preview" element={<PhishingPagePreview />} />
+            <Route path="/phishing-pages/new" element={<ProtectedRoute><CreatePhishingPage /></ProtectedRoute>} />
+            <Route path="/phishing-pages/create-from-url" element={<ProtectedRoute><CloneWebsitePage /></ProtectedRoute>} />
+            <Route path="/phishing-pages/:id/preview" element={<ProtectedRoute><PhishingPagePreview /></ProtectedRoute>} />
             <Route path="/phishing-pages/:id/edit" element={<ProtectedRoute><EditPhishingPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>

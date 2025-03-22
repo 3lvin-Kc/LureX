@@ -1,5 +1,6 @@
+
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   BarChart3, 
@@ -92,15 +93,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     }
   };
 
-  const handleNavigation = (path: string) => {
-    if (isNavigating || path === location.pathname) return;
-    
-    setIsNavigating(true);
-    setIsLoading(true);
-    navigate(path);
-    setSidebarOpen(false);
-  };
-
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: Home },
     { path: '/campaigns', label: 'Campaigns', icon: GanttChart },
@@ -118,11 +110,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           key={item.path}
           variant={location.pathname === item.path ? "secondary" : "ghost"}
           className="w-full justify-start"
-          onClick={() => handleNavigation(item.path)}
-          disabled={isLoading || isNavigating}
+          asChild
+          disabled={isLoading}
         >
-          <item.icon className="mr-2 h-5 w-5" />
-          {item.label}
+          <Link to={item.path} onClick={() => setSidebarOpen(false)}>
+            <item.icon className="mr-2 h-5 w-5" />
+            {item.label}
+          </Link>
         </Button>
       ))}
       <Separator className="my-4" />
@@ -190,16 +184,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         </header>
 
         <main className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
-          {isNavigating ? (
-            <div className="flex h-full items-center justify-center">
-              <div className="flex flex-col items-center">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mb-4"></div>
-                <p className="text-gray-600 dark:text-gray-400">Loading page...</p>
-              </div>
-            </div>
-          ) : (
-            children
-          )}
+          {children}
         </main>
       </div>
     </div>
