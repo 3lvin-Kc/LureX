@@ -32,6 +32,7 @@ import CloneWebsitePage from "./pages/CloneWebsitePage";
 import PhishingPagePreview from "./pages/PhishingPagePreview";
 import EditPhishingPage from "./pages/EditPhishingPage";
 import CreateTemplate from "./pages/CreateTemplate";
+import Guide from "./pages/Guide";
 
 // Create a persistent query client that won't reset on page changes
 const queryClient = new QueryClient({
@@ -110,6 +111,7 @@ const App = () => {
             <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
             <Route path="/" element={<Index />} />
             <Route path="/features" element={<Features />} />
+            <Route path="/guide" element={<Guide />} />
             <Route path="/help" element={<Help />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/compliance" element={<Compliance />} />

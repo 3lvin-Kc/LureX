@@ -5,6 +5,7 @@ import GlassPanel from '../ui/GlassPanel';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
+import { BookOpen } from 'lucide-react';
 
 const Hero = () => {
   const navigate = useNavigate();
@@ -36,8 +37,8 @@ const Hero = () => {
     }
   };
 
-  const handleViewDemo = () => {
-    navigate('/templates');
+  const handleViewGuide = () => {
+    navigate('/guide');
   };
 
   return (
@@ -64,8 +65,14 @@ const Hero = () => {
             <Button size="lg" className="rounded-full px-8" onClick={handleGetStarted}>
               {loading ? "Loading..." : (user ? "Go to Dashboard" : "Get Started")}
             </Button>
-            <Button size="lg" variant="outline" className="rounded-full px-8" onClick={handleViewDemo}>
-              View Demo
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="rounded-full px-8 flex items-center gap-2" 
+              onClick={handleViewGuide}
+            >
+              <BookOpen size={18} />
+              View Guide
             </Button>
           </div>
         </div>
@@ -76,9 +83,9 @@ const Hero = () => {
               {/* This would be the dashboard preview image */}
               <div className="w-full h-full flex items-center justify-center bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
                 <div className="text-center p-6">
-                  <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Interactive Dashboard</h3>
+                  <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Comprehensive Phishing Defense Platform</h3>
                   <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto">
-                    Real-time analytics and reporting to track your organization's phishing awareness journey.
+                    Create realistic phishing simulations, track user responses, and improve security awareness with our advanced platform.
                   </p>
                 </div>
               </div>

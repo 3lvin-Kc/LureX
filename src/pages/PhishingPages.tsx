@@ -12,12 +12,14 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { format } from "date-fns";
+import CloneWebsiteWarning from "@/components/phishing/CloneWebsiteWarning";
 
 const PhishingPages = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [showCloneWarning, setShowCloneWarning] = useState(false);
 
   // Fetch phishing pages from Supabase
   const { data: phishingPages, isLoading, refetch } = useQuery({
@@ -85,6 +87,18 @@ const PhishingPages = () => {
     deleteMutation.mutate(id);
   };
 
+  const handleCloneWebsiteClick = () => {
+    setShowCloneWarning(true);
+  };
+
+  const handleCloneProceed = () => {
+    navigate("/phishing-pages/create-from-url");
+  };
+
+  const handleCloneCancel = () => {
+    navigate("/phishing-pages/new");
+  };
+
   const handleDuplicatePage = async (pageId: string) => {
     try {
       // First, get the page to duplicate
@@ -144,7 +158,7 @@ const PhishingPages = () => {
           <div className="flex gap-2">
             <Button 
               variant="outline"
-              onClick={() => navigate("/phishing-pages/create-from-url")}
+              onClick={handleCloneWebsiteClick}
               className="flex items-center gap-2"
             >
               <Globe size={16} />
@@ -279,6 +293,13 @@ const PhishingPages = () => {
           </CardContent>
         </Card>
       </div>
+      
+      <CloneWebsiteWarning 
+        open={showCloneWarning}
+        onOpenChange={setShowCloneWarning}
+        onProceed={handleCloneProceed}
+        onCancel={handleCloneCancel}
+      />
     </DashboardLayout>
   );
 };
