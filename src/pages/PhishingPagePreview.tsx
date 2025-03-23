@@ -15,6 +15,7 @@ const PhishingPagePreview = () => {
   const [page, setPage] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [iframeKey, setIframeKey] = useState(0); // Used to force iframe refresh
+  const [previewContent, setPreviewContent] = useState("");
 
   useEffect(() => {
     const fetchPage = async () => {
@@ -28,6 +29,12 @@ const PhishingPagePreview = () => {
 
         if (error) throw error;
         setPage(data);
+        
+        // Generate the preview content once we have the page data
+        if (data) {
+          const content = generatePreviewContent(data);
+          setPreviewContent(content);
+        }
       } catch (error) {
         toast({
           title: "Error loading page",
@@ -45,52 +52,94 @@ const PhishingPagePreview = () => {
   }, [id, toast]);
 
   // Combine HTML, CSS, and JS into a complete page
-  const generatePreviewContent = () => {
-    if (!page) return "";
+  const generatePreviewContent = (pageData: any) => {
+    if (!pageData) return "";
 
     // Extract HTML content
-    let content = page.html_content || "";
+    let content = pageData.html_content || "";
+
+    // Add base tag to handle relative paths correctly
+    if (content.includes("<head>")) {
+      content = content.replace(
+        "<head>",
+        `<head><base target="_blank">`
+      );
+    }
 
     // Add CSS if available
-    if (page.css_content) {
+    if (pageData.css_content) {
       // Check if there's a head tag
       if (content.includes("</head>")) {
         content = content.replace(
           "</head>",
-          `<style>${page.css_content}</style></head>`
+          `<style>${pageData.css_content}</style></head>`
         );
       } else if (content.includes("<head>")) {
         content = content.replace(
           "<head>",
-          `<head><style>${page.css_content}</style>`
+          `<head><style>${pageData.css_content}</style>`
         );
       } else if (content.includes("<html>")) {
         content = content.replace(
           "<html>",
-          `<html><head><style>${page.css_content}</style></head>`
+          `<html><head><style>${pageData.css_content}</style></head>`
         );
       } else {
-        content = `<style>${page.css_content}</style>${content}`;
+        content = `<style>${pageData.css_content}</style>${content}`;
       }
     }
 
     // Add JavaScript if available
-    if (page.js_content) {
+    if (pageData.js_content) {
       // Add script before </body> tag if it exists
       if (content.includes("</body>")) {
         content = content.replace(
           "</body>",
-          `<script>${page.js_content}</script></body>`
+          `<script>${pageData.js_content}</script></body>`
         );
       } else {
-        content = `${content}<script>${page.js_content}</script>`;
+        content = `${content}<script>${pageData.js_content}</script>`;
       }
+    }
+
+    // Add a dummy form handler
+    const formHandler = `
+      <script>
+        document.addEventListener('DOMContentLoaded', function() {
+          const forms = document.querySelectorAll('form');
+          forms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+              e.preventDefault();
+              const formData = new FormData(form);
+              const formValues = {};
+              
+              for (let [key, value] of formData.entries()) {
+                formValues[key] = value;
+              }
+              
+              console.log('Form submitted:', formValues);
+              alert('Phishing simulation complete! Form data captured for training purposes.');
+              return false;
+            });
+          });
+        });
+      </script>
+    `;
+
+    if (content.includes("</body>")) {
+      content = content.replace("</body>", `${formHandler}</body>`);
+    } else {
+      content = `${content}${formHandler}`;
     }
 
     return content;
   };
 
   const refreshPreview = () => {
+    if (page) {
+      const content = generatePreviewContent(page);
+      setPreviewContent(content);
+    }
     setIframeKey(prev => prev + 1);
   };
 
@@ -133,11 +182,11 @@ const PhishingPagePreview = () => {
               <div className="border border-gray-200 rounded-md overflow-hidden" style={{ height: "600px" }}>
                 <iframe
                   key={iframeKey}
-                  srcDoc={generatePreviewContent()}
+                  srcDoc={previewContent}
                   title="Phishing Page Preview"
                   width="100%"
                   height="100%"
-                  sandbox="allow-forms"
+                  sandbox="allow-forms allow-scripts"
                   style={{ border: "none" }}
                 />
               </div>

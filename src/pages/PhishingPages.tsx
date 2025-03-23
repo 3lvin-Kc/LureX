@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PlusCircle, Globe, Edit, Trash2, Copy, Eye } from "lucide-react";
@@ -20,7 +20,7 @@ const PhishingPages = () => {
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   // Fetch phishing pages from Supabase
-  const { data: phishingPages, isLoading } = useQuery({
+  const { data: phishingPages, isLoading, refetch } = useQuery({
     queryKey: ["phishing-pages"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -40,6 +40,15 @@ const PhishingPages = () => {
       return data || [];
     },
   });
+
+  // Poll for updates every 5 seconds while on this page
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refetch();
+    }, 5000);
+    
+    return () => clearInterval(interval);
+  }, [refetch]);
 
   // Delete phishing page mutation
   const deleteMutation = useMutation({

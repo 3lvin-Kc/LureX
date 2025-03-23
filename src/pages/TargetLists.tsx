@@ -1,8 +1,7 @@
-
-import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import React, { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { PlusCircle, Users, FileUp, Edit, Trash2, X } from "lucide-react";
+import { PlusCircle, Users, FileUp, Edit, Trash2, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -27,6 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 const TargetLists = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [newListData, setNewListData] = useState({ name: "", description: "" });
@@ -65,6 +65,68 @@ const TargetLists = () => {
     },
   });
 
+  // Create target list mutation
+  const createListMutation = useMutation({
+    mutationFn: async (listData: { name: string; description: string }) => {
+      const { data, error } = await supabase
+        .from("target_lists")
+        .insert([{ 
+          name: listData.name, 
+          description: listData.description
+        }])
+        .select();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["targetLists"] });
+      setNewListData({ name: "", description: "" });
+      setIsCreateDialogOpen(false);
+      toast({
+        title: "Success",
+        description: "Target list created successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create target list",
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setIsSubmitting(false);
+    }
+  });
+
+  // Delete target list mutation
+  const deleteListMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("target_lists")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+      return id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["targetLists"] });
+      toast({
+        title: "Success",
+        description: "Target list deleted successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete target list",
+        variant: "destructive",
+      });
+    }
+  });
+
   const handleCreateList = async () => {
     try {
       setIsSubmitting(true);
@@ -75,34 +137,17 @@ const TargetLists = () => {
           description: "List name is required",
           variant: "destructive",
         });
+        setIsSubmitting(false);
         return;
       }
       
-      const { data, error } = await supabase
-        .from("target_lists")
-        .insert([{ 
-          name: newListData.name, 
-          description: newListData.description
-        }])
-        .select();
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Target list created successfully",
-      });
-
-      setNewListData({ name: "", description: "" });
-      setIsCreateDialogOpen(false);
-      refetch();
+      createListMutation.mutate(newListData);
     } catch (error: any) {
       toast({
         title: "Error",
         description: error.message || "Failed to create target list",
         variant: "destructive",
       });
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -117,6 +162,7 @@ const TargetLists = () => {
           description: "Please select a CSV file to import",
           variant: "destructive",
         });
+        setIsSubmitting(false);
         return;
       }
       
@@ -126,6 +172,7 @@ const TargetLists = () => {
           description: "List name is required",
           variant: "destructive",
         });
+        setIsSubmitting(false);
         return;
       }
       
@@ -206,7 +253,7 @@ const TargetLists = () => {
           setNewListData({ name: "", description: "" });
           setCsvFile(null);
           setIsImportDialogOpen(false);
-          refetch();
+          queryClient.invalidateQueries({ queryKey: ["targetLists"] });
         } catch (error: any) {
           toast({
             title: "Import Error",
@@ -240,27 +287,7 @@ const TargetLists = () => {
   };
 
   const handleDeleteList = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from("target_lists")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Target list deleted successfully",
-      });
-
-      refetch();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete target list",
-        variant: "destructive",
-      });
-    }
+    deleteListMutation.mutate(id);
   };
 
   if (error) {
@@ -428,7 +455,14 @@ const TargetLists = () => {
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>Cancel</Button>
               <Button onClick={handleCreateList} disabled={isSubmitting}>
-                {isSubmitting ? "Creating..." : "Create List"}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  "Create List"
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -490,7 +524,14 @@ const TargetLists = () => {
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsImportDialogOpen(false)}>Cancel</Button>
               <Button onClick={handleImportList} disabled={isSubmitting || !csvFile}>
-                {isSubmitting ? "Importing..." : "Import List"}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Importing...
+                  </>
+                ) : (
+                  "Import List"
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>

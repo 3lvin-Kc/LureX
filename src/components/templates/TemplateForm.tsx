@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { PaperclipIcon, LinkIcon, SendIcon, SaveIcon } from "lucide-react";
+import { PaperclipIcon, LinkIcon, SendIcon, SaveIcon, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 const templateSchema = z.object({
@@ -36,6 +35,7 @@ const TemplateForm: React.FC<TemplateFormProps> = ({ templateId }) => {
   const navigate = useNavigate();
   const [selectedPhishingPage, setSelectedPhishingPage] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<TemplateFormValues>({
     resolver: zodResolver(templateSchema),
@@ -96,6 +96,8 @@ const TemplateForm: React.FC<TemplateFormProps> = ({ templateId }) => {
 
   const onSubmit = async (values: TemplateFormValues) => {
     try {
+      setIsSubmitting(true);
+      
       // Determine if we're creating or updating
       const isUpdate = !!templateId;
 
@@ -166,6 +168,8 @@ const TemplateForm: React.FC<TemplateFormProps> = ({ templateId }) => {
         description: "Failed to save template",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -399,9 +403,18 @@ const TemplateForm: React.FC<TemplateFormProps> = ({ templateId }) => {
           >
             Cancel
           </Button>
-          <Button type="submit">
-            <SaveIcon className="mr-2 h-4 w-4" />
-            {templateId ? "Update Template" : "Save Template"}
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {templateId ? "Updating..." : "Saving..."}
+              </>
+            ) : (
+              <>
+                <SaveIcon className="mr-2 h-4 w-4" />
+                {templateId ? "Update Template" : "Save Template"}
+              </>
+            )}
           </Button>
         </div>
       </form>
