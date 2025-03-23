@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,8 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { PaperclipIcon, LinkIcon, SendIcon, SaveIcon, Loader2 } from "lucide-react";
+import { PaperclipIcon, LinkIcon, SaveIcon, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 const templateSchema = z.object({
@@ -36,6 +36,7 @@ const TemplateForm: React.FC<TemplateFormProps> = ({ templateId }) => {
   const [selectedPhishingPage, setSelectedPhishingPage] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const form = useForm<TemplateFormValues>({
     resolver: zodResolver(templateSchema),
@@ -97,6 +98,7 @@ const TemplateForm: React.FC<TemplateFormProps> = ({ templateId }) => {
   const onSubmit = async (values: TemplateFormValues) => {
     try {
       setIsSubmitting(true);
+      setSubmitError(null);
       
       // Determine if we're creating or updating
       const isUpdate = !!templateId;
@@ -122,17 +124,23 @@ const TemplateForm: React.FC<TemplateFormProps> = ({ templateId }) => {
           .select()
           .single();
           
-        if (error) throw error;
+        if (error) {
+          console.error("Update error:", error);
+          throw error;
+        }
         templateResult = data;
       } else {
         // Create new template
         const { data, error } = await supabase
           .from("email_templates")
-          .insert(templateData)
+          .insert([templateData])
           .select()
           .single();
           
-        if (error) throw error;
+        if (error) {
+          console.error("Insert error:", error);
+          throw error;
+        }
         templateResult = data;
       }
 
@@ -163,9 +171,10 @@ const TemplateForm: React.FC<TemplateFormProps> = ({ templateId }) => {
       navigate("/templates");
     } catch (error) {
       console.error("Error saving template:", error);
+      setSubmitError(error instanceof Error ? error.message : "Unknown error occurred");
       toast({
         title: "Error",
-        description: "Failed to save template",
+        description: error instanceof Error ? error.message : "Failed to save template",
         variant: "destructive",
       });
     } finally {
@@ -206,6 +215,13 @@ const TemplateForm: React.FC<TemplateFormProps> = ({ templateId }) => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        {submitError && (
+          <div className="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg">
+            <p className="font-bold">Error:</p>
+            <p>{submitError}</p>
+          </div>
+        )}
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
             control={form.control}
@@ -400,6 +416,7 @@ const TemplateForm: React.FC<TemplateFormProps> = ({ templateId }) => {
             type="button" 
             variant="outline" 
             onClick={() => navigate("/templates")}
+            disabled={isSubmitting}
           >
             Cancel
           </Button>

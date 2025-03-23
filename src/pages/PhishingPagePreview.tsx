@@ -57,12 +57,22 @@ const PhishingPagePreview = () => {
 
     // Extract HTML content
     let content = pageData.html_content || "";
+    
+    // Ensure we have a proper HTML structure
+    if (!content.includes("<html")) {
+      content = `<html><head></head><body>${content}</body></html>`;
+    }
 
     // Add base tag to handle relative paths correctly
     if (content.includes("<head>")) {
       content = content.replace(
         "<head>",
         `<head><base target="_blank">`
+      );
+    } else if (content.includes("<html>")) {
+      content = content.replace(
+        "<html>",
+        `<html><head><base target="_blank"></head>`
       );
     }
 

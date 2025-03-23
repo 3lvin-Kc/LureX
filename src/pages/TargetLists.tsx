@@ -32,36 +32,42 @@ const TargetLists = () => {
   const [newListData, setNewListData] = useState({ name: "", description: "" });
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const { data: targetLists, isLoading, error, refetch } = useQuery({
     queryKey: ["targetLists"],
     queryFn: async () => {
-      // First get all target lists
-      const { data: lists, error: listsError } = await supabase
-        .from("target_lists")
-        .select("*")
-        .order("created_at", { ascending: false });
+      try {
+        // First get all target lists
+        const { data: lists, error: listsError } = await supabase
+          .from("target_lists")
+          .select("*")
+          .order("created_at", { ascending: false });
 
-      if (listsError) throw listsError;
+        if (listsError) throw listsError;
 
-      // For each list, count the number of targets
-      const listsWithCounts = await Promise.all(
-        lists.map(async (list) => {
-          const { count, error: countError } = await supabase
-            .from("targets")
-            .select("*", { count: "exact", head: true })
-            .eq("list_id", list.id);
+        // For each list, count the number of targets
+        const listsWithCounts = await Promise.all(
+          lists.map(async (list) => {
+            const { count, error: countError } = await supabase
+              .from("targets")
+              .select("*", { count: "exact", head: true })
+              .eq("list_id", list.id);
 
-          if (countError) throw countError;
+            if (countError) throw countError;
 
-          return {
-            ...list,
-            target_count: count || 0,
-          };
-        })
-      );
+            return {
+              ...list,
+              target_count: count || 0,
+            };
+          })
+        );
 
-      return listsWithCounts;
+        return listsWithCounts;
+      } catch (err) {
+        console.error("Error fetching target lists:", err);
+        throw err;
+      }
     },
   });
 
@@ -76,7 +82,10 @@ const TargetLists = () => {
         }])
         .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Create list error:", error);
+        throw error;
+      }
       return data;
     },
     onSuccess: () => {
@@ -89,6 +98,7 @@ const TargetLists = () => {
       });
     },
     onError: (error: any) => {
+      setErrorMessage(error.message || "Failed to create target list");
       toast({
         title: "Error",
         description: error.message || "Failed to create target list",
@@ -130,6 +140,7 @@ const TargetLists = () => {
   const handleCreateList = async () => {
     try {
       setIsSubmitting(true);
+      setErrorMessage(null);
       
       if (!newListData.name) {
         toast({
@@ -143,6 +154,7 @@ const TargetLists = () => {
       
       createListMutation.mutate(newListData);
     } catch (error: any) {
+      setErrorMessage(error.message || "Failed to create target list");
       toast({
         title: "Error",
         description: error.message || "Failed to create target list",
@@ -155,6 +167,7 @@ const TargetLists = () => {
   const handleImportList = async () => {
     try {
       setIsSubmitting(true);
+      setErrorMessage(null);
       
       if (!csvFile) {
         toast({
@@ -185,7 +198,14 @@ const TargetLists = () => {
         }])
         .select();
 
-      if (listError) throw listError;
+      if (listError) {
+        console.error("List creation error:", listError);
+        throw listError;
+      }
+      
+      if (!listData || listData.length === 0) {
+        throw new Error("Failed to create target list");
+      }
       
       const listId = listData[0].id;
       
@@ -242,7 +262,10 @@ const TargetLists = () => {
               .from("targets")
               .insert(batch);
               
-            if (insertError) throw insertError;
+            if (insertError) {
+              console.error("Target insert error:", insertError);
+              throw insertError;
+            }
           }
           
           toast({
@@ -255,6 +278,7 @@ const TargetLists = () => {
           setIsImportDialogOpen(false);
           queryClient.invalidateQueries({ queryKey: ["targetLists"] });
         } catch (error: any) {
+          setErrorMessage(error.message || "Failed to import targets");
           toast({
             title: "Import Error",
             description: error.message || "Failed to import targets",
@@ -266,6 +290,7 @@ const TargetLists = () => {
       };
       
       reader.onerror = () => {
+        setErrorMessage("Failed to read CSV file");
         toast({
           title: "File Error",
           description: "Failed to read CSV file",
@@ -277,6 +302,7 @@ const TargetLists = () => {
       reader.readAsText(csvFile);
       
     } catch (error: any) {
+      setErrorMessage(error.message || "Failed to import target list");
       toast({
         title: "Error",
         description: error.message || "Failed to import target list",
@@ -287,7 +313,9 @@ const TargetLists = () => {
   };
 
   const handleDeleteList = async (id: string) => {
-    deleteListMutation.mutate(id);
+    if (confirm("Are you sure you want to delete this list? This action cannot be undone.")) {
+      deleteListMutation.mutate(id);
+    }
   };
 
   if (error) {
@@ -432,6 +460,11 @@ const TargetLists = () => {
                 Add a new list to organize your phishing campaign targets
               </DialogDescription>
             </DialogHeader>
+            {errorMessage && (
+              <div className="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg">
+                <p>Error: {errorMessage}</p>
+              </div>
+            )}
             <div className="space-y-4 py-2">
               <div className="space-y-2">
                 <Label htmlFor="list-name">List Name</Label>
@@ -453,7 +486,7 @@ const TargetLists = () => {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
               <Button onClick={handleCreateList} disabled={isSubmitting}>
                 {isSubmitting ? (
                   <>
@@ -477,6 +510,11 @@ const TargetLists = () => {
                 Import targets from a CSV file
               </DialogDescription>
             </DialogHeader>
+            {errorMessage && (
+              <div className="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg">
+                <p>Error: {errorMessage}</p>
+              </div>
+            )}
             <div className="space-y-4 py-2">
               <div className="space-y-2">
                 <Label htmlFor="import-list-name">List Name</Label>
@@ -522,7 +560,7 @@ const TargetLists = () => {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsImportDialogOpen(false)}>Cancel</Button>
+              <Button variant="outline" onClick={() => setIsImportDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
               <Button onClick={handleImportList} disabled={isSubmitting || !csvFile}>
                 {isSubmitting ? (
                   <>
