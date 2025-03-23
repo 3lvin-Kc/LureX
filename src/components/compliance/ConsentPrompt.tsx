@@ -36,7 +36,7 @@ const ConsentPrompt: React.FC<ConsentPromptProps> = ({ onAccept, onDecline }) =>
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-6 pb-2 space-y-6">
-        <Alert variant="warning" className="bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+        <Alert variant="destructive" className="bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Important Notice</AlertTitle>
           <AlertDescription>
