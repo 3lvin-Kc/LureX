@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,6 +8,40 @@ import Footer from '@/components/layout/Footer';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+
+const tiers = [
+  {
+    name: "Personal Use",
+    description: "For individuals looking to test their own security awareness",
+    features: [
+      "Basic phishing templates",
+      "Self-assessment tools",
+      "Limited analytics",
+      "Single-user dashboard",
+    ],
+    alert: {
+      title: "Important Disclaimer",
+      description: "This tool is intended for educational and security testing purposes only. Always obtain proper authorization before conducting any security tests.",
+      variant: "destructive",
+    },
+  },
+  {
+    name: "Enterprise Use",
+    description: "Comprehensive guide to all features for organizational security testing",
+    features: [
+      "Advanced phishing templates",
+      "Multi-user dashboard",
+      "Real-time analytics",
+      "Customizable campaigns",
+      "Integration with LMS",
+    ],
+    alert: {
+      title: "Important Disclaimer",
+      description: "This tool is designed for legitimate security testing and educational purposes only. Always obtain proper authorization before conducting any phishing tests. Unauthorized use against individuals or organizations without consent is illegal and unethical.",
+      variant: "warning",
+    },
+  },
+];
 
 const Guide = () => {
   const [openSection, setOpenSection] = useState<string | null>(null);

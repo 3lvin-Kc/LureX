@@ -80,13 +80,18 @@ const Hero = () => {
         <div className="mt-16 md:mt-20 relative animate-fade-up animate-delay-300">
           <GlassPanel className="p-2 rounded-2xl shadow-xl mx-auto max-w-5xl">
             <div className="aspect-[16/9] rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800">
-              {/* This would be the dashboard preview image */}
+              {/* Updated with actual platform dashboard image */}
               <div className="w-full h-full flex items-center justify-center bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
-                <div className="text-center p-6">
+                <div className="text-center p-6 flex flex-col items-center">
                   <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Comprehensive Phishing Defense Platform</h3>
-                  <p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto">
+                  <p className="text-gray-600 dark:text-gray-400 max-w-md mb-8">
                     Create realistic phishing simulations, track user responses, and improve security awareness with our advanced platform.
                   </p>
+                  <img 
+                    src="/lovable-uploads/593ea609-4f84-4649-804c-d9f554b77a57.png" 
+                    alt="Platform Screenshot" 
+                    className="max-w-full max-h-[240px] rounded-lg shadow-md"
+                  />
                 </div>
               </div>
             </div>

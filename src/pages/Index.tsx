@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import Hero from '@/components/landing/Hero';
@@ -8,8 +8,22 @@ import AnimatedCard from '@/components/ui/AnimatedCard';
 import GlassPanel from '@/components/ui/GlassPanel';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Clock } from 'lucide-react';
 
 const Index = () => {
+  const [inProgressOpen, setInProgressOpen] = useState(false);
+  const [inProgressType, setInProgressType] = useState("");
+
+  const handleTabClick = (type: string) => {
+    if (type === 'sms' || type === 'voice') {
+      setInProgressType(type === 'sms' ? 'SMS' : 'Voice');
+      setInProgressOpen(true);
+      return false;
+    }
+    return true;
+  };
+
   const workflowSteps = [
     {
       number: "01",
@@ -93,8 +107,8 @@ const Index = () => {
               <div className="flex justify-center mb-8">
                 <TabsList>
                   <TabsTrigger value="email">Email Templates</TabsTrigger>
-                  <TabsTrigger value="sms">SMS Templates</TabsTrigger>
-                  <TabsTrigger value="voice">Voice Templates</TabsTrigger>
+                  <TabsTrigger value="sms" onClick={() => handleTabClick('sms')}>SMS Templates</TabsTrigger>
+                  <TabsTrigger value="voice" onClick={() => handleTabClick('voice')}>Voice Templates</TabsTrigger>
                 </TabsList>
               </div>
               
@@ -105,17 +119,20 @@ const Index = () => {
                       {
                         title: "Password Reset",
                         category: "Credential Harvest",
-                        difficulty: "Medium"
+                        difficulty: "Medium",
+                        description: "A realistic template mimicking a legitimate password reset notification."
                       },
                       {
                         title: "Invoice Payment",
                         category: "Financial Fraud",
-                        difficulty: "Hard"
+                        difficulty: "Hard",
+                        description: "A convincing invoice payment request template that appears to be from a trusted vendor."
                       },
                       {
                         title: "Document Share",
                         category: "Malware Delivery",
-                        difficulty: "Easy"
+                        difficulty: "Easy",
+                        description: "A template mimicking a legitimate document share notification from popular cloud storage services."
                       }
                     ].map((template, index) => (
                       <AnimatedCard key={index} className="overflow-hidden h-full">
@@ -130,7 +147,7 @@ const Index = () => {
                           </div>
                           <h3 className="text-lg font-semibold mb-2">{template.title}</h3>
                           <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                            A realistic template mimicking a legitimate {template.title.toLowerCase()} notification.
+                            {template.description}
                           </p>
                           <Button variant="outline" size="sm" className="w-full">Preview Template</Button>
                         </div>
@@ -143,41 +160,7 @@ const Index = () => {
               <TabsContent value="sms" className="animate-fade-in">
                 <GlassPanel className="p-6 md:p-8 rounded-xl">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {[
-                      {
-                        title: "Package Delivery",
-                        category: "Link Harvesting",
-                        difficulty: "Medium"
-                      },
-                      {
-                        title: "Account Alert",
-                        category: "Credential Theft",
-                        difficulty: "Hard"
-                      },
-                      {
-                        title: "Verification Code",
-                        category: "2FA Bypass",
-                        difficulty: "Easy"
-                      }
-                    ].map((template, index) => (
-                      <AnimatedCard key={index} className="overflow-hidden h-full">
-                        <div className="p-6">
-                          <div className="flex justify-between items-center mb-4">
-                            <span className="text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 py-1 px-2 rounded-full">
-                              {template.category}
-                            </span>
-                            <span className="text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300 py-1 px-2 rounded-full">
-                              {template.difficulty}
-                            </span>
-                          </div>
-                          <h3 className="text-lg font-semibold mb-2">{template.title}</h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                            A convincing SMS template for {template.title.toLowerCase()} notifications.
-                          </p>
-                          <Button variant="outline" size="sm" className="w-full">Preview Template</Button>
-                        </div>
-                      </AnimatedCard>
-                    ))}
+                    {/* SMS Templates content - In Progress, handled by dialog */}
                   </div>
                 </GlassPanel>
               </TabsContent>
@@ -185,41 +168,7 @@ const Index = () => {
               <TabsContent value="voice" className="animate-fade-in">
                 <GlassPanel className="p-6 md:p-8 rounded-xl">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {[
-                      {
-                        title: "Tech Support",
-                        category: "Social Engineering",
-                        difficulty: "Hard"
-                      },
-                      {
-                        title: "Bank Verification",
-                        category: "Financial Fraud",
-                        difficulty: "Medium"
-                      },
-                      {
-                        title: "Survey Request",
-                        category: "Information Gathering",
-                        difficulty: "Easy"
-                      }
-                    ].map((template, index) => (
-                      <AnimatedCard key={index} className="overflow-hidden h-full">
-                        <div className="p-6">
-                          <div className="flex justify-between items-center mb-4">
-                            <span className="text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 py-1 px-2 rounded-full">
-                              {template.category}
-                            </span>
-                            <span className="text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300 py-1 px-2 rounded-full">
-                              {template.difficulty}
-                            </span>
-                          </div>
-                          <h3 className="text-lg font-semibold mb-2">{template.title}</h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                            Realistic voice script for {template.title.toLowerCase()} simulation calls.
-                          </p>
-                          <Button variant="outline" size="sm" className="w-full">Preview Script</Button>
-                        </div>
-                      </AnimatedCard>
-                    ))}
+                    {/* Voice Templates content - In Progress, handled by dialog */}
                   </div>
                 </GlassPanel>
               </TabsContent>
@@ -281,12 +230,11 @@ const Index = () => {
                 <GlassPanel className="p-4 rounded-xl overflow-hidden">
                   <div className="bg-white dark:bg-gray-800 rounded-lg p-6">
                     <div className="aspect-[4/3] overflow-hidden flex items-center justify-center bg-gray-100 dark:bg-gray-900 rounded-lg">
-                      <div className="text-center p-6">
-                        <h3 className="text-xl font-semibold mb-4">Analytics Dashboard</h3>
-                        <p className="text-gray-600 dark:text-gray-400">
-                          Interactive visualization of phishing campaign metrics and employee responses.
-                        </p>
-                      </div>
+                      <img 
+                        src="/lovable-uploads/f5d91462-4a22-42de-9ee6-1406b1391d82.png" 
+                        alt="Analytics Dashboard" 
+                        className="max-w-full rounded-lg"
+                      />
                     </div>
                   </div>
                 </GlassPanel>
@@ -324,6 +272,28 @@ const Index = () => {
       </main>
       
       <Footer />
+
+      {/* In Progress Feature Alert Dialog */}
+      <AlertDialog open={inProgressOpen} onOpenChange={setInProgressOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-amber-500" />
+              <AlertDialogTitle>Feature In Progress</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="pt-4">
+              <p className="mb-4">
+                {inProgressType} Templates are currently in development and will be available soon.
+              </p>
+              <div className="bg-amber-50 dark:bg-amber-950/30 p-4 rounded-md border border-amber-200 dark:border-amber-800 text-center">
+                <p className="text-amber-800 dark:text-amber-300 text-sm font-medium">
+                  Available Soon
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
