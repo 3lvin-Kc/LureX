@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import GlassPanel from '../ui/GlassPanel';
@@ -9,6 +8,7 @@ import { BookOpen } from 'lucide-react';
 import AnimatedBackground from '../3d/AnimatedBackground';
 import Button3D from '../3d/Button3D';
 import { motion } from 'framer-motion';
+import { preloadCriticalImages } from '@/utils/imagePreloader';
 
 const Hero = () => {
   const navigate = useNavigate();
@@ -30,6 +30,10 @@ const Hero = () => {
     );
 
     return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    preloadCriticalImages();
   }, []);
 
   const handleGetStarted = () => {

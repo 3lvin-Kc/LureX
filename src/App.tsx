@@ -162,12 +162,18 @@ const App = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Create a loading component that preserves UI context
+  // Create an improved loading component that preserves UI context
   const LoadingScreen = () => (
-    <div className="w-full h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+    <div className="w-full h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 to-indigo-800 text-white">
       <div className="flex flex-col items-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
-        <p className="text-gray-600 dark:text-gray-400">Loading application...</p>
+        <div className="relative mb-6">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+          </div>
+        </div>
+        <p className="text-lg font-medium mb-1">Loading</p>
+        <p className="text-sm text-blue-200">Preparing your secure environment...</p>
       </div>
     </div>
   );
