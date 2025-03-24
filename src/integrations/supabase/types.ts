@@ -460,6 +460,93 @@ export type Database = {
         }
         Relationships: []
       }
+      security_anomalies: {
+        Row: {
+          detected_at: string | null
+          event_data: Json
+          id: string
+          ip_address: string | null
+          location: string | null
+          reasons: string[]
+          review_notes: string | null
+          reviewed: boolean | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          detected_at?: string | null
+          event_data: Json
+          id?: string
+          ip_address?: string | null
+          location?: string | null
+          reasons: string[]
+          review_notes?: string | null
+          reviewed?: boolean | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          detected_at?: string | null
+          event_data?: Json
+          id?: string
+          ip_address?: string | null
+          location?: string | null
+          reasons?: string[]
+          review_notes?: string | null
+          reviewed?: boolean | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      security_logs: {
+        Row: {
+          created_at: string | null
+          details: Json | null
+          event_level: string
+          event_type: string
+          id: string
+          ip_address: string | null
+          is_anomalous: boolean | null
+          location: string | null
+          message: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          details?: Json | null
+          event_level: string
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          is_anomalous?: boolean | null
+          location?: string | null
+          message: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          details?: Json | null
+          event_level?: string
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          is_anomalous?: boolean | null
+          location?: string | null
+          message?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       target_lists: {
         Row: {
           created_at: string | null

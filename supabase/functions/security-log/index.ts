@@ -15,10 +15,20 @@ const corsHeaders = {
   "Referrer-Policy": "no-referrer",
 };
 
-// Rate limiting implementation
+// Rate limiting implementation with Redis-style expiration
 const RATE_LIMIT = 10; // logs per window
 const RATE_WINDOW = 60000; // 1 minute in milliseconds
 const ipRequests: Record<string, { count: number, timestamp: number }> = {};
+
+// Clean up old rate limit entries periodically (every 5 minutes)
+setInterval(() => {
+  const now = Date.now();
+  Object.keys(ipRequests).forEach(ip => {
+    if (now - ipRequests[ip].timestamp > RATE_WINDOW) {
+      delete ipRequests[ip];
+    }
+  });
+}, 300000); // 5 minutes
 
 function checkRateLimit(ip: string): boolean {
   const now = Date.now();
@@ -39,12 +49,22 @@ function checkRateLimit(ip: string): boolean {
 // Anomaly detection thresholds and patterns
 const SUSPICIOUS_PATTERNS = [
   /^(SELECT|INSERT|UPDATE|DELETE|DROP)/i, // SQL-like commands
-  /<script>/i,                           // Basic XSS attempt
+  /<script>|javascript:|on(load|click|mouseover)=/i, // Basic XSS attempt
   /(\.\.|\/var\/www|\etc\/passwd)/i,     // Path traversal
+  /;|\||&|\$\(|\`|\$\{/i                // Command injection
 ];
 
 function detectAnomalies(logData: any): { isAnomalous: boolean, reasons: string[] } {
   const reasons: string[] = [];
+  
+  // Check if it's already marked as anomalous
+  if (logData.event?.isAnomalous) {
+    reasons.push('Client-side anomaly detection triggered');
+    if (logData.event?.anomalyReasons) {
+      reasons.push(...logData.event.anomalyReasons);
+    }
+    return { isAnomalous: true, reasons };
+  }
   
   // Check for suspicious patterns in the event details or message
   if (logData.event?.details) {
@@ -52,17 +72,17 @@ function detectAnomalies(logData: any): { isAnomalous: boolean, reasons: string[
       ? logData.event.details 
       : JSON.stringify(logData.event.details);
     
-    SUSPICIOUS_PATTERNS.forEach(pattern => {
+    SUSPICIOUS_PATTERNS.forEach((pattern, index) => {
       if (pattern.test(detailsStr)) {
-        reasons.push(`Suspicious pattern detected: ${pattern}`);
+        reasons.push(`Suspicious pattern #${index+1} detected in details`);
       }
     });
   }
   
   if (logData.event?.message) {
-    SUSPICIOUS_PATTERNS.forEach(pattern => {
+    SUSPICIOUS_PATTERNS.forEach((pattern, index) => {
       if (pattern.test(logData.event.message)) {
-        reasons.push(`Suspicious pattern in message: ${pattern}`);
+        reasons.push(`Suspicious pattern #${index+1} detected in message`);
       }
     });
   }
@@ -77,6 +97,27 @@ function detectAnomalies(logData: any): { isAnomalous: boolean, reasons: string[
       logData.event?.level === 'error' &&
       logData.event?.details?.failureCount > 3) {
     reasons.push(`Multiple authentication failures: ${logData.event.details.failureCount}`);
+  }
+  
+  // Check for rapid succession of events (potential automated attack)
+  if (logData.event?.sessionId && logData.previousEvents) {
+    const sessionEvents = logData.previousEvents.filter(
+      (e: any) => e.sessionId === logData.event.sessionId
+    );
+    
+    // If more than 20 events in less than 10 seconds from the same session
+    if (sessionEvents.length > 20) {
+      const timestamps = sessionEvents.map((e: any) => new Date(e.timestamp).getTime());
+      const timeRange = Math.max(...timestamps) - Math.min(...timestamps);
+      if (timeRange < 10000) { // 10 seconds
+        reasons.push(`High event velocity: ${sessionEvents.length} events in ${timeRange/1000}s`);
+      }
+    }
+  }
+  
+  // IP address anomaly detection
+  if (logData.ipReputation && logData.ipReputation.score > 80) {
+    reasons.push(`Suspicious IP reputation score: ${logData.ipReputation.score}`);
   }
   
   return {
@@ -124,16 +165,45 @@ serve(async (req) => {
     const logData = await req.json();
     const { event, userId, userAgent, location } = logData;
     
-    if (!event || !userId) {
-      throw new Error("Missing required fields");
+    if (!event) {
+      throw new Error("Missing required event field");
     }
     
+    // Get recent events for the same session if available
+    let previousEvents = [];
+    if (event.sessionId) {
+      try {
+        const { data: recentEvents } = await supa
+          .from('security_logs')
+          .select('*')
+          .eq('details->sessionId', event.sessionId)
+          .order('created_at', { ascending: false })
+          .limit(30);
+          
+        if (recentEvents) {
+          previousEvents = recentEvents;
+        }
+      } catch (e) {
+        console.error("Error fetching previous events:", e);
+      }
+    }
+    
+    // Add previous events to the log data for anomaly detection
+    const enrichedLogData = {
+      ...logData,
+      previousEvents
+    };
+    
     // Check for anomalies
-    const anomalyCheck = detectAnomalies(logData);
+    const anomalyCheck = detectAnomalies(enrichedLogData);
     if (anomalyCheck.isAnomalous) {
       console.warn("Anomaly detected:", {
         reasons: anomalyCheck.reasons,
-        logData
+        logData: {
+          event_type: event.type,
+          event_level: event.level,
+          message: event.message
+        }
       });
       
       // Store anomaly in database for monitoring
@@ -166,7 +236,7 @@ serve(async (req) => {
     await supa.from('security_logs').insert(logEntry);
     
     return new Response(
-      JSON.stringify({ success: true, timestamp }),
+      JSON.stringify({ success: true, timestamp, anomaly: anomalyCheck.isAnomalous ? anomalyCheck.reasons : null }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }

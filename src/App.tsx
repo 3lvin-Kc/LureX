@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { securityLogger, SecurityEventType } from "@/utils/securityLogger";
 import Index from "./pages/Index";
 import Features from "./pages/Features";
 import Templates from "./pages/Templates";
@@ -34,12 +35,56 @@ import EditPhishingPage from "./pages/EditPhishingPage";
 import CreateTemplate from "./pages/CreateTemplate";
 import Guide from "./pages/Guide";
 
+// Apply security headers
+const applySecurityHeaders = () => {
+  // Content Security Policy - Add dynamically to make it easier to apply in non-production environments
+  const cspHeader = document.createElement('meta');
+  cspHeader.httpEquiv = 'Content-Security-Policy';
+  cspHeader.content = 
+    "default-src 'self';" +
+    "script-src 'self' 'unsafe-inline' https://apis.google.com;" + // Unlock as needed
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;" +
+    "img-src 'self' data: https: blob:;" +
+    "font-src 'self' https://fonts.gstatic.com;" +
+    "connect-src 'self' https://*.supabase.co https://api.openai.com;" + // Add other APIs as needed
+    "frame-src 'self';" +
+    "object-src 'none';";
+  
+  // X-Content-Type-Options
+  const xctoHeader = document.createElement('meta');
+  xctoHeader.httpEquiv = 'X-Content-Type-Options';
+  xctoHeader.content = 'nosniff';
+  
+  // X-Frame-Options
+  const xfoHeader = document.createElement('meta');
+  xfoHeader.httpEquiv = 'X-Frame-Options';
+  xfoHeader.content = 'DENY';
+  
+  // Referrer-Policy
+  const rpHeader = document.createElement('meta');
+  rpHeader.httpEquiv = 'Referrer-Policy';
+  rpHeader.content = 'strict-origin-when-cross-origin';
+  
+  // Add headers to document
+  document.head.appendChild(cspHeader);
+  document.head.appendChild(xctoHeader);
+  document.head.appendChild(xfoHeader);
+  document.head.appendChild(rpHeader);
+  
+  // Log that security headers were applied
+  securityLogger.info(
+    SecurityEventType.AUTHORIZATION,
+    "Security headers applied to application"
+  );
+};
+
 // Create a persistent query client that won't reset on page changes
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
       staleTime: 5 * 60 * 1000, // 5 minutes
+      retry: 1, // Limit retries to prevent excessive requests on failure
     },
   },
 });
@@ -49,13 +94,32 @@ const App = () => {
   const [loading, setLoading] = useState(true);
   const [authChecked, setAuthChecked] = useState(false);
 
+  // Apply security headers on app load
+  useEffect(() => {
+    applySecurityHeaders();
+  }, []);
+
   useEffect(() => {
     const checkSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         setUser(session?.user || null);
+        
+        // Log auth status
+        if (session?.user) {
+          securityLogger.info(
+            SecurityEventType.AUTHENTICATION,
+            "User session restored",
+            { userId: session.user.id, email: session.user.email }
+          );
+        }
       } catch (error) {
         console.error("Error checking auth session:", error);
+        securityLogger.error(
+          SecurityEventType.AUTHENTICATION,
+          "Error checking user session",
+          { error }
+        );
       } finally {
         setLoading(false);
         setAuthChecked(true);
@@ -66,6 +130,27 @@ const App = () => {
       (event, session) => {
         console.log("Auth state changed:", event);
         setUser(session?.user || null);
+        
+        // Log auth events with security logger
+        if (event === 'SIGNED_IN') {
+          securityLogger.info(
+            SecurityEventType.AUTHENTICATION,
+            "User signed in",
+            { userId: session?.user.id, email: session?.user.email }
+          );
+        } else if (event === 'SIGNED_OUT') {
+          securityLogger.info(
+            SecurityEventType.AUTHENTICATION,
+            "User signed out"
+          );
+        } else if (event === 'PASSWORD_RECOVERY') {
+          securityLogger.info(
+            SecurityEventType.AUTHENTICATION,
+            "Password recovery initiated",
+            { email: session?.user.email }
+          );
+        }
+        
         if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
           setLoading(false);
         }
@@ -90,7 +175,18 @@ const App = () => {
   const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     if (!authChecked) return <LoadingScreen />;
     if (loading) return <LoadingScreen />;
-    if (!user) return <Navigate to="/auth" replace />;
+    
+    if (!user) {
+      // Log unauthorized access attempt
+      securityLogger.warn(
+        SecurityEventType.AUTHORIZATION,
+        "Unauthorized access attempt to protected route",
+        { path: window.location.pathname }
+      );
+      
+      return <Navigate to="/auth" replace />;
+    }
+    
     return <>{children}</>;
   };
 
