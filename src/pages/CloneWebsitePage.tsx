@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
@@ -20,7 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import CloneWebsiteWarning from "@/components/phishing/CloneWebsiteWarning";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { DOMPurify } from 'dompurify';
+import DOMPurify from "dompurify";
 
 const CloneWebsitePage = () => {
   const [url, setUrl] = useState("");
@@ -32,7 +31,6 @@ const CloneWebsitePage = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const navigate = useNavigate();
 
-  // Check authentication status
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -50,7 +48,6 @@ const CloneWebsitePage = () => {
     
     checkAuth();
     
-    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setIsAuthenticated(!!session);
@@ -63,7 +60,6 @@ const CloneWebsitePage = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  // Validate URL to prevent request forgery
   const isValidUrl = (url: string): boolean => {
     try {
       const parsedUrl = new URL(url);
@@ -83,7 +79,6 @@ const CloneWebsitePage = () => {
       return;
     }
 
-    // Validate URL
     if (!isValidUrl(url)) {
       toast({
         title: "Invalid URL",
@@ -97,7 +92,6 @@ const CloneWebsitePage = () => {
     setError("");
 
     try {
-      // Use CORS proxy for security
       const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
       const response = await fetch(proxyUrl, {
         headers: {
@@ -111,10 +105,8 @@ const CloneWebsitePage = () => {
       
       const fetchedHtml = await response.text();
       
-      // Log the operation for security monitoring
       console.log(`Website cloned: ${url} at ${new Date().toISOString()}`);
       
-      // Store sanitized HTML
       setHtml(fetchedHtml);
       setShowPreview(true);
     } catch (error) {

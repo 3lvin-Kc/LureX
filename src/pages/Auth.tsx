@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -426,7 +425,7 @@ const Auth = () => {
                       )}
                     />
                     
-                    {field => field.value && (
+                    {passwordStrength > 0 && (
                       <div className="mt-2">
                         <div className="flex items-center">
                           <div className="h-2 flex-1 bg-gray-200 rounded-full overflow-hidden">
