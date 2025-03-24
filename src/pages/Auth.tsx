@@ -14,6 +14,10 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 
+// Import our new security utilities
+import { authRateLimiter } from "@/utils/rateLimiter";
+import { securityLogger, SecurityEventType } from "@/utils/securityLogger";
+
 // Define strong password requirements
 const passwordSchema = z.string()
   .min(8, "Password must be at least 8 characters")
@@ -124,35 +128,24 @@ const Auth = () => {
   }, [registerForm]);
 
   const handleLogin = async (values: z.infer<typeof loginFormSchema>) => {
-    if (isAuthenticating) return;
-    if (lockoutTime && Date.now() < lockoutTime) {
-      const remainingSeconds = Math.ceil((lockoutTime - Date.now()) / 1000);
+    // Check rate limiting first
+    if (!authRateLimiter.tryRequest()) {
+      const timeLeft = Math.ceil(authRateLimiter.getTimeUntilUnblocked() / 1000);
       toast({
-        title: "Too many attempts",
-        description: `Please try again in ${remainingSeconds} seconds`,
+        title: "Too Many Attempts",
+        description: `Please wait ${timeLeft} seconds before trying again`,
         variant: "destructive",
       });
+      
+      securityLogger.warn(
+        SecurityEventType.RATE_LIMIT,
+        "Login rate limit exceeded",
+        { email: values.email }
+      );
+      
       return;
     }
-    
-    if (!checkRateLimit()) {
-      toast({
-        title: "Too many attempts",
-        description: "Please try again later",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (containsSuspiciousContent(values.email) || containsSuspiciousContent(values.password)) {
-      toast({
-        title: "Security Error",
-        description: "Invalid input detected",
-        variant: "destructive",
-      });
-      return;
-    }
-    
+
     setIsLoading(true);
     setIsAuthenticating(true);
     
@@ -162,7 +155,20 @@ const Auth = () => {
         password: values.password,
       });
       
-      if (error) throw error;
+      if (error) {
+        securityLogger.error(
+          SecurityEventType.AUTHENTICATION,
+          "Login failed",
+          { error: error.message, email: values.email }
+        );
+        throw error;
+      }
+      
+      securityLogger.info(
+        SecurityEventType.AUTHENTICATION,
+        "Login successful",
+        { email: values.email }
+      );
       
       toast({
         title: "Success",
@@ -184,35 +190,24 @@ const Auth = () => {
   };
 
   const handleSignup = async (values: z.infer<typeof registerFormSchema>) => {
-    if (isAuthenticating) return;
-    if (lockoutTime && Date.now() < lockoutTime) {
-      const remainingSeconds = Math.ceil((lockoutTime - Date.now()) / 1000);
+    // Check rate limiting first
+    if (!authRateLimiter.tryRequest()) {
+      const timeLeft = Math.ceil(authRateLimiter.getTimeUntilUnblocked() / 1000);
       toast({
-        title: "Too many attempts",
-        description: `Please try again in ${remainingSeconds} seconds`,
+        title: "Too Many Attempts",
+        description: `Please wait ${timeLeft} seconds before trying again`,
         variant: "destructive",
       });
+      
+      securityLogger.warn(
+        SecurityEventType.RATE_LIMIT,
+        "Registration rate limit exceeded",
+        { email: values.email }
+      );
+      
       return;
     }
-    
-    if (!checkRateLimit()) {
-      toast({
-        title: "Too many attempts",
-        description: "Please try again later",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (containsSuspiciousContent(values.email) || containsSuspiciousContent(values.password)) {
-      toast({
-        title: "Security Error",
-        description: "Invalid input detected",
-        variant: "destructive",
-      });
-      return;
-    }
-    
+
     setIsLoading(true);
     setIsAuthenticating(true);
     
@@ -222,7 +217,20 @@ const Auth = () => {
         password: values.password,
       });
       
-      if (error) throw error;
+      if (error) {
+        securityLogger.error(
+          SecurityEventType.AUTHENTICATION,
+          "Registration failed",
+          { error: error.message, email: values.email }
+        );
+        throw error;
+      }
+      
+      securityLogger.info(
+        SecurityEventType.AUTHENTICATION,
+        "Registration successful",
+        { email: values.email }
+      );
       
       toast({
         title: "Success",
