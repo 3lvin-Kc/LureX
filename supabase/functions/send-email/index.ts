@@ -8,6 +8,11 @@ const resend = new Resend(resendApiKey);
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Content-Security-Policy": "default-src 'self'; img-src 'self' https: data:; object-src 'none'",
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "Referrer-Policy": "no-referrer",
 };
 
 interface EmailRequest {
@@ -23,22 +28,109 @@ interface EmailRequest {
   metadata?: Record<string, any>;
 }
 
+// Validate email addresses to prevent email injection
+function isValidEmail(email: string): boolean {
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  return emailRegex.test(email);
+}
+
+// Sanitize HTML content to prevent XSS
+function sanitizeHtml(html: string): string {
+  // Basic sanitization - in production, use a proper HTML sanitizer library
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/on\w+="[^"]*"/g, '')
+    .replace(/on\w+='[^']*'/g, '');
+}
+
+// Rate limiting implementation
+const RATE_LIMIT = 100; // emails per window
+const RATE_WINDOW = 3600000; // 1 hour in milliseconds
+const ipRequests: Record<string, { count: number, timestamp: number }> = {};
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  
+  if (!ipRequests[ip] || (now - ipRequests[ip].timestamp) > RATE_WINDOW) {
+    ipRequests[ip] = { count: 1, timestamp: now };
+    return true;
+  }
+  
+  if (ipRequests[ip].count >= RATE_LIMIT) {
+    return false;
+  }
+  
+  ipRequests[ip].count++;
+  return true;
+}
+
 serve(async (req) => {
+  console.log("Email function called:", new Date().toISOString());
+  
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
-
+  
   try {
-    const { templateId, targetEmails, campaignId, trackingIds, subject, htmlContent, textContent, from, replyTo, metadata } = await req.json() as EmailRequest;
+    // Get client IP for rate limiting
+    const clientIp = req.headers.get("x-forwarded-for") || "unknown";
+    
+    // Check rate limit
+    if (!checkRateLimit(clientIp)) {
+      console.error(`Rate limit exceeded for IP: ${clientIp}`);
+      return new Response(
+        JSON.stringify({ success: false, error: "Rate limit exceeded" }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+    
+    if (req.method !== "POST") {
+      return new Response(
+        JSON.stringify({ success: false, error: "Method not allowed" }),
+        {
+          status: 405,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Parse and validate request body
+    const requestBody = await req.json() as EmailRequest;
+    const { templateId, targetEmails, campaignId, trackingIds, subject, htmlContent, textContent, from, replyTo, metadata } = requestBody;
     
     if (!resendApiKey) {
       throw new Error("RESEND_API_KEY is not configured");
     }
 
+    // Validate required fields
     if (!templateId || !targetEmails || !campaignId || !subject || !htmlContent || !from) {
-      throw new Error("Missing required fields");
+      return new Response(
+        JSON.stringify({ success: false, error: "Missing required fields" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
+
+    // Validate all email addresses to prevent injection
+    const invalidEmails = targetEmails.filter(email => !isValidEmail(email));
+    if (invalidEmails.length > 0) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid email addresses detected", invalidEmails }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Sanitize HTML content to prevent XSS in email
+    const sanitizedHtml = sanitizeHtml(htmlContent);
 
     const currentTime = new Date().toISOString();
     const results = [];
@@ -50,15 +142,24 @@ serve(async (req) => {
       
       const batchPromises = batch.map(async (email) => {
         const trackingId = trackingIds[email];
+        if (!trackingId) {
+          return {
+            email,
+            status: "failed",
+            error: "Missing tracking ID for email",
+          };
+        }
         
         // Add tracking pixels and click tracking
-        const trackingPixel = `<img src="https://sfsloprgxcwjjzjiwkmc.supabase.co/functions/v1/track-open?tid=${trackingId}" width="1" height="1" />`;
-        let emailHtml = htmlContent.replace("</body>", `${trackingPixel}</body>`);
+        const trackingPixel = `<img src="https://sfsloprgxcwjjzjiwkmc.supabase.co/functions/v1/track-open?tid=${encodeURIComponent(trackingId)}" width="1" height="1" alt="" />`;
+        let emailHtml = sanitizedHtml.replace("</body>", `${trackingPixel}</body>`);
         
-        // Replace links with tracking links
+        // Replace links with tracking links using regex and proper URL encoding
         emailHtml = emailHtml.replace(
           /<a\s+(?:[^>]*?\s+)?href=(["'])(.*?)\1/g,
-          `<a href="https://sfsloprgxcwjjzjiwkmc.supabase.co/functions/v1/track-click?tid=${trackingId}&url=$2"`
+          function(match, quote, url) {
+            return `<a href="https://sfsloprgxcwjjzjiwkmc.supabase.co/functions/v1/track-click?tid=${encodeURIComponent(trackingId)}&url=${encodeURIComponent(url)}"`;
+          }
         );
 
         try {
@@ -85,6 +186,8 @@ serve(async (req) => {
             ],
           });
 
+          console.log(`Email sent to ${email} with ID: ${emailResponse.id}`);
+          
           results.push({
             email,
             trackingId,
@@ -104,6 +207,9 @@ serve(async (req) => {
 
       await Promise.all(batchPromises);
     }
+
+    // Log success for monitoring
+    console.log(`Successfully processed ${results.length} emails for campaign: ${campaignId}`);
 
     return new Response(
       JSON.stringify({ success: true, results }),
