@@ -1,12 +1,14 @@
 
 import React, { useState, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, HTMLMotionProps } from 'framer-motion';
 
-interface Button3DProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+// Create a more specific props interface that extends the motion component props
+interface Button3DProps extends Omit<HTMLMotionProps<"button">, "className" | "children" | "onClick"> {
   children: React.ReactNode;
   variant?: 'default' | 'outline' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
   className?: string;
+  onClick?: React.MouseEventHandler<HTMLButtonElement>;
 }
 
 const Button3D: React.FC<Button3DProps> = ({
@@ -54,6 +56,15 @@ const Button3D: React.FC<Button3DProps> = ({
         : "translate-y-0";
   };
 
+  // Event handlers
+  const handleMouseEnter = () => setIsHovered(true);
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    setIsPressed(false);
+  };
+  const handleMouseDown = () => setIsPressed(true);
+  const handleMouseUp = () => setIsPressed(false);
+
   return (
     <motion.button
       ref={buttonRef}
@@ -65,10 +76,10 @@ const Button3D: React.FC<Button3DProps> = ({
         ${className}
       `}
       whileTap={{ scale: 0.98 }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      onMouseDown={() => setIsPressed(true)}
-      onMouseUp={() => setIsPressed(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
       onClick={onClick}
       {...props}
     >
