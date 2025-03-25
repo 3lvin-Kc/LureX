@@ -1,9 +1,11 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
+import sgMail from "npm:@sendgrid/mail@7.7.0";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+const sendgridApiKey = Deno.env.get("SENDGRID_API_KEY") || "";
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -137,79 +139,14 @@ serve(async (req) => {
       }, {});
 
       // Prepare data for sending
-      const targetEmails = items.map(item => item.target.email);
-      const trackingIds = {};
-
-      items.forEach(item => {
-        trackingIds[item.target.email] = trackingMap[item.target_id];
-      });
-
-      // Prepare email provider details
       const providerInfo = firstItem.provider;
       const fromEmail = providerInfo.from_email;
       const fromName = providerInfo.from_name || "Phishing Simulation";
       const from = `${fromName} <${fromEmail}>`;
       
-      // Add SendGrid-specific parameters if applicable
-      const sendgridTemplateId = providerInfo.sendgrid_template_id;
-
-      // Send emails via the send-email function
-      try {
-        const response = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${supabaseServiceKey}`,
-          },
-          body: JSON.stringify({
-            templateId: template.id,
-            targetEmails,
-            campaignId,
-            trackingIds,
-            subject,
-            htmlContent,
-            textContent,
-            from,
-            sendgridTemplateId
-          }),
-        });
-
-        const responseData = await response.json();
-        
-        // Update queue items based on send results
-        for (const result of responseData.results) {
-          const item = items.find(i => i.target.email === result.email);
-          
-          if (item) {
-            await supabase
-              .from("email_queue")
-              .update({
-                status: result.status,
-                sent_time: result.status === "sent" ? now : null,
-                error_message: result.error || null,
-                updated_at: now,
-              })
-              .eq("id", item.id);
-
-            // Also update tracking status
-            await supabase
-              .from("email_tracking")
-              .update({
-                status: result.status,
-                sent_at: result.status === "sent" ? now : null,
-                metadata: { message_id: result.messageId },
-              })
-              .eq("tracking_id", result.trackingId);
-          }
-        }
-
-        results.push({
-          campaignId,
-          processed: responseData.results.length,
-          success: responseData.success,
-        });
-      } catch (error) {
-        console.error(`Error sending emails for campaign ${campaignId}:`, error);
+      // Use the SendGrid API key from environment variables instead of the one from provider
+      if (!sendgridApiKey) {
+        console.error("SENDGRID_API_KEY environment variable is not set");
         
         // Mark all items as failed
         for (const item of items) {
@@ -217,19 +154,160 @@ serve(async (req) => {
             .from("email_queue")
             .update({
               status: "failed",
-              error_message: `Error calling send-email function: ${error.message}`,
+              error_message: "SENDGRID_API_KEY environment variable is not set",
               updated_at: now,
             })
             .eq("id", item.id);
         }
-
+        
         results.push({
           campaignId,
           processed: 0,
           success: false,
-          error: error.message,
+          error: "SENDGRID_API_KEY environment variable is not set",
         });
+        
+        continue;
       }
+      
+      // Initialize SendGrid API
+      sgMail.setApiKey(sendgridApiKey);
+      
+      // Add SendGrid-specific parameters if applicable
+      const sendgridTemplateId = providerInfo.sendgrid_template_id;
+      
+      // Process each target in the campaign
+      const emailResults = [];
+      
+      for (const item of items) {
+        const target = item.target;
+        const trackingId = trackingMap[target.target_id];
+        
+        if (!trackingId) {
+          emailResults.push({
+            email: target.email,
+            status: "failed",
+            error: "Missing tracking ID for email",
+          });
+          continue;
+        }
+        
+        // Add tracking pixels and click tracking
+        const trackingPixel = `<img src="https://sfsloprgxcwjjzjiwkmc.supabase.co/functions/v1/track-open?tid=${encodeURIComponent(trackingId)}" width="1" height="1" alt="" />`;
+        
+        // Prepare email content
+        let emailContent = {};
+        
+        if (sendgridTemplateId) {
+          // Use SendGrid template
+          emailContent = {
+            templateId: sendgridTemplateId,
+            dynamicTemplateData: {
+              subject: subject,
+              tracking_id: trackingId,
+              campaign_id: campaignId,
+              // Add other dynamic data as needed
+            }
+          };
+        } else {
+          // Use custom HTML content
+          let sanitizedHtml = htmlContent.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+            .replace(/on\w+="[^"]*"/g, '')
+            .replace(/on\w+='[^']*'/g, '');
+          
+          sanitizedHtml = sanitizedHtml.replace("</body>", `${trackingPixel}</body>`);
+          
+          // Replace links with tracking links
+          sanitizedHtml = sanitizedHtml.replace(
+            /<a\s+(?:[^>]*?\s+)?href=(["'])(.*?)\1/g,
+            function(match, quote, url) {
+              return `<a href="https://sfsloprgxcwjjzjiwkmc.supabase.co/functions/v1/track-click?tid=${encodeURIComponent(trackingId)}&url=${encodeURIComponent(url)}"`;
+            }
+          );
+          
+          emailContent = {
+            html: sanitizedHtml,
+            text: textContent,
+          };
+        }
+        
+        // Prepare email message
+        const msg = {
+          to: target.email,
+          from: from,
+          subject: subject,
+          ...emailContent,
+          replyTo: from,
+          customArgs: {
+            campaign_id: campaignId,
+            template_id: template.id,
+            tracking_id: trackingId,
+          },
+          trackingSettings: {
+            clickTracking: { enable: true },
+            openTracking: { enable: true },
+          },
+        };
+        
+        try {
+          const response = await sgMail.send(msg);
+          
+          console.log(`Email sent to ${target.email} with ID: ${response[0]?.headers['x-message-id']}`);
+          
+          // Update queue item status
+          await supabase
+            .from("email_queue")
+            .update({
+              status: "sent",
+              sent_time: now,
+              updated_at: now,
+            })
+            .eq("id", item.id);
+            
+          // Update tracking status
+          await supabase
+            .from("email_tracking")
+            .update({
+              status: "sent",
+              sent_at: now,
+              metadata: { message_id: response[0]?.headers['x-message-id'] },
+            })
+            .eq("tracking_id", trackingId);
+            
+          emailResults.push({
+            email: target.email,
+            trackingId,
+            status: "sent",
+            messageId: response[0]?.headers['x-message-id'],
+          });
+        } catch (error) {
+          console.error(`Failed to send email to ${target.email}:`, error);
+          
+          // Update queue item status
+          await supabase
+            .from("email_queue")
+            .update({
+              status: "failed",
+              error_message: error.message,
+              updated_at: now,
+            })
+            .eq("id", item.id);
+            
+          emailResults.push({
+            email: target.email,
+            trackingId,
+            status: "failed",
+            error: error.message,
+          });
+        }
+      }
+      
+      results.push({
+        campaignId,
+        processed: emailResults.length,
+        success: emailResults.some(r => r.status === "sent"),
+        results: emailResults,
+      });
     }
 
     return new Response(

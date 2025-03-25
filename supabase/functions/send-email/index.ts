@@ -114,7 +114,7 @@ serve(async (req) => {
     } = requestBody;
     
     if (!sendgridApiKey) {
-      throw new Error("SENDGRID_API_KEY is not configured");
+      throw new Error("SENDGRID_API_KEY environment variable is not configured");
     }
 
     sgMail.setApiKey(sendgridApiKey);

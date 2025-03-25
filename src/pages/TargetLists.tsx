@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,7 +30,11 @@ const TargetLists = () => {
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isViewTargetsDialogOpen, setIsViewTargetsDialogOpen] = useState(false);
   const [newListData, setNewListData] = useState({ name: "", description: "" });
+  const [editListData, setEditListData] = useState({ id: "", name: "", description: "" });
+  const [currentTargets, setCurrentTargets] = useState([]);
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -71,6 +76,41 @@ const TargetLists = () => {
     },
   });
 
+  // Function to load targets for a specific list
+  const loadTargets = async (listId) => {
+    try {
+      setIsSubmitting(true);
+      const { data, error } = await supabase
+        .from("targets")
+        .select("*")
+        .eq("list_id", listId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setCurrentTargets(data || []);
+      setIsViewTargetsDialogOpen(true);
+    } catch (error) {
+      console.error("Error loading targets:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load targets",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Function to load a target list for editing
+  const loadListForEdit = (list) => {
+    setEditListData({
+      id: list.id,
+      name: list.name,
+      description: list.description || "",
+    });
+    setIsEditDialogOpen(true);
+  };
+
   // Create target list mutation
   const createListMutation = useMutation({
     mutationFn: async (listData: { name: string; description: string }) => {
@@ -102,6 +142,46 @@ const TargetLists = () => {
       toast({
         title: "Error",
         description: error.message || "Failed to create target list",
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setIsSubmitting(false);
+    }
+  });
+
+  // Update target list mutation
+  const updateListMutation = useMutation({
+    mutationFn: async (listData: { id: string; name: string; description: string }) => {
+      const { data, error } = await supabase
+        .from("target_lists")
+        .update({ 
+          name: listData.name, 
+          description: listData.description
+        })
+        .eq("id", listData.id)
+        .select();
+
+      if (error) {
+        console.error("Update list error:", error);
+        throw error;
+      }
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["targetLists"] });
+      setEditListData({ id: "", name: "", description: "" });
+      setIsEditDialogOpen(false);
+      toast({
+        title: "Success",
+        description: "Target list updated successfully",
+      });
+    },
+    onError: (error: any) => {
+      setErrorMessage(error.message || "Failed to update target list");
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update target list",
         variant: "destructive",
       });
     },
@@ -158,6 +238,33 @@ const TargetLists = () => {
       toast({
         title: "Error",
         description: error.message || "Failed to create target list",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateList = async () => {
+    try {
+      setIsSubmitting(true);
+      setErrorMessage(null);
+      
+      if (!editListData.name) {
+        toast({
+          title: "Error",
+          description: "List name is required",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      
+      updateListMutation.mutate(editListData);
+    } catch (error: any) {
+      setErrorMessage(error.message || "Failed to update target list");
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update target list",
         variant: "destructive",
       });
       setIsSubmitting(false);
@@ -407,7 +514,7 @@ const TargetLists = () => {
                                 <Button
                                   variant="outline"
                                   size="icon"
-                                  onClick={() => navigate(`/targets/${list.id}`)}
+                                  onClick={() => loadTargets(list.id)}
                                 >
                                   <Users size={16} />
                                 </Button>
@@ -420,7 +527,7 @@ const TargetLists = () => {
                                 <Button
                                   variant="outline"
                                   size="icon"
-                                  onClick={() => navigate(`/targets/${list.id}/edit`)}
+                                  onClick={() => loadListForEdit(list)}
                                 >
                                   <Edit size={16} />
                                 </Button>
@@ -497,6 +604,101 @@ const TargetLists = () => {
                   "Create List"
                 )}
               </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit List Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Target List</DialogTitle>
+              <DialogDescription>
+                Update the target list information
+              </DialogDescription>
+            </DialogHeader>
+            {errorMessage && (
+              <div className="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg">
+                <p>Error: {errorMessage}</p>
+              </div>
+            )}
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label htmlFor="edit-list-name">List Name</Label>
+                <Input 
+                  id="edit-list-name" 
+                  placeholder="HR Department Targets" 
+                  value={editListData.name}
+                  onChange={(e) => setEditListData(prev => ({ ...prev, name: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-list-description">Description (Optional)</Label>
+                <Textarea 
+                  id="edit-list-description" 
+                  placeholder="Targets for the HR department phishing campaign" 
+                  value={editListData.description}
+                  onChange={(e) => setEditListData(prev => ({ ...prev, description: e.target.value }))}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
+              <Button onClick={handleUpdateList} disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  "Update List"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* View Targets Dialog */}
+        <Dialog open={isViewTargetsDialogOpen} onOpenChange={setIsViewTargetsDialogOpen}>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader>
+              <DialogTitle>View Targets</DialogTitle>
+              <DialogDescription>
+                List of targets in this target list
+              </DialogDescription>
+            </DialogHeader>
+            <div className="max-h-[60vh] overflow-y-auto">
+              {currentTargets.length === 0 ? (
+                <div className="py-4 text-center">
+                  <p>No targets found in this list.</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Email</TableHead>
+                      <TableHead>First Name</TableHead>
+                      <TableHead>Last Name</TableHead>
+                      <TableHead>Department</TableHead>
+                      <TableHead>Position</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {currentTargets.map((target) => (
+                      <TableRow key={target.id}>
+                        <TableCell>{target.email}</TableCell>
+                        <TableCell>{target.first_name || "—"}</TableCell>
+                        <TableCell>{target.last_name || "—"}</TableCell>
+                        <TableCell>{target.department || "—"}</TableCell>
+                        <TableCell>{target.position || "—"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsViewTargetsDialogOpen(false)}>Close</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

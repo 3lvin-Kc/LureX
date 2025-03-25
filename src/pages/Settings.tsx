@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { Save, Mail, Shield, Webhook, Database, Key, Server, FileText, Users, GanttChart, MonitorPlay } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,20 +10,58 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const Settings = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("email-settings");
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
   
-  // Mock SendGrid settings form
+  // SendGrid settings form
   const [sendGridForm, setSendGridForm] = useState({
-    api_key: "•••••••••••••••••••••••••••••••",
-    from_email: "it-support@example.com",
-    from_name: "IT Department",
-    template_id: "",
-    is_default: true
+    id: "",
+    from_email: "",
+    from_name: "",
+    sendgrid_template_id: "",
+    is_default: true,
+    provider_type: "sendgrid",
   });
+
+  // Load existing SendGrid settings
+  useEffect(() => {
+    const fetchSendGridSettings = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("email_providers")
+          .select("*")
+          .eq("provider_type", "sendgrid")
+          .maybeSingle();
+
+        if (error) throw error;
+
+        if (data) {
+          setSendGridForm({
+            id: data.id,
+            from_email: data.from_email || "",
+            from_name: data.from_name || "",
+            sendgrid_template_id: data.sendgrid_template_id || "",
+            is_default: data.is_default || true,
+            provider_type: "sendgrid",
+          });
+        }
+      } catch (error) {
+        console.error("Error loading SendGrid settings:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load email settings",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchSendGridSettings();
+  }, []);
 
   const handleSendGridChange = (field: string, value: string | boolean) => {
     setSendGridForm(prev => ({
@@ -31,12 +70,72 @@ const Settings = () => {
     }));
   };
 
-  const handleSendGridSave = () => {
-    // Would normally save to database here
-    toast({
-      title: "SendGrid Settings Saved",
-      description: "Your email settings have been updated successfully."
-    });
+  const handleSendGridSave = async () => {
+    try {
+      setIsLoading(true);
+
+      if (!sendGridForm.from_email) {
+        toast({
+          title: "Validation Error",
+          description: "From Email is required",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Check if we're updating or creating
+      if (sendGridForm.id) {
+        // Update existing record
+        const { error } = await supabase
+          .from("email_providers")
+          .update({
+            from_email: sendGridForm.from_email,
+            from_name: sendGridForm.from_name,
+            sendgrid_template_id: sendGridForm.sendgrid_template_id,
+            is_default: sendGridForm.is_default,
+            provider_type: "sendgrid",
+          })
+          .eq("id", sendGridForm.id);
+
+        if (error) throw error;
+      } else {
+        // Create new record
+        const { data, error } = await supabase
+          .from("email_providers")
+          .insert({
+            from_email: sendGridForm.from_email,
+            from_name: sendGridForm.from_name,
+            sendgrid_template_id: sendGridForm.sendgrid_template_id,
+            is_default: sendGridForm.is_default,
+            provider_type: "sendgrid",
+          })
+          .select();
+
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          setSendGridForm(prev => ({
+            ...prev,
+            id: data[0].id,
+          }));
+        }
+      }
+
+      toast({
+        title: "SendGrid Settings Saved",
+        description: "Your email settings have been updated successfully."
+      });
+    } catch (error: any) {
+      console.error("Error saving SendGrid settings:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save email settings",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const renderEmailSettings = () => (
@@ -47,14 +146,15 @@ const Settings = () => {
           <div className="grid grid-cols-1 gap-4">
             <div className="space-y-2">
               <Label htmlFor="sendgrid-api-key">SendGrid API Key</Label>
-              <Input 
-                id="sendgrid-api-key" 
-                type="password"
-                value={sendGridForm.api_key}
-                onChange={(e) => handleSendGridChange("api_key", e.target.value)}
-                placeholder="SG.xxxxxxxxxxxxxxxxxxxxxxxx"
-              />
-              <p className="text-xs text-muted-foreground">Your SendGrid API key. Required for sending emails.</p>
+              <div className="flex flex-col gap-2">
+                <div className="p-3 border rounded bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-sm">
+                  The SendGrid API key is now securely stored in the backend environment variables.
+                  Contact your administrator to update it if needed.
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  For security reasons, API keys are managed by your admin through the secure backend.
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -89,8 +189,8 @@ const Settings = () => {
             <Label htmlFor="template-id">Template ID</Label>
             <Input 
               id="template-id" 
-              value={sendGridForm.template_id}
-              onChange={(e) => handleSendGridChange("template_id", e.target.value)}
+              value={sendGridForm.sendgrid_template_id}
+              onChange={(e) => handleSendGridChange("sendgrid_template_id", e.target.value)}
               placeholder="d-xxxxxxxxxxxxxxxxxxxxxxxx"
             />
             <p className="text-xs text-muted-foreground">
@@ -112,9 +212,21 @@ const Settings = () => {
           </div>
         </div>
 
-        <Button onClick={handleSendGridSave} className="w-fit">
-          <Save className="mr-2 h-4 w-4" />
-          Save Email Settings
+        <Button 
+          onClick={handleSendGridSave} 
+          className="w-fit"
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <span className="animate-spin mr-2">⏳</span> Saving...
+            </>
+          ) : (
+            <>
+              <Save className="mr-2 h-4 w-4" />
+              Save Email Settings
+            </>
+          )}
         </Button>
       </div>
     </div>
@@ -383,4 +495,3 @@ const Settings = () => {
 };
 
 export default Settings;
-
