@@ -173,6 +173,8 @@ export type Database = {
           name: string
           password: string
           port: number
+          provider_type: string
+          sendgrid_template_id: string | null
           updated_at: string | null
           username: string
         }
@@ -186,6 +188,8 @@ export type Database = {
           name: string
           password: string
           port: number
+          provider_type?: string
+          sendgrid_template_id?: string | null
           updated_at?: string | null
           username: string
         }
@@ -199,6 +203,8 @@ export type Database = {
           name?: string
           password?: string
           port?: number
+          provider_type?: string
+          sendgrid_template_id?: string | null
           updated_at?: string | null
           username?: string
         }

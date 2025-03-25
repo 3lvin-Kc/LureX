@@ -18,19 +18,19 @@ const Settings = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   
-  // SendGrid settings form
-  const [sendGridForm, setSendGridForm] = useState({
+  // Email provider settings form
+  const [emailProviderForm, setEmailProviderForm] = useState({
     id: "",
+    provider_type: "sendgrid", // Default to SendGrid
     from_email: "",
     from_name: "",
     sendgrid_template_id: "",
     is_default: true,
-    provider_type: "sendgrid",
   });
 
-  // Load existing SendGrid settings
+  // Load existing Email provider settings
   useEffect(() => {
-    const fetchSendGridSettings = async () => {
+    const fetchEmailProviderSettings = async () => {
       try {
         const { data, error } = await supabase
           .from("email_providers")
@@ -41,13 +41,13 @@ const Settings = () => {
         if (error) throw error;
 
         if (data) {
-          setSendGridForm({
+          setEmailProviderForm({
             id: data.id,
+            provider_type: data.provider_type || "sendgrid",
             from_email: data.from_email || "",
             from_name: data.from_name || "",
             sendgrid_template_id: data.sendgrid_template_id || "",
             is_default: data.is_default || true,
-            provider_type: "sendgrid",
           });
         }
       } catch (error) {
@@ -60,21 +60,21 @@ const Settings = () => {
       }
     };
 
-    fetchSendGridSettings();
+    fetchEmailProviderSettings();
   }, []);
 
-  const handleSendGridChange = (field: string, value: string | boolean) => {
-    setSendGridForm(prev => ({
+  const handleEmailProviderChange = (field: string, value: string | boolean) => {
+    setEmailProviderForm(prev => ({
       ...prev,
       [field]: value
     }));
   };
 
-  const handleSendGridSave = async () => {
+  const handleEmailProviderSave = async () => {
     try {
       setIsLoading(true);
 
-      if (!sendGridForm.from_email) {
+      if (!emailProviderForm.from_email) {
         toast({
           title: "Validation Error",
           description: "From Email is required",
@@ -85,18 +85,18 @@ const Settings = () => {
       }
 
       // Check if we're updating or creating
-      if (sendGridForm.id) {
+      if (emailProviderForm.id) {
         // Update existing record
         const { error } = await supabase
           .from("email_providers")
           .update({
-            from_email: sendGridForm.from_email,
-            from_name: sendGridForm.from_name,
-            sendgrid_template_id: sendGridForm.sendgrid_template_id,
-            is_default: sendGridForm.is_default,
+            from_email: emailProviderForm.from_email,
+            from_name: emailProviderForm.from_name,
+            sendgrid_template_id: emailProviderForm.sendgrid_template_id,
+            is_default: emailProviderForm.is_default,
             provider_type: "sendgrid",
           })
-          .eq("id", sendGridForm.id);
+          .eq("id", emailProviderForm.id);
 
         if (error) throw error;
       } else {
@@ -104,18 +104,24 @@ const Settings = () => {
         const { data, error } = await supabase
           .from("email_providers")
           .insert({
-            from_email: sendGridForm.from_email,
-            from_name: sendGridForm.from_name,
-            sendgrid_template_id: sendGridForm.sendgrid_template_id,
-            is_default: sendGridForm.is_default,
+            from_email: emailProviderForm.from_email,
+            from_name: emailProviderForm.from_name,
+            sendgrid_template_id: emailProviderForm.sendgrid_template_id,
+            is_default: emailProviderForm.is_default,
             provider_type: "sendgrid",
+            // Required fields for the table even though we don't use them with SendGrid
+            host: "sendgrid",
+            port: 587,
+            username: "sendgrid",
+            password: "not-used-with-api",
+            name: "SendGrid",
           })
           .select();
 
         if (error) throw error;
         
         if (data && data.length > 0) {
-          setSendGridForm(prev => ({
+          setEmailProviderForm(prev => ({
             ...prev,
             id: data[0].id,
           }));
@@ -166,16 +172,16 @@ const Settings = () => {
               <Label htmlFor="from-name">From Name</Label>
               <Input 
                 id="from-name" 
-                value={sendGridForm.from_name}
-                onChange={(e) => handleSendGridChange("from_name", e.target.value)}
+                value={emailProviderForm.from_name}
+                onChange={(e) => handleEmailProviderChange("from_name", e.target.value)}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="from-email">From Email</Label>
               <Input 
                 id="from-email" 
-                value={sendGridForm.from_email}
-                onChange={(e) => handleSendGridChange("from_email", e.target.value)}
+                value={emailProviderForm.from_email}
+                onChange={(e) => handleEmailProviderChange("from_email", e.target.value)}
                 placeholder="sender@yourdomain.com"
               />
               <p className="text-xs text-muted-foreground">This email must be verified in your SendGrid account.</p>
@@ -189,8 +195,8 @@ const Settings = () => {
             <Label htmlFor="template-id">Template ID</Label>
             <Input 
               id="template-id" 
-              value={sendGridForm.sendgrid_template_id}
-              onChange={(e) => handleSendGridChange("sendgrid_template_id", e.target.value)}
+              value={emailProviderForm.sendgrid_template_id}
+              onChange={(e) => handleEmailProviderChange("sendgrid_template_id", e.target.value)}
               placeholder="d-xxxxxxxxxxxxxxxxxxxxxxxx"
             />
             <p className="text-xs text-muted-foreground">
@@ -205,15 +211,15 @@ const Settings = () => {
           <div className="flex items-center space-x-2">
             <Switch 
               id="is-default" 
-              checked={sendGridForm.is_default}
-              onCheckedChange={(checked) => handleSendGridChange("is_default", checked)}
+              checked={emailProviderForm.is_default}
+              onCheckedChange={(checked) => handleEmailProviderChange("is_default", checked)}
             />
             <Label htmlFor="is-default">Set as default email provider</Label>
           </div>
         </div>
 
         <Button 
-          onClick={handleSendGridSave} 
+          onClick={handleEmailProviderSave} 
           className="w-fit"
           disabled={isLoading}
         >
