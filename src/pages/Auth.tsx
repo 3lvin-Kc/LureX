@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,12 +13,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import GlassCard from "@/components/3d/GlassCard";
-import AnimatedBackground from "@/components/3d/AnimatedBackground";
-import Button3D from "@/components/3d/Button3D";
-import { motion } from "framer-motion";
 
-// Import our security utilities
+// Import our new security utilities
 import { authRateLimiter } from "@/utils/rateLimiter";
 import { securityLogger, SecurityEventType } from "@/utils/securityLogger";
 
@@ -281,317 +276,244 @@ const Auth = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  // Animation variants
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        duration: 0.5,
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const item = {
-    hidden: { y: 20, opacity: 0 },
-    show: { y: 0, opacity: 1 }
-  };
-
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 overflow-hidden relative">
-      {/* 3D Animated Background */}
-      <AnimatedBackground />
-      
-      {/* Glowing floating orbs */}
-      <motion.div 
-        className="absolute top-1/4 left-1/4 w-32 h-32 rounded-full bg-blue-500/20 blur-3xl"
-        animate={{
-          x: [0, 30, 0],
-          y: [0, -30, 0],
-        }}
-        transition={{
-          duration: 8,
-          repeat: Infinity,
-          repeatType: "reverse",
-        }}
-      />
-      
-      <motion.div 
-        className="absolute bottom-1/4 right-1/4 w-40 h-40 rounded-full bg-purple-500/20 blur-3xl"
-        animate={{
-          x: [0, -40, 0],
-          y: [0, 40, 0],
-        }}
-        transition={{
-          duration: 10,
-          repeat: Infinity,
-          repeatType: "reverse",
-        }}
-      />
-      
-      <motion.div
-        variants={container}
-        initial="hidden"
-        animate="show"
-        className="w-full max-w-md z-10"
-      >
-        <GlassCard intensity="medium" className="w-full p-6 backdrop-blur-xl">
-          <motion.div variants={item}>
-            <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="login" className="text-white">Login</TabsTrigger>
-                <TabsTrigger value="register" className="text-white">Register</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="login">
-                <motion.div 
-                  variants={item}
-                  className="bg-white/10 backdrop-blur-md rounded-lg border border-white/20 p-6"
-                >
-                  <div className="space-y-2 mb-4 text-center">
-                    <h2 className="text-2xl font-bold text-white">Welcome Back</h2>
-                    <p className="text-gray-300 text-sm">
-                      Sign in to your phishing simulation platform account
-                    </p>
-                  </div>
-                  
-                  <Form {...loginForm}>
-                    <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
-                      <FormField
-                        control={loginForm.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-gray-200">Email</FormLabel>
-                            <FormControl>
-                              <div className="relative">
-                                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                                <Input
-                                  type="email"
-                                  placeholder="Email"
-                                  className="pl-10 bg-white/10 border-white/20 text-white"
-                                  required
-                                  disabled={isLoading}
-                                  {...field}
-                                />
-                              </div>
-                            </FormControl>
-                            <FormMessage className="text-red-300" />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={loginForm.control}
-                        name="password"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-gray-200">Password</FormLabel>
-                            <FormControl>
-                              <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                                <Input
-                                  type={showPassword ? "text" : "password"}
-                                  placeholder="Password"
-                                  className="pl-10 pr-10 bg-white/10 border-white/20 text-white"
-                                  required
-                                  disabled={isLoading}
-                                  {...field}
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => setShowPassword(!showPassword)}
-                                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                                  disabled={isLoading}
-                                >
-                                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                </button>
-                              </div>
-                            </FormControl>
-                            <FormMessage className="text-red-300" />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <Button3D type="submit" className="w-full" disabled={isLoading}>
-                        {isLoading ? (
-                          <div className="flex items-center">
-                            <div className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-white rounded-full"></div>
-                            Logging in...
-                          </div>
-                        ) : "Login"}
-                      </Button3D>
-                    </form>
-                  </Form>
-                </motion.div>
-              </TabsContent>
-              
-              <TabsContent value="register">
-                <motion.div 
-                  variants={item}
-                  className="bg-white/10 backdrop-blur-md rounded-lg border border-white/20 p-6"
-                >
-                  <div className="space-y-2 mb-4 text-center">
-                    <h2 className="text-2xl font-bold text-white">Create Account</h2>
-                    <p className="text-gray-300 text-sm">
-                      Register a new phishing simulation platform account
-                    </p>
-                  </div>
-                  
-                  <Form {...registerForm}>
-                    <form onSubmit={registerForm.handleSubmit(handleSignup)} className="space-y-4">
-                      <FormField
-                        control={registerForm.control}
-                        name="email"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-gray-200">Email</FormLabel>
-                            <FormControl>
-                              <div className="relative">
-                                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                                <Input
-                                  type="email"
-                                  placeholder="Email"
-                                  className="pl-10 bg-white/10 border-white/20 text-white"
-                                  required
-                                  disabled={isLoading}
-                                  {...field}
-                                />
-                              </div>
-                            </FormControl>
-                            <FormMessage className="text-red-300" />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={registerForm.control}
-                        name="password"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-gray-200">Password</FormLabel>
-                            <FormControl>
-                              <div className="relative">
-                                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                                <Input
-                                  type={showPassword ? "text" : "password"}
-                                  placeholder="Password"
-                                  className="pl-10 pr-10 bg-white/10 border-white/20 text-white"
-                                  required
-                                  disabled={isLoading}
-                                  {...field}
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => setShowPassword(!showPassword)}
-                                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                                  disabled={isLoading}
-                                >
-                                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                </button>
-                              </div>
-                            </FormControl>
-                            <FormMessage className="text-red-300" />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      {passwordStrength > 0 && (
-                        <div className="mt-2">
-                          <div className="flex items-center">
-                            <div className="h-2 flex-1 bg-gray-700 rounded-full overflow-hidden">
-                              <div 
-                                className={`h-full ${
-                                  passwordStrength === 0 ? 'bg-gray-600' :
-                                  passwordStrength === 1 ? 'bg-red-500' :
-                                  passwordStrength === 2 ? 'bg-orange-500' :
-                                  passwordStrength === 3 ? 'bg-yellow-500' :
-                                  passwordStrength === 4 ? 'bg-lime-500' :
-                                  'bg-green-500'
-                                }`}
-                                style={{ width: `${(passwordStrength / 5) * 100}%` }}
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
+      <GlassPanel className="w-full max-w-md p-8">
+        <Tabs defaultValue="login" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="login">Login</TabsTrigger>
+            <TabsTrigger value="register">Register</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="login">
+            <Card>
+              <CardHeader>
+                <CardTitle>Login</CardTitle>
+                <CardDescription>
+                  Sign in to your phishing simulation platform account
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Form {...loginForm}>
+                  <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
+                    <FormField
+                      control={loginForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                              <Input
+                                type="email"
+                                placeholder="Email"
+                                className="pl-10"
+                                required
+                                disabled={isLoading}
+                                {...field}
                               />
                             </div>
-                            <span className="ml-2 text-xs text-gray-300">
-                              {passwordStrength === 0 ? 'Weak' :
-                               passwordStrength === 1 ? 'Poor' :
-                               passwordStrength === 2 ? 'Fair' :
-                               passwordStrength === 3 ? 'Good' :
-                               passwordStrength === 4 ? 'Strong' :
-                               'Very Strong'}
-                            </span>
-                          </div>
-                        </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
                       )}
-                      
-                      <FormField
-                        control={registerForm.control}
-                        name="confirmPassword"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-gray-200">Confirm Password</FormLabel>
-                            <FormControl>
-                              <div className="relative">
-                                <ShieldCheck className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                                <Input
-                                  type={showPassword ? "text" : "password"}
-                                  placeholder="Confirm Password"
-                                  className="pl-10 bg-white/10 border-white/20 text-white"
-                                  required
-                                  disabled={isLoading}
-                                  {...field}
-                                />
-                              </div>
-                            </FormControl>
-                            <FormMessage className="text-red-300" />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <Alert className="bg-white/10 border-white/20">
-                        <AlertCircle className="h-4 w-4 text-amber-300" />
-                        <AlertTitle className="text-white">Password Requirements</AlertTitle>
-                        <AlertDescription>
-                          <ul className="text-xs list-disc pl-5 mt-1 text-gray-300">
-                            <li>At least 8 characters long</li>
-                            <li>At least one uppercase letter</li>
-                            <li>At least one lowercase letter</li>
-                            <li>At least one number</li>
-                            <li>At least one special character</li>
-                          </ul>
-                        </AlertDescription>
-                      </Alert>
-                      
-                      <Button3D type="submit" className="w-full" disabled={isLoading}>
-                        {isLoading ? (
-                          <div className="flex items-center">
-                            <div className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-white rounded-full"></div>
-                            Creating account...
+                    />
+                    
+                    <FormField
+                      control={loginForm.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Password</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                              <Input
+                                type={showPassword ? "text" : "password"}
+                                placeholder="Password"
+                                className="pl-10 pr-10"
+                                required
+                                disabled={isLoading}
+                                {...field}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                                disabled={isLoading}
+                              >
+                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                              </button>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading ? (
+                        <div className="flex items-center">
+                          <div className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-white rounded-full"></div>
+                          Logging in...
+                        </div>
+                      ) : "Login"}
+                    </Button>
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="register">
+            <Card>
+              <CardHeader>
+                <CardTitle>Create an account</CardTitle>
+                <CardDescription>
+                  Register a new phishing simulation platform account
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Form {...registerForm}>
+                  <form onSubmit={registerForm.handleSubmit(handleSignup)} className="space-y-4">
+                    <FormField
+                      control={registerForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                              <Input
+                                type="email"
+                                placeholder="Email"
+                                className="pl-10"
+                                required
+                                disabled={isLoading}
+                                {...field}
+                              />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={registerForm.control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Password</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                              <Input
+                                type={showPassword ? "text" : "password"}
+                                placeholder="Password"
+                                className="pl-10 pr-10"
+                                required
+                                disabled={isLoading}
+                                {...field}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                                disabled={isLoading}
+                              >
+                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                              </button>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    {passwordStrength > 0 && (
+                      <div className="mt-2">
+                        <div className="flex items-center">
+                          <div className="h-2 flex-1 bg-gray-200 rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full ${
+                                passwordStrength === 0 ? 'bg-gray-200' :
+                                passwordStrength === 1 ? 'bg-red-500' :
+                                passwordStrength === 2 ? 'bg-orange-500' :
+                                passwordStrength === 3 ? 'bg-yellow-500' :
+                                passwordStrength === 4 ? 'bg-lime-500' :
+                                'bg-green-500'
+                              }`}
+                              style={{ width: `${(passwordStrength / 5) * 100}%` }}
+                            />
                           </div>
-                        ) : "Register"}
-                      </Button3D>
-                    </form>
-                  </Form>
-                </motion.div>
-              </TabsContent>
-            </Tabs>
-          </motion.div>
-        </GlassCard>
-        
-        {/* Floating "Secure Login" badge */}
-        <motion.div
-          className="absolute -top-5 left-1/2 -translate-x-1/2 z-20"
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.5, type: "spring", stiffness: 300, damping: 10 }}
-        >
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2 rounded-full text-white text-sm font-medium shadow-lg flex items-center gap-2">
-            <ShieldCheck size={16} />
-            <span>Secure Login</span>
-          </div>
-        </motion.div>
-      </motion.div>
+                          <span className="ml-2 text-xs text-gray-500">
+                            {passwordStrength === 0 ? 'Weak' :
+                             passwordStrength === 1 ? 'Poor' :
+                             passwordStrength === 2 ? 'Fair' :
+                             passwordStrength === 3 ? 'Good' :
+                             passwordStrength === 4 ? 'Strong' :
+                             'Very Strong'}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <FormField
+                      control={registerForm.control}
+                      name="confirmPassword"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Confirm Password</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <ShieldCheck className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                              <Input
+                                type={showPassword ? "text" : "password"}
+                                placeholder="Confirm Password"
+                                className="pl-10"
+                                required
+                                disabled={isLoading}
+                                {...field}
+                              />
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>Password Requirements</AlertTitle>
+                      <AlertDescription>
+                        <ul className="text-xs list-disc pl-5 mt-1">
+                          <li>At least 8 characters long</li>
+                          <li>At least one uppercase letter</li>
+                          <li>At least one lowercase letter</li>
+                          <li>At least one number</li>
+                          <li>At least one special character</li>
+                        </ul>
+                      </AlertDescription>
+                    </Alert>
+                    
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading ? (
+                        <div className="flex items-center">
+                          <div className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-white rounded-full"></div>
+                          Creating account...
+                        </div>
+                      ) : "Register"}
+                    </Button>
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </GlassPanel>
     </div>
   );
 };
