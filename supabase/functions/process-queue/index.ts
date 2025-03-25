@@ -43,12 +43,11 @@ serve(async (req) => {
         ),
         provider:provider_id(
           id,
-          host,
-          port,
-          username,
-          password,
+          provider_type,
+          api_key,
           from_email,
-          from_name
+          from_name,
+          sendgrid_template_id
         )
       `)
       .eq("status", "queued")
@@ -145,6 +144,15 @@ serve(async (req) => {
         trackingIds[item.target.email] = trackingMap[item.target_id];
       });
 
+      // Prepare email provider details
+      const providerInfo = firstItem.provider;
+      const fromEmail = providerInfo.from_email;
+      const fromName = providerInfo.from_name || "Phishing Simulation";
+      const from = `${fromName} <${fromEmail}>`;
+      
+      // Add SendGrid-specific parameters if applicable
+      const sendgridTemplateId = providerInfo.sendgrid_template_id;
+
       // Send emails via the send-email function
       try {
         const response = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
@@ -161,7 +169,8 @@ serve(async (req) => {
             subject,
             htmlContent,
             textContent,
-            from: `${firstItem.provider.from_name || "Phishing Simulation"} <${firstItem.provider.from_email}>`,
+            from,
+            sendgridTemplateId
           }),
         });
 

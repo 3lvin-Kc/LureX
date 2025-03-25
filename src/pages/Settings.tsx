@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Save, Mail, Shield, Webhook, Database, Key, Server, FileText, Users, GanttChart, MonitorPlay } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,29 +15,26 @@ const Settings = () => {
   const [activeTab, setActiveTab] = useState("email-settings");
   const navigate = useNavigate();
   
-  // Mock SMTP settings form
-  const [smtpForm, setSmtpForm] = useState({
-    host: "smtp.example.com",
-    port: "587",
-    username: "phishing@example.com",
-    password: "••••••••••••",
-    from_name: "IT Department",
+  // Mock SendGrid settings form
+  const [sendGridForm, setSendGridForm] = useState({
+    api_key: "•••••••••••••••••••••••••••••••",
     from_email: "it-support@example.com",
-    use_ssl: true,
+    from_name: "IT Department",
+    template_id: "",
     is_default: true
   });
 
-  const handleSmtpChange = (field: string, value: string | boolean) => {
-    setSmtpForm(prev => ({
+  const handleSendGridChange = (field: string, value: string | boolean) => {
+    setSendGridForm(prev => ({
       ...prev,
       [field]: value
     }));
   };
 
-  const handleSmtpSave = () => {
+  const handleSendGridSave = () => {
     // Would normally save to database here
     toast({
-      title: "SMTP Settings Saved",
+      title: "SendGrid Settings Saved",
       description: "Your email settings have been updated successfully."
     });
   };
@@ -47,40 +43,18 @@ const Settings = () => {
     <div className="space-y-6">
       <div className="grid gap-6">
         <div className="space-y-4">
-          <h3 className="text-lg font-medium">SMTP Server Configuration</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <h3 className="text-lg font-medium">SendGrid Configuration</h3>
+          <div className="grid grid-cols-1 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="smtp-host">SMTP Host</Label>
+              <Label htmlFor="sendgrid-api-key">SendGrid API Key</Label>
               <Input 
-                id="smtp-host" 
-                value={smtpForm.host}
-                onChange={(e) => handleSmtpChange("host", e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="smtp-port">SMTP Port</Label>
-              <Input 
-                id="smtp-port" 
-                value={smtpForm.port}
-                onChange={(e) => handleSmtpChange("port", e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="smtp-username">Username</Label>
-              <Input 
-                id="smtp-username" 
-                value={smtpForm.username}
-                onChange={(e) => handleSmtpChange("username", e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="smtp-password">Password</Label>
-              <Input 
-                id="smtp-password" 
+                id="sendgrid-api-key" 
                 type="password"
-                value={smtpForm.password}
-                onChange={(e) => handleSmtpChange("password", e.target.value)}
+                value={sendGridForm.api_key}
+                onChange={(e) => handleSendGridChange("api_key", e.target.value)}
+                placeholder="SG.xxxxxxxxxxxxxxxxxxxxxxxx"
               />
+              <p className="text-xs text-muted-foreground">Your SendGrid API key. Required for sending emails.</p>
             </div>
           </div>
         </div>
@@ -92,44 +66,53 @@ const Settings = () => {
               <Label htmlFor="from-name">From Name</Label>
               <Input 
                 id="from-name" 
-                value={smtpForm.from_name}
-                onChange={(e) => handleSmtpChange("from_name", e.target.value)}
+                value={sendGridForm.from_name}
+                onChange={(e) => handleSendGridChange("from_name", e.target.value)}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="from-email">From Email</Label>
               <Input 
                 id="from-email" 
-                value={smtpForm.from_email}
-                onChange={(e) => handleSmtpChange("from_email", e.target.value)}
+                value={sendGridForm.from_email}
+                onChange={(e) => handleSendGridChange("from_email", e.target.value)}
+                placeholder="sender@yourdomain.com"
               />
+              <p className="text-xs text-muted-foreground">This email must be verified in your SendGrid account.</p>
             </div>
           </div>
         </div>
 
         <div className="space-y-4">
-          <h3 className="text-lg font-medium">Connection Settings</h3>
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <Switch 
-                id="use-ssl" 
-                checked={smtpForm.use_ssl}
-                onCheckedChange={(checked) => handleSmtpChange("use_ssl", checked)}
-              />
-              <Label htmlFor="use-ssl">Use SSL/TLS</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Switch 
-                id="is-default" 
-                checked={smtpForm.is_default}
-                onCheckedChange={(checked) => handleSmtpChange("is_default", checked)}
-              />
-              <Label htmlFor="is-default">Set as default SMTP server</Label>
-            </div>
+          <h3 className="text-lg font-medium">SendGrid Template (Optional)</h3>
+          <div className="space-y-2">
+            <Label htmlFor="template-id">Template ID</Label>
+            <Input 
+              id="template-id" 
+              value={sendGridForm.template_id}
+              onChange={(e) => handleSendGridChange("template_id", e.target.value)}
+              placeholder="d-xxxxxxxxxxxxxxxxxxxxxxxx"
+            />
+            <p className="text-xs text-muted-foreground">
+              Optional: Use a SendGrid Dynamic Template ID for consistent email designs. 
+              Leave blank to use custom HTML in your email templates.
+            </p>
           </div>
         </div>
 
-        <Button onClick={handleSmtpSave} className="w-fit">
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium">Default Settings</h3>
+          <div className="flex items-center space-x-2">
+            <Switch 
+              id="is-default" 
+              checked={sendGridForm.is_default}
+              onCheckedChange={(checked) => handleSendGridChange("is_default", checked)}
+            />
+            <Label htmlFor="is-default">Set as default email provider</Label>
+          </div>
+        </div>
+
+        <Button onClick={handleSendGridSave} className="w-fit">
           <Save className="mr-2 h-4 w-4" />
           Save Email Settings
         </Button>
@@ -400,3 +383,4 @@ const Settings = () => {
 };
 
 export default Settings;
+

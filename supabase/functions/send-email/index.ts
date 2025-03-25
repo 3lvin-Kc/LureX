@@ -1,9 +1,8 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { Resend } from "npm:resend@2.0.0";
+import sgMail from "npm:@sendgrid/mail@7.7.0";
 
-const resendApiKey = Deno.env.get("RESEND_API_KEY");
-const resend = new Resend(resendApiKey);
+const sendgridApiKey = Deno.env.get("SENDGRID_API_KEY");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,6 +25,7 @@ interface EmailRequest {
   from: string;
   replyTo?: string;
   metadata?: Record<string, any>;
+  sendgridTemplateId?: string;
 }
 
 // Validate email addresses to prevent email injection
@@ -100,14 +100,27 @@ serve(async (req) => {
 
     // Parse and validate request body
     const requestBody = await req.json() as EmailRequest;
-    const { templateId, targetEmails, campaignId, trackingIds, subject, htmlContent, textContent, from, replyTo, metadata } = requestBody;
+    const { 
+      templateId, 
+      targetEmails, 
+      campaignId, 
+      trackingIds, 
+      subject, 
+      htmlContent, 
+      textContent, 
+      from, 
+      replyTo,
+      sendgridTemplateId
+    } = requestBody;
     
-    if (!resendApiKey) {
-      throw new Error("RESEND_API_KEY is not configured");
+    if (!sendgridApiKey) {
+      throw new Error("SENDGRID_API_KEY is not configured");
     }
 
+    sgMail.setApiKey(sendgridApiKey);
+
     // Validate required fields
-    if (!templateId || !targetEmails || !campaignId || !subject || !htmlContent || !from) {
+    if (!templateId || !targetEmails || !campaignId || !subject || (!htmlContent && !sendgridTemplateId) || !from) {
       return new Response(
         JSON.stringify({ success: false, error: "Missing required fields" }),
         {
@@ -129,10 +142,6 @@ serve(async (req) => {
       );
     }
 
-    // Sanitize HTML content to prevent XSS in email
-    const sanitizedHtml = sanitizeHtml(htmlContent);
-
-    const currentTime = new Date().toISOString();
     const results = [];
 
     // Process emails in batches to prevent timeouts
@@ -152,47 +161,68 @@ serve(async (req) => {
         
         // Add tracking pixels and click tracking
         const trackingPixel = `<img src="https://sfsloprgxcwjjzjiwkmc.supabase.co/functions/v1/track-open?tid=${encodeURIComponent(trackingId)}" width="1" height="1" alt="" />`;
-        let emailHtml = sanitizedHtml.replace("</body>", `${trackingPixel}</body>`);
         
-        // Replace links with tracking links using regex and proper URL encoding
-        emailHtml = emailHtml.replace(
-          /<a\s+(?:[^>]*?\s+)?href=(["'])(.*?)\1/g,
-          function(match, quote, url) {
-            return `<a href="https://sfsloprgxcwjjzjiwkmc.supabase.co/functions/v1/track-click?tid=${encodeURIComponent(trackingId)}&url=${encodeURIComponent(url)}"`;
-          }
-        );
-
-        try {
-          const emailResponse = await resend.emails.send({
-            from,
-            to: [email],
-            subject,
-            html: emailHtml,
+        // Prepare email content
+        let emailContent: any;
+        
+        if (sendgridTemplateId) {
+          // Use SendGrid template
+          emailContent = {
+            templateId: sendgridTemplateId,
+            dynamicTemplateData: {
+              subject: subject,
+              tracking_id: trackingId,
+              campaign_id: campaignId,
+              // Add other dynamic data as needed
+            }
+          };
+        } else {
+          // Use custom HTML content
+          let sanitizedHtml = sanitizeHtml(htmlContent);
+          sanitizedHtml = sanitizedHtml.replace("</body>", `${trackingPixel}</body>`);
+          
+          // Replace links with tracking links
+          sanitizedHtml = sanitizedHtml.replace(
+            /<a\s+(?:[^>]*?\s+)?href=(["'])(.*?)\1/g,
+            function(match, quote, url) {
+              return `<a href="https://sfsloprgxcwjjzjiwkmc.supabase.co/functions/v1/track-click?tid=${encodeURIComponent(trackingId)}&url=${encodeURIComponent(url)}"`;
+            }
+          );
+          
+          emailContent = {
+            html: sanitizedHtml,
             text: textContent,
-            reply_to: replyTo,
-            tags: [
-              {
-                name: "campaign_id",
-                value: campaignId,
-              },
-              {
-                name: "template_id",
-                value: templateId,
-              },
-              {
-                name: "tracking_id",
-                value: trackingId,
-              },
-            ],
-          });
-
-          console.log(`Email sent to ${email} with ID: ${emailResponse.id}`);
+          };
+        }
+        
+        // Prepare email message
+        const msg = {
+          to: email,
+          from: from,
+          subject: subject,
+          ...emailContent,
+          replyTo: replyTo || from,
+          customArgs: {
+            campaign_id: campaignId,
+            template_id: templateId,
+            tracking_id: trackingId,
+          },
+          trackingSettings: {
+            clickTracking: { enable: true },
+            openTracking: { enable: true },
+          },
+        };
+        
+        try {
+          const response = await sgMail.send(msg);
+          
+          console.log(`Email sent to ${email} with ID: ${response[0]?.headers['x-message-id']}`);
           
           results.push({
             email,
             trackingId,
             status: "sent",
-            messageId: emailResponse.id,
+            messageId: response[0]?.headers['x-message-id'],
           });
         } catch (error) {
           console.error(`Failed to send email to ${email}:`, error);
