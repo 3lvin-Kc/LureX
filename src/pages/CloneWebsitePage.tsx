@@ -1,491 +1,350 @@
 
-import React, { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { toast } from "@/components/ui/use-toast";
-import { useNavigate } from "react-router-dom";
-import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Skeleton } from "@/components/ui/skeleton";
-import CloneWebsiteWarning from "@/components/phishing/CloneWebsiteWarning";
-import { AlertCircle, FileCode, Globe, CheckCircle, RefreshCw } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import DOMPurify from "dompurify";
-
-type CloneOptions = {
-  advancedCloning: boolean;
-  customizations?: {
-    companyName?: string;
-    companyLogo?: string;
-    primaryColor?: string;
-    secondaryColor?: string;
-  };
-};
-
-const defaultCustomizations = {
-  companyName: "",
-  companyLogo: "",
-  primaryColor: "#3b82f6",
-  secondaryColor: "#6b7280",
-};
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import CloneWebsiteWarning from '@/components/phishing/CloneWebsiteWarning';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Globe, Info, AlertCircle, Loader2 } from 'lucide-react';
+import { securityLogger, SecurityEventType } from '@/utils/securityLogger';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { apiRateLimiter } from '@/utils/rateLimiter';
 
 const CloneWebsitePage = () => {
-  const [url, setUrl] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [html, setHtml] = useState("");
-  const [error, setError] = useState("");
-  const [progress, setProgress] = useState<number | null>(null);
-  const [showPreview, setShowPreview] = useState(false);
-  const [showWarning, setShowWarning] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState("basic");
-  const [cloneOptions, setCloneOptions] = useState<CloneOptions>({
-    advancedCloning: false,
-    customizations: defaultCustomizations,
-  });
+  const [url, setUrl] = useState<string>('');
+  const [name, setName] = useState<string>('');
+  const [category, setCategory] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [agreeToTerms, setAgreeToTerms] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [warningAccepted, setWarningAccepted] = useState<boolean>(false);
+  const [advancedCloning, setAdvancedCloning] = useState<boolean>(false);
+  const [progress, setProgress] = useState<number>(0);
+  const [progressMessage, setProgressMessage] = useState<string>('');
+  
+  const { toast } = useToast();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setIsAuthenticated(!!session);
-      
-      if (!session) {
-        toast({
-          title: "Authentication Required",
-          description: "You must be logged in to use this feature",
-          variant: "destructive",
-        });
-        navigate("/auth");
-      }
-    };
-    
-    checkAuth();
-    
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setIsAuthenticated(!!session);
-        if (!session) {
-          navigate("/auth");
-        }
-      }
-    );
-    
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
-  const isValidUrl = (url: string): boolean => {
-    try {
-      const parsedUrl = new URL(url);
-      return parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:";
-    } catch (_) {
+  
+  const validateInput = () => {
+    if (!url) {
+      setError('Please enter a URL to clone');
       return false;
     }
-  };
-
-  const startProgressSimulation = () => {
-    setProgress(0);
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev === null) return 0;
-        if (prev >= 90) {
-          clearInterval(interval);
-          return 90;
-        }
-        return prev + Math.floor(Math.random() * 5) + 1;
-      });
-    }, 300);
     
-    return () => clearInterval(interval);
-  };
-
-  const completeProgress = () => {
-    setProgress(100);
-    setTimeout(() => setProgress(null), 1000);
-  };
-
-  const handleClone = async () => {
-    if (!url) {
-      toast({
-        title: "URL Required",
-        description: "Please enter a valid URL to clone",
-        variant: "destructive",
-      });
-      return;
+    if (!name) {
+      setError('Please enter a name for the phishing page');
+      return false;
     }
-
-    if (!isValidUrl(url)) {
-      toast({
-        title: "Invalid URL",
-        description: "Please enter a valid http:// or https:// URL",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    setError("");
-    setShowPreview(false);
     
-    // Start progress simulation
-    const stopProgress = startProgressSimulation();
-
+    if (!category) {
+      setError('Please enter a category for the phishing page');
+      return false;
+    }
+    
+    if (!agreeToTerms) {
+      setError('You must agree to the terms before proceeding');
+      return false;
+    }
+    
+    if (!warningAccepted) {
+      setError('You must acknowledge the warning before proceeding');
+      return false;
+    }
+    
     try {
-      // Prepare the request body
-      const requestBody = {
-        url,
-        name: new URL(url).hostname,
-        category: 'Cloned',
-        advancedCloning: cloneOptions.advancedCloning,
-      };
-      
-      // Add customizations if advanced cloning is enabled
-      if (cloneOptions.advancedCloning && cloneOptions.customizations) {
-        requestBody.customizations = cloneOptions.customizations;
-      }
-      
-      console.log("Cloning website with options:", requestBody);
-      
-      // Use the Supabase Edge Function for cloning
-      const { data, error } = await supabase.functions.invoke('clone-website', {
-        body: requestBody
+      new URL(url);
+    } catch (e) {
+      setError('Please enter a valid URL including http:// or https://');
+      return false;
+    }
+    
+    setError(null);
+    return true;
+  };
+  
+  const handleClone = async () => {
+    if (!validateInput()) return;
+    
+    // Rate limiting check
+    if (!apiRateLimiter.tryRequest()) {
+      toast({
+        title: "Rate limit exceeded",
+        description: "Please wait a moment before trying again",
+        variant: "destructive"
       });
-
-      // Stop progress simulation
-      stopProgress();
-
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      setProgress(10);
+      setProgressMessage('Initializing cloning process');
+      
+      // Log the attempt
+      securityLogger.info(
+        SecurityEventType.DATA_ACCESS,
+        "Website cloning initiated",
+        { url, name, category, advancedCloning }
+      );
+      
+      setProgress(20);
+      setProgressMessage('Requesting website content');
+      
+      // Call the edge function to clone the website
+      const { data, error } = await supabase.functions.invoke('clone-website', {
+        body: { 
+          url, 
+          name, 
+          category,
+          advancedCloning
+        }
+      });
+      
       if (error) {
-        completeProgress();
         throw new Error(error.message);
       }
       
-      if (data.error) {
-        completeProgress();
-        throw new Error(data.error);
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to clone website');
       }
       
-      console.log(`Website cloned: ${url} at ${new Date().toISOString()}`);
-      completeProgress();
+      setProgress(100);
+      setProgressMessage('Cloning complete!');
       
-      if (data.data && data.data.html_content) {
-        setHtml(data.data.html_content);
-        setShowPreview(true);
-        
-        toast({
-          title: "Success",
-          description: "Website cloned successfully",
-        });
-      } else {
-        // If we got success but no HTML content
-        const pageId = data.data?.id;
-        if (pageId) {
-          // If we have a page ID, navigate to that page
-          toast({
-            title: "Success",
-            description: "Website cloned successfully. Redirecting to preview...",
-          });
-          setTimeout(() => {
-            navigate(`/phishing-pages/${pageId}/preview`);
-          }, 1500);
-        } else {
-          throw new Error("No HTML content returned");
-        }
-      }
-    } catch (error) {
-      console.error("Error cloning website:", error);
-      setError(error instanceof Error ? error.message : "Failed to clone website. Please try again or use a different URL.");
+      toast({
+        title: "Website Cloned",
+        description: "The website has been successfully cloned.",
+      });
+      
+      // Log success
+      securityLogger.info(
+        SecurityEventType.DATA_ACCESS,
+        "Website successfully cloned",
+        { url, pageId: data.pageId }
+      );
+      
+      // Redirect to the phishing pages list
+      navigate('/phishing-pages');
+    } catch (error: any) {
+      setProgress(0);
+      
+      // Log failure
+      securityLogger.error(
+        SecurityEventType.DATA_ACCESS,
+        "Website cloning failed",
+        { url, error: error.message }
+      );
+      
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to clone website. Please try a different URL.",
+        description: "Failed to clone website. Please try again or use a different URL.",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
   };
-
-  const handleNewPage = () => {
-    navigate("/phishing-pages/new");
+  
+  const updateProgress = (value: number, message: string) => {
+    setProgress(value);
+    setProgressMessage(message);
   };
-
-  const handleUseHtml = () => {
-    navigate("/phishing-pages/new", { state: { html } });
-  };
-
-  const handleAdvancedCloningToggle = (enabled: boolean) => {
-    setCloneOptions({
-      ...cloneOptions,
-      advancedCloning: enabled,
-    });
-  };
-
-  const updateCustomization = (key: keyof typeof defaultCustomizations, value: string) => {
-    setCloneOptions({
-      ...cloneOptions,
-      customizations: {
-        ...cloneOptions.customizations,
-        [key]: value,
-      },
-    });
-  };
-
-  if (!isAuthenticated) {
-    return (
-      <DashboardLayout>
-        <div className="container mx-auto p-4 max-w-5xl">
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Authentication Required</AlertTitle>
-            <AlertDescription>
-              You must be logged in to access this page.
-            </AlertDescription>
-          </Alert>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
+  
   return (
     <DashboardLayout>
-      <CloneWebsiteWarning 
-        open={showWarning}
-        onOpenChange={setShowWarning}
-        onProceed={() => setShowWarning(false)}
-        onCancel={handleNewPage}
-      />
-
-      <div className="container mx-auto p-4 max-w-5xl">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold">Clone Website</h1>
-          <p className="text-muted-foreground">
-            Enter a URL to clone its HTML content and create a phishing page.
-          </p>
+      <div className="container mx-auto px-4 py-8 max-w-5xl">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-3xl font-bold">Clone Website</h1>
+            <p className="text-muted-foreground">Create a phishing page by cloning an existing website</p>
+          </div>
         </div>
-
-        <Alert className="mb-4">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Security Notice</AlertTitle>
-          <AlertDescription>
-            This feature is for security awareness and education purposes only. Always use responsibly and with proper authorization.
-          </AlertDescription>
-        </Alert>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Website URL</CardTitle>
-            <CardDescription>
-              Enter the URL of the website you want to clone.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="basic" value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="mb-4">
-                <TabsTrigger value="basic">Basic</TabsTrigger>
-                <TabsTrigger value="advanced">Advanced</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="basic" className="space-y-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="url" className="text-right">
-                    URL
-                  </Label>
-                  <Input
-                    id="url"
-                    className="col-span-3"
-                    type="url"
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    placeholder="https://example.com"
-                  />
+        
+        <div className="grid gap-6">
+          <CloneWebsiteWarning onAccept={() => setWarningAccepted(true)} />
+          
+          {!warningAccepted && (
+            <Alert variant="warning">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Warning</AlertTitle>
+              <AlertDescription>
+                Please review and accept the warning above before proceeding.
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          {warningAccepted && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Clone a Website</CardTitle>
+                <CardDescription>
+                  Enter the URL of the website you want to clone and provide details for the new phishing page.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="url">Website URL</Label>
+                  <div className="flex items-center space-x-2">
+                    <Globe className="w-5 h-5 text-muted-foreground" />
+                    <Input
+                      id="url"
+                      placeholder="https://example.com"
+                      value={url}
+                      onChange={(e) => setUrl(e.target.value)}
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Enter the full URL including http:// or https://
+                  </p>
                 </div>
-              </TabsContent>
-              
-              <TabsContent value="advanced" className="space-y-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="url" className="text-right">
-                    URL
-                  </Label>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="name">Phishing Page Name</Label>
                   <Input
-                    id="url"
-                    className="col-span-3"
-                    type="url"
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    placeholder="https://example.com"
+                    id="name"
+                    placeholder="Corporate Login Portal"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    disabled={isLoading}
                   />
                 </div>
                 
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="advancedCloning" className="text-right">
-                    Advanced Cloning
-                  </Label>
-                  <div className="col-span-3 flex items-center space-x-2">
-                    <Switch
+                <div className="space-y-2">
+                  <Label htmlFor="category">Category</Label>
+                  <Input
+                    id="category"
+                    placeholder="Finance, Healthcare, Technology, etc."
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    disabled={isLoading}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
                       id="advancedCloning"
-                      checked={cloneOptions.advancedCloning}
-                      onCheckedChange={handleAdvancedCloningToggle}
+                      checked={advancedCloning}
+                      onCheckedChange={(checked) => setAdvancedCloning(checked as boolean)}
+                      disabled={isLoading}
                     />
-                    <span className="text-sm text-muted-foreground">
-                      Enable company-specific customizations
-                    </span>
+                    <Label htmlFor="advancedCloning" className="font-normal">
+                      Use advanced cloning (deeper resource capture, form detection)
+                    </Label>
+                  </div>
+                  <p className="text-sm text-muted-foreground ml-6">
+                    Enables more comprehensive cloning with better form handling and resource capture. May take longer.
+                  </p>
+                </div>
+                
+                <div className="pt-2">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="agreeToTerms"
+                      checked={agreeToTerms}
+                      onCheckedChange={(checked) => setAgreeToTerms(checked as boolean)}
+                      disabled={isLoading}
+                    />
+                    <Label htmlFor="agreeToTerms" className="font-normal">
+                      I agree to use this feature ethically and in compliance with applicable laws
+                    </Label>
                   </div>
                 </div>
                 
-                {cloneOptions.advancedCloning && (
-                  <>
-                    <Separator className="my-4" />
-                    <h3 className="text-md font-medium mb-2">Customizations</h3>
-                    
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="companyName" className="text-right">
-                        Company Name
-                      </Label>
-                      <Input
-                        id="companyName"
-                        className="col-span-3"
-                        value={cloneOptions.customizations?.companyName || ""}
-                        onChange={(e) => updateCustomization("companyName", e.target.value)}
-                        placeholder="Acme Inc."
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="companyLogo" className="text-right">
-                        Logo URL
-                      </Label>
-                      <Input
-                        id="companyLogo"
-                        className="col-span-3"
-                        value={cloneOptions.customizations?.companyLogo || ""}
-                        onChange={(e) => updateCustomization("companyLogo", e.target.value)}
-                        placeholder="https://example.com/logo.png"
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="primaryColor" className="text-right">
-                        Primary Color
-                      </Label>
-                      <div className="col-span-3 flex items-center space-x-2">
-                        <Input
-                          id="primaryColor"
-                          type="color"
-                          className="w-10 h-10 p-1"
-                          value={cloneOptions.customizations?.primaryColor || "#3b82f6"}
-                          onChange={(e) => updateCustomization("primaryColor", e.target.value)}
-                        />
-                        <Input
-                          value={cloneOptions.customizations?.primaryColor || "#3b82f6"}
-                          onChange={(e) => updateCustomization("primaryColor", e.target.value)}
-                          className="flex-1"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="secondaryColor" className="text-right">
-                        Secondary Color
-                      </Label>
-                      <div className="col-span-3 flex items-center space-x-2">
-                        <Input
-                          id="secondaryColor"
-                          type="color"
-                          className="w-10 h-10 p-1"
-                          value={cloneOptions.customizations?.secondaryColor || "#6b7280"}
-                          onChange={(e) => updateCustomization("secondaryColor", e.target.value)}
-                        />
-                        <Input
-                          value={cloneOptions.customizations?.secondaryColor || "#6b7280"}
-                          onChange={(e) => updateCustomization("secondaryColor", e.target.value)}
-                          className="flex-1"
-                        />
-                      </div>
-                    </div>
-                  </>
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
                 )}
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-          <CardFooter className="flex justify-between pt-2">
-            <Button variant="outline" onClick={handleNewPage}>
-              <FileCode className="mr-2 h-4 w-4" /> New Page
-            </Button>
-            <Button onClick={handleClone} disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> Cloning...
-                </>
-              ) : (
-                <>
-                  <Globe className="mr-2 h-4 w-4" /> Clone Website
-                </>
-              )}
-            </Button>
-          </CardFooter>
-        </Card>
-
-        {progress !== null && (
-          <div className="mt-4">
-            <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-              <div 
-                className="bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-out" 
-                style={{ width: `${progress}%` }}
-              ></div>
-            </div>
-            <p className="text-sm text-muted-foreground mt-1">
-              {progress < 100 ? "Cloning website..." : "Clone complete!"}
-            </p>
-          </div>
-        )}
-
-        {error && (
-          <Alert variant="destructive" className="mt-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {showPreview && (
-          <Card className="mt-6">
+                
+                {isLoading && progress > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>{progressMessage}</span>
+                      <span>{progress}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                      <div 
+                        className="bg-blue-600 h-2.5 rounded-full transition-all duration-300" 
+                        style={{ width: `${progress}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+              <CardFooter className="flex justify-between">
+                <Button variant="outline" onClick={() => navigate('/phishing-pages')} disabled={isLoading}>
+                  Cancel
+                </Button>
+                <Button onClick={handleClone} disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Cloning...
+                    </>
+                  ) : (
+                    'Clone Website'
+                  )}
+                </Button>
+              </CardFooter>
+            </Card>
+          )}
+          
+          <Card>
             <CardHeader>
-              <CardTitle>Cloned HTML Content</CardTitle>
+              <CardTitle>About Website Cloning</CardTitle>
               <CardDescription>
-                Review the cloned HTML content before saving.
+                Important information about using the website cloning feature
               </CardDescription>
             </CardHeader>
-            <CardContent className="grid gap-4">
-              <Textarea
-                value={html}
-                className="min-h-[300px] font-mono text-sm"
-                readOnly
-              />
-              <Button onClick={handleUseHtml} className="w-full">
-                <CheckCircle className="mr-2 h-4 w-4" /> Use this HTML
-              </Button>
+            <CardContent className="space-y-4">
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertTitle>What This Feature Does</AlertTitle>
+                <AlertDescription>
+                  <p className="mt-1">
+                    This feature creates a copy of a website's frontend appearance for phishing simulation purposes.
+                    It captures HTML, CSS, and essential resources to create a convincing phishing page.
+                  </p>
+                </AlertDescription>
+              </Alert>
+              
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertTitle>Best Practices</AlertTitle>
+                <AlertDescription>
+                  <ul className="list-disc pl-5 mt-1 space-y-1">
+                    <li>Choose websites relevant to your organization's security training needs</li>
+                    <li>Modify cloned pages to make them more relevant to your specific training scenario</li>
+                    <li>Always inform users after a phishing test that it was a simulation</li>
+                    <li>Provide educational resources after a simulation to help users learn</li>
+                  </ul>
+                </AlertDescription>
+              </Alert>
+              
+              <Alert variant="warning">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Limitations</AlertTitle>
+                <AlertDescription>
+                  <ul className="list-disc pl-5 mt-1 space-y-1">
+                    <li>Dynamic website functionality will not be preserved</li>
+                    <li>JavaScript functionality may be limited or non-functional</li>
+                    <li>Some modern websites with complex security measures may not clone properly</li>
+                    <li>External resources might be blocked by the target website</li>
+                  </ul>
+                </AlertDescription>
+              </Alert>
             </CardContent>
           </Card>
-        )}
+        </div>
       </div>
     </DashboardLayout>
   );
