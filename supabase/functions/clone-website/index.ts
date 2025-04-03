@@ -652,7 +652,7 @@ serve(async (req) => {
                 if (text.includes("©") || text.includes("&copy;")) {
                   element.innerHTML = text.replace(
                     /(&copy;|©)\s*\d{4}(\s*-\s*\d{4})?\s*([A-Za-z0-9\s,.]+)/g,
-                    `&copy; ${new Date().getFullYear()} ${companyName}`
+                    "&copy; " + new Date().getFullYear() + " " + companyName
                   );
                 }
               });
