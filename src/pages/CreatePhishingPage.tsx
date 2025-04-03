@@ -1,6 +1,6 @@
 
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -30,21 +30,150 @@ const formSchema = z.object({
   jsContent: z.string().optional(),
 });
 
+// Default HTML template for a login page
+const defaultLoginTemplate = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .login-container {
+      background: white;
+      padding: 40px;
+      border-radius: 5px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      width: 350px;
+    }
+    .logo {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 30px;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      color: #555;
+    }
+    input[type="text"],
+    input[type="password"],
+    input[type="email"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-size: 16px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background-color: #357ae8;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 14px;
+      color: #666;
+    }
+    a {
+      color: #4285f4;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="logo">
+      <img src="https://via.placeholder.com/150x50" alt="Company Logo" />
+    </div>
+    <h1>Sign In</h1>
+    <form id="loginForm" onsubmit="return false;">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" placeholder="Enter your email" required />
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="Enter your password" required />
+      </div>
+      <div class="form-group">
+        <button type="submit">Sign In</button>
+      </div>
+    </form>
+    <div class="footer">
+      <p>Forgot password? <a href="#">Reset it here</a></p>
+      <p>Don't have an account? <a href="#">Sign up</a></p>
+    </div>
+  </div>
+  
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      
+      // In a real phishing page, this would send the credentials to a server
+      console.log('Credentials captured:', { email, password });
+      
+      // Show a security awareness message
+      alert('This was a security awareness test. In a real attack, your credentials could have been stolen.');
+    });
+  </script>
+</body>
+</html>`;
+
 const CreatePhishingPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Get HTML content from location state if available (from cloned website)
+  const stateHtml = location.state?.html || '';
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
       category: "Custom",
-      htmlContent: "<!DOCTYPE html>\n<html>\n<head>\n  <title>Login Page</title>\n</head>\n<body>\n  <h1>Login Form</h1>\n  <form>\n    <label for=\"username\">Username:</label>\n    <input type=\"text\" id=\"username\" name=\"username\"><br><br>\n    <label for=\"password\">Password:</label>\n    <input type=\"password\" id=\"password\" name=\"password\"><br><br>\n    <button type=\"submit\">Login</button>\n  </form>\n</body>\n</html>",
+      htmlContent: stateHtml || defaultLoginTemplate,
       cssContent: "",
       jsContent: "",
     },
   });
+
+  // Set the HTML content when it becomes available from location state
+  useEffect(() => {
+    if (stateHtml) {
+      form.setValue('htmlContent', stateHtml);
+    }
+  }, [stateHtml, form]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);

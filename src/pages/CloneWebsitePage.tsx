@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
@@ -92,29 +93,45 @@ const CloneWebsitePage = () => {
     setError("");
 
     try {
-      const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-      const response = await fetch(proxyUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        },
+      // Use the Supabase Edge Function for cloning instead of direct fetch
+      const { data, error } = await supabase.functions.invoke('clone-website', {
+        body: { url, name: new URL(url).hostname, category: 'Cloned' }
       });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+
+      if (error) {
+        throw new Error(error.message);
       }
       
-      const fetchedHtml = await response.text();
+      if (data.error) {
+        throw new Error(data.error);
+      }
       
       console.log(`Website cloned: ${url} at ${new Date().toISOString()}`);
       
-      setHtml(fetchedHtml);
-      setShowPreview(true);
+      if (data.data && data.data.html_content) {
+        setHtml(data.data.html_content);
+        setShowPreview(true);
+        
+        toast({
+          title: "Success",
+          description: "Website cloned successfully",
+        });
+      } else {
+        // If we got success but no HTML content
+        const pageId = data.data?.id;
+        if (pageId) {
+          // If we have a page ID, navigate to that page
+          navigate(`/phishing-pages/${pageId}/preview`);
+        } else {
+          throw new Error("No HTML content returned");
+        }
+      }
     } catch (error) {
       console.error("Error cloning website:", error);
       setError("Failed to clone website. Please try again or use a different URL.");
       toast({
         title: "Error",
-        description: "Failed to clone website. Please try a different URL.",
+        description: error instanceof Error ? error.message : "Failed to clone website. Please try a different URL.",
         variant: "destructive",
       });
     } finally {
