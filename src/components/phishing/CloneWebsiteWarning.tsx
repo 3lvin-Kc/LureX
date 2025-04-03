@@ -17,6 +17,7 @@ interface CloneWebsiteWarningProps {
   onOpenChange: (open: boolean) => void;
   onProceed: () => void;
   onCancel: () => void;
+  onAccept?: () => void; // Added this optional prop
 }
 
 const CloneWebsiteWarning = ({
@@ -24,7 +25,16 @@ const CloneWebsiteWarning = ({
   onOpenChange,
   onProceed,
   onCancel,
+  onAccept, // Include it in the destructured props
 }: CloneWebsiteWarningProps) => {
+  // Call onAccept when proceeding if it's provided
+  const handleProceed = () => {
+    onProceed();
+    if (onAccept) {
+      onAccept();
+    }
+  };
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -51,7 +61,7 @@ const CloneWebsiteWarning = ({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onCancel}>Use New Page Instead</AlertDialogCancel>
-          <AlertDialogAction onClick={onProceed}>Proceed with Cloner</AlertDialogAction>
+          <AlertDialogAction onClick={handleProceed}>Proceed with Cloner</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

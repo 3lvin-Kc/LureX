@@ -30,30 +30,30 @@ refresh_token_reuse_interval = 10
 [storage]
 enabled = true
 
-[edge-functions]
-[edge-functions.immutable-log]
+[functions]
+[functions.immutable-log]
 verify_jwt = false
 
-[edge-functions.generate-template]
+[functions.generate-template]
 verify_jwt = true
 
-[edge-functions.analyze-phishing]
+[functions.analyze-phishing]
 verify_jwt = true
 
-[edge-functions.generate-report]
+[functions.generate-report]
 verify_jwt = true
 
-[edge-functions.send-email]
+[functions.send-email]
 verify_jwt = true
 
-[edge-functions.track-click]
+[functions.track-click]
 verify_jwt = false
 
-[edge-functions.track-open]
+[functions.track-open]
 verify_jwt = false
 
-[edge-functions.queue-campaign]
+[functions.queue-campaign]
 verify_jwt = true
 
-[edge-functions.clone-website]
+[functions.clone-website]
 verify_jwt = true

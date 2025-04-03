@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
@@ -26,6 +25,7 @@ const CloneWebsitePage = () => {
   const [advancedCloning, setAdvancedCloning] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
   const [progressMessage, setProgressMessage] = useState<string>('');
+  const [showWarningDialog, setShowWarningDialog] = useState<boolean>(true);
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -70,7 +70,6 @@ const CloneWebsitePage = () => {
   const handleClone = async () => {
     if (!validateInput()) return;
     
-    // Rate limiting check
     if (!apiRateLimiter.tryRequest()) {
       toast({
         title: "Rate limit exceeded",
@@ -85,7 +84,6 @@ const CloneWebsitePage = () => {
       setProgress(10);
       setProgressMessage('Initializing cloning process');
       
-      // Log the attempt
       securityLogger.info(
         SecurityEventType.DATA_ACCESS,
         "Website cloning initiated",
@@ -95,7 +93,6 @@ const CloneWebsitePage = () => {
       setProgress(20);
       setProgressMessage('Requesting website content');
       
-      // Call the edge function to clone the website
       const { data, error } = await supabase.functions.invoke('clone-website', {
         body: { 
           url, 
@@ -121,19 +118,16 @@ const CloneWebsitePage = () => {
         description: "The website has been successfully cloned.",
       });
       
-      // Log success
       securityLogger.info(
         SecurityEventType.DATA_ACCESS,
         "Website successfully cloned",
         { url, pageId: data.pageId }
       );
       
-      // Redirect to the phishing pages list
       navigate('/phishing-pages');
     } catch (error: any) {
       setProgress(0);
       
-      // Log failure
       securityLogger.error(
         SecurityEventType.DATA_ACCESS,
         "Website cloning failed",
@@ -166,10 +160,21 @@ const CloneWebsitePage = () => {
         </div>
         
         <div className="grid gap-6">
-          <CloneWebsiteWarning onAccept={() => setWarningAccepted(true)} />
+          <CloneWebsiteWarning 
+            open={showWarningDialog} 
+            onOpenChange={setShowWarningDialog}
+            onProceed={() => {
+              setShowWarningDialog(false);
+              setWarningAccepted(true);
+            }}
+            onCancel={() => {
+              setShowWarningDialog(false);
+              navigate('/phishing-pages');
+            }}
+          />
           
           {!warningAccepted && (
-            <Alert variant="warning">
+            <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Warning</AlertTitle>
               <AlertDescription>
@@ -330,7 +335,7 @@ const CloneWebsitePage = () => {
                 </AlertDescription>
               </Alert>
               
-              <Alert variant="warning">
+              <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Limitations</AlertTitle>
                 <AlertDescription>
