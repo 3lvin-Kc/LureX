@@ -10,9 +10,10 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import CloneWebsiteWarning from '@/components/phishing/CloneWebsiteWarning';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import { 
   Globe, Info, AlertCircle, Loader2, Layers, ChevronsUp, Award,
-  Zap, Eye, Database, Code, FileCode, BarChart3, Lock, Radar
+  Zap, Eye, Database, Code, FileCode, BarChart3, Lock, Radar, Shield
 } from 'lucide-react';
 import { securityLogger, SecurityEventType } from '@/utils/securityLogger';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
