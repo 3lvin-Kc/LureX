@@ -40,3 +40,5 @@ noninteractive_stream_limit = 2
 [functions.clone-website]
 import_map = "./supabase/functions/import_map.json"
 verify_jwt = true
+timeout_seconds = 60
+

