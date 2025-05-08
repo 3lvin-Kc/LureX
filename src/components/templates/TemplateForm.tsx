@@ -85,10 +85,10 @@ const TemplateForm: React.FC<TemplateFormProps> = ({ templateId }) => {
   useEffect(() => {
     if (templateData) {
       form.reset({
-        name: templateData.name,
-        subject: templateData.subject,
+        name: templateData.name || "",
+        subject: templateData.subject || "",
         category: templateData.category || "",
-        htmlContent: templateData.html_content,
+        htmlContent: templateData.html_content || "",
         textContent: templateData.text_content || "",
         description: templateData.description || "",
       });
@@ -154,7 +154,7 @@ const TemplateForm: React.FC<TemplateFormProps> = ({ templateId }) => {
           
           const { error: uploadError } = await supabase.storage
             .from('attachments')
-            .upload(`template-attachments/${templateResult.id}/${fileName}`, file);
+            .upload(`template-attachments/${templateResult?.id}/${fileName}`, file);
             
           if (uploadError) throw uploadError;
         }

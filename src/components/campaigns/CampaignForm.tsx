@@ -225,7 +225,7 @@ const CampaignForm = () => {
       securityLogger.info(
         SecurityEventType.DATA_ACCESS,
         'Campaign created successfully',
-        { campaignId: data.id, name: sanitizeInput(name) }
+        { campaignId: data?.id, name: sanitizeInput(name) }
       );
       
       toast({
