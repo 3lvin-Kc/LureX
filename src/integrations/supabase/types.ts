@@ -9,6 +9,48 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      campaign_variants: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          distribution_percentage: number
+          id: string
+          template_id: string
+          variant_name: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          distribution_percentage?: number
+          id?: string
+          template_id: string
+          variant_name: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          distribution_percentage?: number
+          id?: string
+          template_id?: string
+          variant_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_variants_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_variants_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaigns: {
         Row: {
           created_at: string
@@ -414,6 +456,81 @@ export type Database = {
           name?: string
           source_url?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      security_anomalies: {
+        Row: {
+          detected_at: string
+          event_data: Json
+          id: string
+          ip_address: string | null
+          location: string | null
+          reasons: string[]
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          detected_at?: string
+          event_data: Json
+          id?: string
+          ip_address?: string | null
+          location?: string | null
+          reasons: string[]
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          detected_at?: string
+          event_data?: Json
+          id?: string
+          ip_address?: string | null
+          location?: string | null
+          reasons?: string[]
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      security_logs: {
+        Row: {
+          created_at: string
+          details: Json | null
+          event_level: string
+          event_type: string
+          id: string
+          ip_address: string | null
+          is_anomalous: boolean
+          location: string | null
+          message: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          event_level: string
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          is_anomalous?: boolean
+          location?: string | null
+          message: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          event_level?: string
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          is_anomalous?: boolean
+          location?: string | null
+          message?: string
+          user_agent?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }

@@ -9,4 +9,112 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+// Adding custom TypeScript helper to handle tables not yet in the type definition
+export type CustomDatabase = Database & {
+  public: {
+    Tables: {
+      campaign_variants: {
+        Row: {
+          id: string;
+          campaign_id: string;
+          variant_name: string;
+          template_id: string;
+          distribution_percentage: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          campaign_id: string;
+          variant_name: string;
+          template_id: string;
+          distribution_percentage?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          campaign_id?: string;
+          variant_name?: string;
+          template_id?: string;
+          distribution_percentage?: number;
+          created_at?: string;
+        };
+      };
+      security_logs: {
+        Row: {
+          id: string;
+          user_id?: string;
+          event_type: string;
+          event_level: string;
+          message: string;
+          details?: any;
+          user_agent?: string;
+          location?: string;
+          ip_address?: string;
+          is_anomalous: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string;
+          event_type: string;
+          event_level: string;
+          message: string;
+          details?: any;
+          user_agent?: string;
+          location?: string;
+          ip_address?: string;
+          is_anomalous?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          event_type?: string;
+          event_level?: string;
+          message?: string;
+          details?: any;
+          user_agent?: string;
+          location?: string;
+          ip_address?: string;
+          is_anomalous?: boolean;
+          created_at?: string;
+        };
+      };
+      security_anomalies: {
+        Row: {
+          id: string;
+          user_id?: string;
+          event_data: any;
+          reasons: string[];
+          user_agent?: string;
+          location?: string;
+          ip_address?: string;
+          detected_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string;
+          event_data: any;
+          reasons: string[];
+          user_agent?: string;
+          location?: string;
+          ip_address?: string;
+          detected_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          event_data?: any;
+          reasons?: string[];
+          user_agent?: string;
+          location?: string;
+          ip_address?: string;
+          detected_at?: string;
+        };
+      };
+    } & Database['public']['Tables'];
+  };
+};
+
+// Create a type-augmented client
+export const supabase = createClient<CustomDatabase>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);

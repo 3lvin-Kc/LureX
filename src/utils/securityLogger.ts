@@ -416,7 +416,7 @@ class SecurityLogger {
         ip_address: null, // IP will be captured by the server
         is_anomalous: event.isAnomalous || false,
         created_at: new Date().toISOString()
-      });
+      } as any); // Type assertion to bypass TypeScript error
       
       // If this is an anomaly, also log to the anomalies table
       if (event.isAnomalous && event.anomalyReasons && event.anomalyReasons.length > 0) {
@@ -433,7 +433,7 @@ class SecurityLogger {
           user_agent: clientInfo.userAgent,
           location: clientInfo.location,
           detected_at: new Date().toISOString()
-        });
+        } as any); // Type assertion to bypass TypeScript error
       }
     } catch (error) {
       console.error('Failed to send security log to Supabase:', error);
