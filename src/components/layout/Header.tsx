@@ -1,30 +1,16 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { supabase } from '@/integrations/supabase/client';
-import { LogOut } from 'lucide-react';
+import { Menu } from 'lucide-react';
 
 const Header = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [user, setUser] = useState<any>(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Check current auth state
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user || null);
-    });
-
-    // Set up auth listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user || null);
-      }
-    );
-
+  React.useEffect(() => {
     const handleScroll = () => {
       const isScrolled = window.scrollY > 10;
       if (isScrolled !== scrolled) {
@@ -36,7 +22,6 @@ const Header = () => {
     
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      subscription.unsubscribe();
     };
   }, [scrolled]);
 
@@ -44,17 +29,8 @@ const Header = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate('/');
-  };
-
   const handleGetStarted = () => {
-    if (user) {
-      navigate('/dashboard');
-    } else {
-      navigate('/auth');
-    }
+    navigate('/dashboard');
   };
 
   return (
@@ -85,23 +61,9 @@ const Header = () => {
             <Link to="/help">Help</Link>
           </Button>
           
-          {user ? (
-            <Button variant="outline" size="sm" onClick={handleLogout} className="flex items-center gap-1">
-              <LogOut className="h-4 w-4" />
-              Logout
-            </Button>
-          ) : (
-            <Button asChild size="sm">
-              <Link to="/auth">Login</Link>
-            </Button>
-          )}
-          
-          {/* Removed Dashboard button, leaving only Get Started for dashboard access */}
-          {!user && (
-            <Button asChild size="sm">
-              <Link to="/auth" onClick={handleGetStarted}>Get Started</Link>
-            </Button>
-          )}
+          <Button asChild size="sm">
+            <Link to="/dashboard" onClick={handleGetStarted}>Dashboard</Link>
+          </Button>
         </div>
 
         {/* Mobile Menu Toggle */}
@@ -150,23 +112,11 @@ const Header = () => {
                 <Link to="/help" onClick={() => setMobileMenuOpen(false)}>Help</Link>
               </Button>
               
-              {user ? (
-                <Button variant="outline" size="sm" className="w-full" onClick={handleLogout}>
-                  Logout
-                </Button>
-              ) : (
-                <>
-                  <Button asChild size="sm" className="w-full">
-                    <Link to="/auth" onClick={() => setMobileMenuOpen(false)}>Login</Link>
-                  </Button>
-                  
-                  <Button asChild size="sm" className="w-full">
-                    <Link to="/auth" onClick={() => { setMobileMenuOpen(false); handleGetStarted(); }}>
-                      Get Started
-                    </Link>
-                  </Button>
-                </>
-              )}
+              <Button asChild size="sm" className="w-full">
+                <Link to="/dashboard" onClick={() => { setMobileMenuOpen(false); handleGetStarted(); }}>
+                  Dashboard
+                </Link>
+              </Button>
             </div>
           </nav>
         </div>

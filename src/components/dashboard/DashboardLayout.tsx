@@ -1,14 +1,11 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { 
   BarChart3, 
-  FileText, 
   Users, 
   Mail, 
   Settings, 
-  LogOut, 
   Menu, 
   Home,
   GanttChart,
@@ -24,7 +21,6 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 type DashboardLayoutProps = {
@@ -32,61 +28,10 @@ type DashboardLayoutProps = {
 };
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
-  const [user, setUser] = useState<any>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const location = useLocation();
-  const { toast } = useToast();
-
-  useEffect(() => {
-    const getUser = async () => {
-      try {
-        const { data } = await supabase.auth.getUser();
-        setUser(data.user);
-      } catch (error) {
-        console.error("Error fetching user:", error);
-      }
-    };
-
-    getUser();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_OUT') {
-          setUser(null);
-          navigate('/auth');
-        } else if (event === 'SIGNED_IN' && session) {
-          setUser(session.user);
-        }
-      }
-    );
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, [navigate]);
-
-  const handleLogout = async () => {
-    try {
-      setIsLoading(true);
-      await supabase.auth.signOut();
-      toast({
-        title: 'Logged out',
-        description: 'You have been successfully logged out',
-      });
-      navigate('/auth');
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to log out',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const navItems = [
     { path: '/dashboard', label: 'Dashboard', icon: Home },
@@ -106,7 +51,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           variant={location.pathname === item.path ? "secondary" : "ghost"}
           className="w-full justify-start"
           asChild
-          disabled={isLoading}
         >
           <Link to={item.path} onClick={() => setSidebarOpen(false)}>
             <item.icon className="mr-2 h-5 w-5" />
@@ -114,16 +58,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           </Link>
         </Button>
       ))}
-      <Separator className="my-4" />
-      <Button
-        variant="ghost"
-        className="w-full justify-start text-red-500 hover:text-red-700 hover:bg-red-100"
-        onClick={handleLogout}
-        disabled={isLoading}
-      >
-        <LogOut className="mr-2 h-5 w-5" />
-        Logout
-      </Button>
     </div>
   );
 
@@ -163,7 +97,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             <Link to="/dashboard">Phishing Platform</Link>
           </div>
           <div className="flex items-center">
-            <span className="text-sm mr-4">{user?.email}</span>
+            <span className="text-sm mr-4">Demo User</span>
           </div>
         </header>
 

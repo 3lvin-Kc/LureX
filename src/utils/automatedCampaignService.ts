@@ -48,11 +48,11 @@ export interface CampaignSchedule {
   startTime: string;
   endTime?: string;
   timeZone?: string;
-  staggered?: boolean; // Whether to send in batches over time
-  staggerInterval?: number; // Minutes between batches
-  maxBatchSize?: number; // Maximum targets per batch
-  workHoursOnly?: boolean; // Only send during work hours
-  excludeWeekends?: boolean; // Don't send on weekends
+  staggered?: boolean;
+  staggerInterval?: number;
+  maxBatchSize?: number;
+  workHoursOnly?: boolean;
+  excludeWeekends?: boolean;
 }
 
 export interface CampaignVariant {
@@ -68,14 +68,14 @@ export interface CampaignOptions {
   vectors: AttackVector[];
   targetListId: string;
   schedule: CampaignSchedule;
-  primaryTemplateId: string; // Main template to use
-  variants?: CampaignVariant[]; // For A/B testing
-  providerId: string; // Email provider, SMS service, etc.
-  landingPageId?: string; // Phishing page to use
-  dynamicContent?: boolean; // Whether to personalize content
-  advancedTracking?: boolean; // Use advanced tracking features
-  useAi?: boolean; // Use AI to customize attacks
-  remediationTraining?: string; // Training to show after user falls for phish
+  primaryTemplateId: string;
+  variants?: CampaignVariant[];
+  providerId: string;
+  landingPageId?: string;
+  dynamicContent?: boolean;
+  advancedTracking?: boolean;
+  useAi?: boolean;
+  remediationTraining?: string;
 }
 
 /**
@@ -179,7 +179,7 @@ export class AutomatedCampaignService {
               variant_name: variant.name,
               template_id: variant.templateId,
               distribution_percentage: variant.distributionPercentage
-            } as any); // Type assertion to prevent TypeScript error
+            } as any);
           
           if (variantError) {
             throw variantError;
