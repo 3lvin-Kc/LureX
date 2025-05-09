@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { nanoid } from "nanoid";
 
@@ -332,20 +331,58 @@ export class SecurityLogger {
 }
 
 /**
- * Sanitize input to prevent XSS attacks
- * @param input The input string to sanitize
- * @returns Sanitized string
+ * Sanitize user input to prevent XSS and injection attacks
+ * @param input The user input to sanitize
+ * @returns Sanitized input safe for use
  */
-export function sanitizeInput(input: string): string {
-  if (!input) return "";
+export const sanitizeInput = (input: string): string => {
+  if (!input) return '';
   
-  // Basic HTML entity encoding
+  // Basic sanitation - replace potentially dangerous characters
   return input
-    .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+    .replace(/'/g, '&#039;')
+    .replace(/\\/g, '&#092;')
+    .trim();
+};
+
+/**
+ * Validate user input against expected patterns and constraints
+ * @param input The input to validate
+ * @param pattern Optional regex pattern to test against
+ * @param maxLength Optional maximum length
+ * @returns Whether the input is valid
+ */
+export const validateInput = (
+  input: string,
+  pattern?: RegExp,
+  maxLength?: number
+): boolean => {
+  if (!input) return false;
+  
+  if (maxLength && input.length > maxLength) {
+    return false;
+  }
+  
+  if (pattern && !pattern.test(input)) {
+    return false;
+  }
+  
+  return true;
+};
+
+// Make sure the SecurityLogger class has these methods:
+// Add these methods to the SecurityLogger class if they don't exist
+/* 
+sanitizeUserInput(input: string): string {
+  return sanitizeInput(input);
 }
+
+validateUserInput(input: string, pattern?: RegExp, maxLength?: number): boolean {
+  return validateInput(input, pattern, maxLength);
+}
+*/
 
 export const securityLogger = SecurityLogger.getInstance();
