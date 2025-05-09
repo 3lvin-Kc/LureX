@@ -1,4 +1,3 @@
-
 /**
  * Client-side rate limiter utility to prevent API abuse
  */
@@ -221,7 +220,7 @@ export const apiRateLimiter = new RateLimiter({
   maxRequests: 60,
   timeWindow: 60000, // 1 minute
   storageKey: 'api_rate_limit',
-  securityEventType: SecurityEventType.API_ABUSE
+  securityEventType: SecurityEventType.API_ACCESS
 });
 
 // Additional specialized rate limiters
@@ -229,7 +228,7 @@ export const formSubmissionLimiter = new RateLimiter({
   maxRequests: 10,
   timeWindow: 60000, // 1 minute
   storageKey: 'form_submission_rate_limit',
-  securityEventType: SecurityEventType.INPUT_VALIDATION
+  securityEventType: SecurityEventType.DATA_ACCESS
 });
 
 // Sensitive operation rate limiter (stricter limits)

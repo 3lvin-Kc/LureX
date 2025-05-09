@@ -11,7 +11,9 @@ export enum SecurityEventType {
   RATE_LIMIT = 'rate_limit',
   API_ACCESS = 'api_access',
   CONTENT_MUTATION = 'content_mutation',
-  SUSPICIOUS_ACTIVITY = 'suspicious_activity'
+  SUSPICIOUS_ACTIVITY = 'suspicious_activity',
+  API_ABUSE = 'api_abuse',
+  INPUT_VALIDATION = 'input_validation'
 }
 
 export enum SecurityEventLevel {
@@ -33,6 +35,12 @@ interface SecurityLogEvent {
   ipAddress?: string;
   location?: string;
   isAnomalous: boolean;
+}
+
+interface InputValidationResult {
+  safe: boolean;
+  issues?: string[];
+  sanitized?: string;
 }
 
 /**
@@ -195,7 +203,7 @@ export class SecurityLogger {
   private async saveLog(event: SecurityLogEvent): Promise<void> {
     try {
       const { error } = await supabase
-        .from("security_logs")
+        .from("security_logs" as any)
         .insert({
           user_id: event.userId,
           event_type: event.eventType,
@@ -223,7 +231,7 @@ export class SecurityLogger {
     try {
       // Save to security anomalies table
       const { error } = await supabase
-        .from("security_anomalies")
+        .from("security_anomalies" as any)
         .insert({
           user_id: event.userId,
           event_data: event,
@@ -284,6 +292,60 @@ export class SecurityLogger {
   public setAnomalyDetection(enabled: boolean): void {
     this.anomalyDetectionEnabled = enabled;
   }
+
+  /**
+   * Validate input for security issues
+   * @param input The input string to validate
+   * @param context The context where this input is used (for logging)
+   * @returns Result indicating if the input is safe and any issues found
+   */
+  public validateInput(input: string, context: string): InputValidationResult {
+    if (!input) {
+      return { safe: true, sanitized: "" };
+    }
+
+    const issues: string[] = [];
+    
+    // Check for potential XSS payloads
+    if (/<script|javascript:|on\w+\s*=|alert\s*\(|eval\s*\(|document\.cookie|iframe/i.test(input)) {
+      issues.push('Potentially malicious script content');
+    }
+    
+    // Check for SQL injection attempts
+    if (/(\b(select|insert|update|delete|from|where|drop|alter|exec|union|--)\b)|('--)/i.test(input)) {
+      issues.push('Potential SQL injection pattern');
+    }
+    
+    // Check for very long inputs (potential DoS)
+    if (input.length > 1000) {
+      issues.push('Input exceeds maximum allowed length');
+    }
+
+    const sanitized = this.sanitizeInput(input);
+    
+    return {
+      safe: issues.length === 0,
+      issues: issues.length > 0 ? issues : undefined,
+      sanitized
+    };
+  }
+}
+
+/**
+ * Sanitize input to prevent XSS attacks
+ * @param input The input string to sanitize
+ * @returns Sanitized string
+ */
+export function sanitizeInput(input: string): string {
+  if (!input) return "";
+  
+  // Basic HTML entity encoding
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 export const securityLogger = SecurityLogger.getInstance();

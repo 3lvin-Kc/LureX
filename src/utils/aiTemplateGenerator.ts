@@ -83,7 +83,7 @@ export class AITemplateGenerator {
     try {
       // Log the template generation request
       securityLogger.info(
-        SecurityEventType.API_ABUSE,
+        SecurityEventType.API_ACCESS,
         "Template generation requested",
         { options }
       );
@@ -95,7 +95,7 @@ export class AITemplateGenerator {
       
       if (error) {
         securityLogger.error(
-          SecurityEventType.API_ABUSE,
+          SecurityEventType.API_ACCESS,
           "Template generation failed",
           { error, options }
         );
@@ -104,7 +104,7 @@ export class AITemplateGenerator {
       
       // Log successful template generation
       securityLogger.info(
-        SecurityEventType.API_ABUSE,
+        SecurityEventType.API_ACCESS,
         "Template generation successful",
         { templateId: data.id, type: options.type }
       );
@@ -112,7 +112,7 @@ export class AITemplateGenerator {
       return data as GeneratedTemplate;
     } catch (error) {
       securityLogger.error(
-        SecurityEventType.API_ABUSE,
+        SecurityEventType.API_ACCESS,
         "Error in template generation",
         { error, options }
       );
@@ -178,7 +178,7 @@ export class AITemplateGenerator {
       return data.indicators as string[];
     } catch (error) {
       securityLogger.error(
-        SecurityEventType.API_ABUSE,
+        SecurityEventType.API_ACCESS,
         "Error analyzing phishing content",
         { error }
       );
