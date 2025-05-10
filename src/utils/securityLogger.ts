@@ -1,388 +1,272 @@
-import { supabase } from "@/integrations/supabase/client";
-import { nanoid } from "nanoid";
 
+import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../integrations/supabase/client';
+
+/**
+ * Enum representing different types of security events that can be logged.
+ */
 export enum SecurityEventType {
-  AUTHENTICATION = 'authentication',
-  AUTHORIZATION = 'authorization',
-  DATA_ACCESS = 'data_access',
-  CONFIG_CHANGE = 'config_change',
-  USER_MANAGEMENT = 'user_management',
-  RATE_LIMIT = 'rate_limit',
+  LOGIN_SUCCESS = 'login_success',
+  LOGIN_FAILURE = 'login_failure',
+  LOGOUT = 'logout',
+  PASSWORD_CHANGE = 'password_change',
+  PASSWORD_RESET_REQUEST = 'password_reset_request',
+  PASSWORD_RESET_SUCCESS = 'password_reset_success',
+  USER_CREATION = 'user_creation',
+  USER_DELETION = 'user_deletion',
+  PERMISSION_CHANGE = 'permission_change',
   API_ACCESS = 'api_access',
-  CONTENT_MUTATION = 'content_mutation',
   SUSPICIOUS_ACTIVITY = 'suspicious_activity',
-  API_ABUSE = 'api_abuse',
-  INPUT_VALIDATION = 'input_validation'
-}
-
-export enum SecurityEventLevel {
-  INFO = 'info',
-  WARN = 'warn',
-  ERROR = 'error',
-  CRITICAL = 'critical'
-}
-
-interface SecurityLogEvent {
-  id: string;
-  timestamp: string;
-  eventType: SecurityEventType;
-  level: SecurityEventLevel;
-  message: string;
-  details?: any;
-  userId?: string;
-  userAgent?: string;
-  ipAddress?: string;
-  location?: string;
-  isAnomalous: boolean;
-}
-
-interface InputValidationResult {
-  safe: boolean;
-  issues?: string[];
-  sanitized?: string;
+  RATE_LIMIT_EXCEEDED = 'rate_limit_exceeded',
+  DATA_EXPORT = 'data_export',
+  CONFIGURATION_CHANGE = 'configuration_change',
+  EMAIL_SEND_ATTEMPT = 'email_send_attempt',
+  PHISHING_PAGE_ACCESS = 'phishing_page_access',
+  CAMPAIGN_CREATION = 'campaign_creation',
+  CAMPAIGN_MODIFICATION = 'campaign_modification',
+  TEMPLATE_ACCESS = 'template_access',
+  TEMPLATE_CREATION = 'template_creation',
+  TEMPLATE_MODIFICATION = 'template_modification',
+  INPUT_VALIDATION_FAILURE = 'input_validation_failure',
+  ADMIN_ACTION = 'admin_action',
 }
 
 /**
- * Security Logger for tracking security events and anomalies
+ * Interface for a security event log entry.
+ */
+interface SecurityLogEntry {
+  event_type: SecurityEventType;
+  user_id?: string;
+  ip_address?: string;
+  user_agent?: string;
+  details?: any;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  status: 'success' | 'failure' | 'warning' | 'info';
+  created_at?: string;
+}
+
+/**
+ * Service for logging security events and detecting suspicious activity.
  */
 export class SecurityLogger {
   private static instance: SecurityLogger;
-  private queue: SecurityLogEvent[] = [];
-  private processing: boolean = false;
-  private anomalyDetectionEnabled: boolean = true;
-  
+  private client: ReturnType<typeof createClient>;
+  private suspiciousActivityThreshold: number = 5;
+  private suspiciousActivityTimeframe: number = 60 * 60 * 1000; // 1 hour in milliseconds
+  private suspiciousActivities: Map<string, { count: number, firstOccurrence: number }> = new Map();
+
   private constructor() {
-    // Process queued events every 5 seconds
-    setInterval(() => this.processQueue(), 5000);
+    this.client = supabase;
   }
-  
+
+  /**
+   * Gets the singleton instance of the SecurityLogger.
+   */
   public static getInstance(): SecurityLogger {
     if (!SecurityLogger.instance) {
       SecurityLogger.instance = new SecurityLogger();
     }
     return SecurityLogger.instance;
   }
-  
+
   /**
-   * Log an informational security event
+   * Logs a security event to the database.
+   * @param event The security event to log.
    */
-  public info(
-    eventType: SecurityEventType,
-    message: string,
-    details?: any
-  ): void {
-    this.log(SecurityEventLevel.INFO, eventType, message, details);
-  }
-  
-  /**
-   * Log a warning security event
-   */
-  public warn(
-    eventType: SecurityEventType,
-    message: string,
-    details?: any
-  ): void {
-    this.log(SecurityEventLevel.WARN, eventType, message, details);
-  }
-  
-  /**
-   * Log an error security event
-   */
-  public error(
-    eventType: SecurityEventType,
-    message: string,
-    details?: any
-  ): void {
-    this.log(SecurityEventLevel.ERROR, eventType, message, details);
-  }
-  
-  /**
-   * Log a critical security event
-   */
-  public critical(
-    eventType: SecurityEventType,
-    message: string,
-    details?: any
-  ): void {
-    this.log(SecurityEventLevel.CRITICAL, eventType, message, details);
-  }
-  
-  /**
-   * Log a security event
-   */
-  public log(
-    level: SecurityEventLevel,
-    eventType: SecurityEventType,
-    message: string,
-    details?: any
-  ): void {
-    const event = this.createLogEvent(level, eventType, message, details);
-    
-    // Add to processing queue
-    this.queue.push(event);
-    
-    // Log to console as well
-    this.logToConsole(event);
-    
-    // Process immediately for critical events, otherwise process in batch
-    if (level === SecurityEventLevel.CRITICAL) {
-      this.processQueue();
-    }
-  }
-  
-  /**
-   * Create a log event object
-   */
-  private createLogEvent(
-    level: SecurityEventLevel,
-    eventType: SecurityEventType,
-    message: string,
-    details?: any
-  ): SecurityLogEvent {
-    // Get browser information
-    const userAgent = typeof window !== 'undefined' ? window.navigator.userAgent : 'server';
-    
-    // Default isAnomalous to false, anomaly detection happens during processing
-    const isAnomalous = false;
-    
-    // Create the log event
-    return {
-      id: nanoid(),
-      timestamp: new Date().toISOString(),
-      eventType,
-      level,
-      message,
-      details,
-      userAgent,
-      isAnomalous
-    };
-  }
-  
-  /**
-   * Process the queue of log events
-   */
-  private async processQueue(): Promise<void> {
-    // Prevent concurrent processing
-    if (this.processing || this.queue.length === 0) {
-      return;
-    }
-    
-    this.processing = true;
-    
+  public async logSecurityEvent(event: SecurityLogEntry): Promise<void> {
     try {
-      // Get events to process in this batch (copy and clear queue)
-      const events = [...this.queue];
-      this.queue = [];
-      
-      // Process each event
-      for (const event of events) {
-        // Check if the event is anomalous
-        if (this.anomalyDetectionEnabled) {
-          event.isAnomalous = await this.detectAnomaly(event);
-        }
-        
-        // Save the log to the database
-        await this.saveLog(event);
-        
-        // Handle anomalous events
-        if (event.isAnomalous) {
-          await this.handleAnomaly(event);
-        }
+      // Add timestamp if not provided
+      if (!event.created_at) {
+        event.created_at = new Date().toISOString();
       }
-    } catch (error) {
-      console.error('Error processing security logs:', error);
-    } finally {
-      this.processing = false;
-    }
-  }
-  
-  /**
-   * Save a log entry to the database
-   */
-  private async saveLog(event: SecurityLogEvent): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from("security_logs" as any)
-        .insert({
-          user_id: event.userId,
-          event_type: event.eventType,
-          event_level: event.level,
-          message: event.message,
-          details: event.details,
-          user_agent: event.userAgent,
-          location: event.location,
-          ip_address: event.ipAddress,
-          is_anomalous: event.isAnomalous
-        } as any);
-      
+
+      // Log to database
+      const { error } = await this.client
+        .from('security_logs')
+        .insert(event);
+
       if (error) {
-        console.error('Error saving security log:', error);
+        console.error('Failed to log security event:', error);
+        
+        // Fallback to local storage if database logging fails
+        this.logToLocalStorage(event);
+      }
+
+      // Check for suspicious activity patterns
+      if (event.user_id) {
+        this.checkForSuspiciousActivity(event.user_id, event.event_type);
       }
     } catch (error) {
-      console.error('Error saving security log:', error);
+      console.error('Error in security logging:', error);
+      this.logToLocalStorage(event);
     }
   }
-  
+
   /**
-   * Handle an anomalous security event
+   * Fallback method to log security events to local storage if database logging fails.
+   * @param event The security event to log.
    */
-  private async handleAnomaly(event: SecurityLogEvent): Promise<void> {
+  private logToLocalStorage(event: SecurityLogEntry): void {
     try {
-      // Save to security anomalies table
-      const { error } = await supabase
-        .from("security_anomalies" as any)
-        .insert({
-          user_id: event.userId,
-          event_data: event,
-          reasons: ['Suspicious activity detected'],
-          user_agent: event.userAgent,
-          location: event.location,
-          ip_address: event.ipAddress
-        } as any);
+      const logs = JSON.parse(localStorage.getItem('security_logs') || '[]');
+      logs.push({...event, logged_at: new Date().toISOString()});
+      localStorage.setItem('security_logs', JSON.stringify(logs));
+    } catch (error) {
+      console.error('Failed to log to local storage:', error);
+    }
+  }
+
+  /**
+   * Checks for suspicious activity patterns based on frequency of events.
+   * @param userId The user ID to check for suspicious activity.
+   * @param eventType The type of event that occurred.
+   */
+  private checkForSuspiciousActivity(userId: string, eventType: SecurityEventType): void {
+    const key = `${userId}:${eventType}`;
+    const now = Date.now();
+    const activity = this.suspiciousActivities.get(key);
+
+    if (activity) {
+      activity.count++;
       
-      if (error) {
-        console.error('Error saving security anomaly:', error);
+      // Check if the activity exceeds the threshold within the timeframe
+      if (activity.count >= this.suspiciousActivityThreshold && 
+          now - activity.firstOccurrence < this.suspiciousActivityTimeframe) {
+        
+        // Log suspicious activity
+        this.logSecurityEvent({
+          event_type: SecurityEventType.SUSPICIOUS_ACTIVITY,
+          user_id: userId,
+          details: {
+            related_event_type: eventType,
+            occurrence_count: activity.count,
+            timeframe_ms: now - activity.firstOccurrence
+          },
+          severity: 'high',
+          status: 'warning'
+        });
+
+        // Reset the counter
+        this.suspiciousActivities.set(key, { count: 0, firstOccurrence: now });
       }
       
-      // Additional anomaly handling can be added here
+      // Reset counter if outside the timeframe
+      if (now - activity.firstOccurrence >= this.suspiciousActivityTimeframe) {
+        this.suspiciousActivities.set(key, { count: 1, firstOccurrence: now });
+      }
+    } else {
+      // First occurrence of this activity for this user
+      this.suspiciousActivities.set(key, { count: 1, firstOccurrence: now });
+    }
+  }
+
+  /**
+   * Gets recent security events for a specific user.
+   * @param userId The user ID to get events for.
+   * @param limit The maximum number of events to retrieve.
+   */
+  public async getUserSecurityEvents(userId: string, limit: number = 50): Promise<SecurityLogEntry[]> {
+    try {
+      const { data, error } = await this.client
+        .from('security_logs')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        console.error('Failed to retrieve security events:', error);
+        return [];
+      }
+
+      return data as SecurityLogEntry[];
     } catch (error) {
-      console.error('Error handling security anomaly:', error);
+      console.error('Error retrieving security events:', error);
+      return [];
     }
-  }
-  
-  /**
-   * Detect if an event is anomalous
-   * Simple implementation for now, can be expanded later
-   */
-  private async detectAnomaly(_event: SecurityLogEvent): Promise<boolean> {
-    // Simplified anomaly detection logic
-    // In a real system, this would use more sophisticated detection
-    return false;
-  }
-  
-  /**
-   * Log to console for development visibility
-   */
-  private logToConsole(event: SecurityLogEvent): void {
-    const { level, eventType, message } = event;
-    const timestamp = new Date(event.timestamp).toLocaleTimeString();
-    
-    const style = {
-      info: 'color: #4299E1; font-weight: bold;',
-      warn: 'color: #ECC94B; font-weight: bold;',
-      error: 'color: #F56565; font-weight: bold;',
-      critical: 'color: #FFFFFF; background: #E53E3E; font-weight: bold; padding: 2px 4px;'
-    };
-    
-    console.log(
-      `%c${timestamp} [${level.toUpperCase()}] [${eventType}]%c ${message}`,
-      style[level as keyof typeof style],
-      'color: inherit'
-    );
-    
-    if (event.details) {
-      console.log('Details:', event.details);
-    }
-  }
-  
-  /**
-   * Enable or disable anomaly detection
-   */
-  public setAnomalyDetection(enabled: boolean): void {
-    this.anomalyDetectionEnabled = enabled;
   }
 
   /**
-   * Validate input for security issues
-   * @param input The input string to validate
-   * @param context The context where this input is used (for logging)
-   * @returns Result indicating if the input is safe and any issues found
+   * Gets security events of a specific type.
+   * @param eventType The type of events to retrieve.
+   * @param limit The maximum number of events to retrieve.
    */
-  public validateInput(input: string, context: string): InputValidationResult {
-    if (!input) {
-      return { safe: true, sanitized: "" };
-    }
+  public async getEventsByType(eventType: SecurityEventType, limit: number = 50): Promise<SecurityLogEntry[]> {
+    try {
+      const { data, error } = await this.client
+        .from('security_logs')
+        .select('*')
+        .eq('event_type', eventType)
+        .order('created_at', { ascending: false })
+        .limit(limit);
 
-    const issues: string[] = [];
-    
-    // Check for potential XSS payloads
-    if (/<script|javascript:|on\w+\s*=|alert\s*\(|eval\s*\(|document\.cookie|iframe/i.test(input)) {
-      issues.push('Potentially malicious script content');
-    }
-    
-    // Check for SQL injection attempts
-    if (/(\b(select|insert|update|delete|from|where|drop|alter|exec|union|--)\b)|('--)/i.test(input)) {
-      issues.push('Potential SQL injection pattern');
-    }
-    
-    // Check for very long inputs (potential DoS)
-    if (input.length > 1000) {
-      issues.push('Input exceeds maximum allowed length');
-    }
+      if (error) {
+        console.error('Failed to retrieve security events by type:', error);
+        return [];
+      }
 
-    const sanitized = this.sanitizeInput(input);
+      return data as SecurityLogEntry[];
+    } catch (error) {
+      console.error('Error retrieving security events by type:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Sets the threshold for detecting suspicious activity.
+   * @param count The number of events that triggers a suspicious activity detection.
+   * @param timeframeMs The timeframe in milliseconds within which the events must occur.
+   */
+  public setSuspiciousActivityThreshold(count: number, timeframeMs: number): void {
+    this.suspiciousActivityThreshold = count;
+    this.suspiciousActivityTimeframe = timeframeMs;
+  }
+
+  /**
+   * Sanitizes user input to prevent injection attacks.
+   * @param input The input string to sanitize.
+   * @returns The sanitized input string.
+   */
+  public sanitizeInput(input: string): string {
+    if (!input) return '';
     
-    return {
-      safe: issues.length === 0,
-      issues: issues.length > 0 ? issues : undefined,
-      sanitized
-    };
+    // Basic sanitization to prevent common injection attacks
+    return input
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#x27;')
+      .replace(/\//g, '&#x2F;')
+      .replace(/\\/g, '&#x5C;')
+      .replace(/`/g, '&#x60;');
+  }
+
+  /**
+   * Validates user input according to specified constraints.
+   * @param input The input to validate.
+   * @param pattern Optional regex pattern to test against.
+   * @param maxLength Optional maximum allowed length.
+   * @returns Boolean indicating if the input is valid.
+   */
+  public validateInput(input: string, pattern?: RegExp, maxLength?: number): boolean {
+    if (input === undefined || input === null) {
+      return false;
+    }
+    
+    if (maxLength && input.length > maxLength) {
+      return false;
+    }
+    
+    if (pattern && !pattern.test(input)) {
+      return false;
+    }
+    
+    return true;
   }
 }
 
-/**
- * Sanitize user input to prevent XSS and injection attacks
- * @param input The user input to sanitize
- * @returns Sanitized input safe for use
- */
-export const sanitizeInput = (input: string): string => {
-  if (!input) return '';
-  
-  // Basic sanitation - replace potentially dangerous characters
-  return input
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
-    .replace(/\\/g, '&#092;')
-    .trim();
-};
-
-/**
- * Validate user input against expected patterns and constraints
- * @param input The input to validate
- * @param pattern Optional regex pattern to test against
- * @param maxLength Optional maximum length
- * @returns Whether the input is valid
- */
-export const validateInput = (
-  input: string,
-  pattern?: RegExp,
-  maxLength?: number
-): boolean => {
-  if (!input) return false;
-  
-  if (maxLength && input.length > maxLength) {
-    return false;
-  }
-  
-  if (pattern && !pattern.test(input)) {
-    return false;
-  }
-  
-  return true;
-};
-
-// Make sure the SecurityLogger class has these methods:
-// Add these methods to the SecurityLogger class if they don't exist
-/* 
-sanitizeUserInput(input: string): string {
-  return sanitizeInput(input);
-}
-
-validateUserInput(input: string, pattern?: RegExp, maxLength?: number): boolean {
-  return validateInput(input, pattern, maxLength);
-}
-*/
-
+// Export a singleton instance for use throughout the application
 export const securityLogger = SecurityLogger.getInstance();
+
+// Export the SecurityLogEntry interface for use in other files
+export type { SecurityLogEntry };
