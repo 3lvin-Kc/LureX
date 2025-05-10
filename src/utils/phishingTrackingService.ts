@@ -108,7 +108,10 @@ export class PhishingTrackingService {
       
       // Update the tracking record with click information
       const now = new Date().toISOString();
-      const metadata = {
+      const metadataObj = data.metadata && typeof data.metadata === 'object' ? data.metadata : {};
+      
+      const updatedMetadata = {
+        ...metadataObj,
         clicked_at: now,
         user_agent: userAgent,
         ip_address: ipAddress,
@@ -120,7 +123,7 @@ export class PhishingTrackingService {
         .update({
           clicked_at: data.clicked_at || now,
           clicked_count: (data.clicked_count || 0) + 1,
-          metadata: { ...data.metadata, ...metadata }
+          metadata: updatedMetadata
         })
         .eq("tracking_id", trackingId);
       
@@ -131,13 +134,19 @@ export class PhishingTrackingService {
           trackingId, 
           campaignId: data.campaign_id,
           email: data.email,
-          metadata 
+          metadata: updatedMetadata
         }
       );
       
+      // Determine redirect URL
+      let redirectUrl = '/';
+      if (metadataObj && 'redirect_url' in metadataObj) {
+        redirectUrl = String(metadataObj.redirect_url);
+      }
+      
       // Return destination information
       return { 
-        redirectUrl: data.metadata?.redirect_url || '/',
+        redirectUrl,
         metadata: data 
       };
     } catch (error) {
@@ -177,7 +186,10 @@ export class PhishingTrackingService {
       
       // Update the tracking record with open information
       const now = new Date().toISOString();
-      const metadata = {
+      const metadataObj = data.metadata && typeof data.metadata === 'object' ? data.metadata : {};
+      
+      const updatedMetadata = {
+        ...metadataObj,
         opened_at: now,
         user_agent: userAgent,
         ip_address: ipAddress,
@@ -189,7 +201,7 @@ export class PhishingTrackingService {
         .update({
           opened_at: data.opened_at || now,
           opened_count: (data.opened_count || 0) + 1,
-          metadata: { ...data.metadata, ...metadata }
+          metadata: updatedMetadata
         })
         .eq("tracking_id", trackingId);
       
@@ -200,7 +212,7 @@ export class PhishingTrackingService {
           trackingId, 
           campaignId: data.campaign_id,
           email: data.email,
-          metadata 
+          metadata: updatedMetadata
         }
       );
     } catch (error) {
@@ -257,15 +269,19 @@ export class PhishingTrackingService {
       
       // Update the tracking record
       const now = new Date().toISOString();
+      const metadataObj = data.metadata && typeof data.metadata === 'object' ? data.metadata : {};
+      
+      const updatedMetadata = {
+        ...metadataObj,
+        submitted_at: now,
+        submitted: true,
+        form_fields_count: Object.keys(formData).length
+      };
+      
       await supabase
         .from("email_tracking")
         .update({
-          metadata: { 
-            ...data.metadata, 
-            submitted_at: now,
-            submitted: true,
-            form_fields_count: Object.keys(formData).length
-          }
+          metadata: updatedMetadata
         })
         .eq("tracking_id", trackingId);
       
@@ -316,7 +332,13 @@ export class PhishingTrackingService {
         delivered: data.filter(item => item.sent_at).length, // Assuming delivered = sent for email
         opened: data.filter(item => item.opened_at).length,
         clicked: data.filter(item => item.clicked_at).length,
-        submitted: data.filter(item => item.metadata?.submitted === true).length
+        submitted: data.filter(item => {
+          const metadata = item.metadata;
+          return metadata && 
+                 typeof metadata === 'object' && 
+                 'submitted' in metadata && 
+                 metadata.submitted === true;
+        }).length
       };
       
       return stats;

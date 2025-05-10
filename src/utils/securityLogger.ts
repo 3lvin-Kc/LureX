@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { supabase } from '../integrations/supabase/client';
 
@@ -53,16 +54,19 @@ interface SecurityLogEntry {
   user_id?: string;
   ip_address?: string;
   user_agent?: string;
-  details?: any;
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  status: 'success' | 'failure' | 'warning' | 'info';
+  details?: Record<string, unknown>;
+  event_level: string;
+  message: string;
   created_at?: string;
+  is_anomalous?: boolean;
+  location?: string;
+  [key: string]: unknown;
 }
 
 /**
  * Interface for input validation result.
  */
-export interface ValidationResult {
+interface IValidationResult {
   safe: boolean;
   issues?: string[];
 }
@@ -72,7 +76,7 @@ export interface ValidationResult {
  */
 export class SecurityLogger {
   private static instance: SecurityLogger;
-  private client: ReturnType<typeof createClient>;
+  private client;
   private suspiciousActivityThreshold: number = 5;
   private suspiciousActivityTimeframe: number = 60 * 60 * 1000; // 1 hour in milliseconds
   private suspiciousActivities: Map<string, { count: number, firstOccurrence: number }> = new Map();
@@ -97,12 +101,13 @@ export class SecurityLogger {
   public info(
     eventType: SecurityEventType,
     message: string,
-    details?: any
+    details?: Record<string, unknown>
   ): void {
     this.logSecurityEvent({
       event_type: eventType,
       details: { ...details, message },
-      severity: 'low',
+      event_level: 'info',
+      message: message,
       status: 'info'
     });
   }
@@ -113,12 +118,13 @@ export class SecurityLogger {
   public warn(
     eventType: SecurityEventType,
     message: string,
-    details?: any
+    details?: Record<string, unknown>
   ): void {
     this.logSecurityEvent({
       event_type: eventType,
       details: { ...details, message },
-      severity: 'medium',
+      event_level: 'warning',
+      message: message,
       status: 'warning'
     });
   }
@@ -129,12 +135,13 @@ export class SecurityLogger {
   public error(
     eventType: SecurityEventType,
     message: string,
-    details?: any
+    details?: Record<string, unknown>
   ): void {
     this.logSecurityEvent({
       event_type: eventType,
       details: { ...details, message },
-      severity: 'high',
+      event_level: 'error',
+      message: message,
       status: 'failure'
     });
   }
@@ -145,12 +152,13 @@ export class SecurityLogger {
   public critical(
     eventType: SecurityEventType,
     message: string,
-    details?: any
+    details?: Record<string, unknown>
   ): void {
     this.logSecurityEvent({
       event_type: eventType,
       details: { ...details, message },
-      severity: 'critical',
+      event_level: 'critical',
+      message: message,
       status: 'failure'
     });
   }
@@ -166,10 +174,24 @@ export class SecurityLogger {
         event.created_at = new Date().toISOString();
       }
 
+      // Prepare the record for insertion
+      const record: Record<string, unknown> = {
+        event_type: event.event_type,
+        event_level: event.event_level,
+        message: event.message,
+        details: event.details,
+        created_at: event.created_at,
+        user_id: event.user_id,
+        user_agent: event.user_agent,
+        ip_address: event.ip_address,
+        is_anomalous: event.is_anomalous || false,
+        location: event.location
+      };
+
       // Log to database
       const { error } = await this.client
         .from('security_logs')
-        .insert(event);
+        .insert(record);
 
       if (error) {
         console.error('Failed to log security event:', error);
@@ -228,7 +250,8 @@ export class SecurityLogger {
             occurrence_count: activity.count,
             timeframe_ms: now - activity.firstOccurrence
           },
-          severity: 'high',
+          event_level: 'high',
+          message: 'Suspicious activity detected',
           status: 'warning'
         });
 
@@ -340,7 +363,7 @@ export class SecurityLogger {
     validationType?: string, 
     pattern?: RegExp, 
     maxLength?: number
-  ): ValidationResult {
+  ): IValidationResult {
     const issues: string[] = [];
     
     if (input === undefined || input === null) {
@@ -379,7 +402,7 @@ export class SecurityLogger {
 export const securityLogger = SecurityLogger.getInstance();
 
 // Export the SecurityLogEntry interface for use in other files
-export type { SecurityLogEntry, ValidationResult };
+export type { SecurityLogEntry, IValidationResult as ValidationResult };
 
 // Export the sanitizeInput function for use in other files
 export const sanitizeInput = (input: string): string => {
