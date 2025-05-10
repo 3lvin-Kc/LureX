@@ -63,6 +63,15 @@ serve(async (req) => {
     const queueEntries = [];
     const trackingEntries = [];
     const trackingIds = {};
+    
+    // Get phishing page ID if applicable
+    const { data: phishingPage } = await supabase
+      .from("phishing_pages")
+      .select("id")
+      .eq("id", campaign.landingPageId)
+      .single();
+    
+    const phishingPageId = phishingPage?.id;
 
     for (const target of targets) {
       const trackingId = uuidv4();
@@ -75,6 +84,11 @@ serve(async (req) => {
         tracking_id: trackingId,
         status: "pending",
         created_at: now,
+        metadata: {
+          pageId: phishingPageId, // Store the phishing page ID in metadata
+          campaignId: campaignId, // Also store campaign ID for reference
+          redirect_url: phishingPageId ? `/phishing-page/${phishingPageId}` : "/training"
+        }
       });
 
       queueEntries.push({
@@ -119,6 +133,24 @@ serve(async (req) => {
     if (updateError) {
       console.error("Error updating campaign:", updateError);
       throw new Error("Failed to update campaign status");
+    }
+    
+    // Log the event
+    const { error: logError } = await supabase
+      .from("security_logs")
+      .insert({
+        event_type: "campaign_creation",
+        message: "Campaign queued successfully",
+        details: { 
+          campaignId, 
+          targetCount: targets.length,
+          scheduledTime: campaign.schedule_time || now
+        },
+        event_level: "info",
+      });
+    
+    if (logError) {
+      console.error("Error logging event:", logError);
     }
 
     return new Response(

@@ -7,6 +7,12 @@ const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Cache-Control": "no-store, no-cache, must-revalidate, private",
+};
+
 serve(async (req) => {
   try {
     const url = new URL(req.url);
@@ -28,19 +34,63 @@ serve(async (req) => {
       throw new Error("Failed to find tracking record");
     }
 
+    // Get user info from headers for tracking
+    const userAgent = req.headers.get("user-agent") || "";
+    const ipAddress = req.headers.get("x-forwarded-for") || 
+                     req.headers.get("cf-connecting-ip") || 
+                     "unknown";
+
     // Update opened status
     const now = new Date().toISOString();
+    const metadata = trackingData.metadata || {};
+    
+    const deviceInfo = {
+      userAgent,
+      timestamp: now,
+      isMobile: /mobile/i.test(userAgent),
+      isTablet: /tablet|ipad/i.test(userAgent),
+      browser: determineBrowser(userAgent),
+      os: determineOS(userAgent),
+    };
+
     const { error: updateError } = await supabase
       .from("email_tracking")
       .update({
         opened_at: trackingData.opened_at ? trackingData.opened_at : now,
-        opened_count: trackingData.opened_count + 1,
+        opened_count: (trackingData.opened_count || 0) + 1,
+        metadata: {
+          ...metadata,
+          lastOpen: now,
+          openDevices: [...(metadata.openDevices || []), deviceInfo],
+          ipAddress,
+        }
       })
       .eq("tracking_id", trackingId);
 
     if (updateError) {
       console.error("Error updating tracking data:", updateError);
-      throw new Error("Failed to update tracking record");
+    }
+    
+    // Log the security event
+    const { error: logError } = await supabase
+      .from("security_logs")
+      .insert({
+        event_type: "email_send_attempt",
+        message: "Phishing email opened",
+        user_id: null,
+        user_agent: userAgent,
+        ip_address: ipAddress,
+        details: {
+          trackingId,
+          campaignId: trackingData.campaign_id,
+          email: trackingData.email,
+          openTime: now
+        },
+        event_level: "info",
+      });
+    
+    if (logError) {
+      console.error("Error logging security event:", logError);
     }
 
     // Return a 1x1 transparent pixel
@@ -53,8 +103,8 @@ serve(async (req) => {
       ]),
       {
         headers: {
+          ...corsHeaders,
           "Content-Type": "image/gif",
-          "Cache-Control": "no-store, no-cache, must-revalidate, private",
         },
       }
     );
@@ -70,10 +120,30 @@ serve(async (req) => {
       ]),
       {
         headers: {
+          ...corsHeaders,
           "Content-Type": "image/gif",
-          "Cache-Control": "no-store, no-cache, must-revalidate, private",
         },
       }
     );
   }
 });
+
+// Helper functions to determine browser and OS
+function determineBrowser(userAgent: string): string {
+  if (/chrome/i.test(userAgent)) return 'Chrome';
+  if (/firefox/i.test(userAgent)) return 'Firefox';
+  if (/safari/i.test(userAgent) && !/chrome/i.test(userAgent)) return 'Safari';
+  if (/edge|edg/i.test(userAgent)) return 'Edge';
+  if (/opera|opr/i.test(userAgent)) return 'Opera';
+  if (/msie|trident/i.test(userAgent)) return 'Internet Explorer';
+  return 'Unknown';
+}
+
+function determineOS(userAgent: string): string {
+  if (/windows/i.test(userAgent)) return 'Windows';
+  if (/macintosh|mac os/i.test(userAgent)) return 'macOS';
+  if (/linux/i.test(userAgent)) return 'Linux';
+  if (/android/i.test(userAgent)) return 'Android';
+  if (/iphone|ipad/i.test(userAgent)) return 'iOS';
+  return 'Unknown';
+}
