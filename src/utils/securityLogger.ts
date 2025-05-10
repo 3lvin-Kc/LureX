@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { supabase } from '../integrations/supabase/client';
 
@@ -29,6 +28,21 @@ export enum SecurityEventType {
   TEMPLATE_MODIFICATION = 'template_modification',
   INPUT_VALIDATION_FAILURE = 'input_validation_failure',
   ADMIN_ACTION = 'admin_action',
+  DATA_ACCESS = 'data_access',
+  RATE_LIMIT = 'rate_limit',
+  AUTHORIZATION = 'authorization',
+  INPUT_VALIDATION = 'input_validation',
+  AUTHENTICATION = 'authentication'
+}
+
+/**
+ * Represents different severity levels for security logs.
+ */
+export enum SecurityEventLevel {
+  INFO = 'info',
+  WARNING = 'warning',
+  ERROR = 'error',
+  CRITICAL = 'critical'
 }
 
 /**
@@ -43,6 +57,14 @@ interface SecurityLogEntry {
   severity: 'low' | 'medium' | 'high' | 'critical';
   status: 'success' | 'failure' | 'warning' | 'info';
   created_at?: string;
+}
+
+/**
+ * Interface for input validation result.
+ */
+export interface ValidationResult {
+  safe: boolean;
+  issues?: string[];
 }
 
 /**
@@ -67,6 +89,70 @@ export class SecurityLogger {
       SecurityLogger.instance = new SecurityLogger();
     }
     return SecurityLogger.instance;
+  }
+
+  /**
+   * Log an informational security event.
+   */
+  public info(
+    eventType: SecurityEventType,
+    message: string,
+    details?: any
+  ): void {
+    this.logSecurityEvent({
+      event_type: eventType,
+      details: { ...details, message },
+      severity: 'low',
+      status: 'info'
+    });
+  }
+
+  /**
+   * Log a warning security event.
+   */
+  public warn(
+    eventType: SecurityEventType,
+    message: string,
+    details?: any
+  ): void {
+    this.logSecurityEvent({
+      event_type: eventType,
+      details: { ...details, message },
+      severity: 'medium',
+      status: 'warning'
+    });
+  }
+
+  /**
+   * Log an error security event.
+   */
+  public error(
+    eventType: SecurityEventType,
+    message: string,
+    details?: any
+  ): void {
+    this.logSecurityEvent({
+      event_type: eventType,
+      details: { ...details, message },
+      severity: 'high',
+      status: 'failure'
+    });
+  }
+
+  /**
+   * Log a critical security event.
+   */
+  public critical(
+    eventType: SecurityEventType,
+    message: string,
+    details?: any
+  ): void {
+    this.logSecurityEvent({
+      event_type: eventType,
+      details: { ...details, message },
+      severity: 'critical',
+      status: 'failure'
+    });
   }
 
   /**
@@ -244,24 +330,48 @@ export class SecurityLogger {
   /**
    * Validates user input according to specified constraints.
    * @param input The input to validate.
+   * @param validationType Optional string identifier for validation type.
    * @param pattern Optional regex pattern to test against.
    * @param maxLength Optional maximum allowed length.
-   * @returns Boolean indicating if the input is valid.
+   * @returns ValidationResult object with safe flag and potential issues.
    */
-  public validateInput(input: string, pattern?: RegExp, maxLength?: number): boolean {
+  public validateInput(
+    input: string, 
+    validationType?: string, 
+    pattern?: RegExp, 
+    maxLength?: number
+  ): ValidationResult {
+    const issues: string[] = [];
+    
     if (input === undefined || input === null) {
-      return false;
+      return { safe: false, issues: ['Input is null or undefined'] };
     }
     
     if (maxLength && input.length > maxLength) {
-      return false;
+      issues.push(`Input exceeds maximum length of ${maxLength}`);
     }
     
     if (pattern && !pattern.test(input)) {
-      return false;
+      issues.push(`Input fails pattern validation`);
     }
     
-    return true;
+    // Additional checks based on validation type
+    if (validationType === 'campaign_name') {
+      // Check for potentially dangerous characters in campaign names
+      if (/[<>{}()[\]\\\/]/.test(input)) {
+        issues.push('Campaign name contains potentially unsafe characters');
+      }
+    } else if (validationType === 'campaign_description') {
+      // Check for potentially dangerous content in descriptions
+      if (/<script|javascript:|on\w+=/i.test(input)) {
+        issues.push('Description contains potentially unsafe script content');
+      }
+    }
+    
+    return { 
+      safe: issues.length === 0,
+      issues: issues.length > 0 ? issues : undefined
+    };
   }
 }
 
@@ -269,4 +379,9 @@ export class SecurityLogger {
 export const securityLogger = SecurityLogger.getInstance();
 
 // Export the SecurityLogEntry interface for use in other files
-export type { SecurityLogEntry };
+export type { SecurityLogEntry, ValidationResult };
+
+// Export the sanitizeInput function for use in other files
+export const sanitizeInput = (input: string): string => {
+  return securityLogger.sanitizeInput(input);
+};
