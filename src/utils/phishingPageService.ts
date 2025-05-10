@@ -223,8 +223,15 @@ export class PhishingPageService {
         `;
       
       // Use campaign-specific training content if available
-      if (campaign?.metadata && typeof campaign.metadata === 'object' && campaign.metadata !== null && 'remediationTraining' in campaign.metadata) {
-        content = campaign.metadata.remediationTraining as string;
+      if (campaign && campaign.template && 
+          typeof campaign.template === 'object' &&
+          campaign.template.metadata &&
+          typeof campaign.template.metadata === 'object') {
+        // Check for remediationTraining in metadata
+        const metadata = campaign.template.metadata as Record<string, any>;
+        if (metadata.remediationTraining) {
+          content = metadata.remediationTraining as string;
+        }
       }
       
       // Create the HTML for the training page
