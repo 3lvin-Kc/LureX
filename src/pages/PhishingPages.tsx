@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { PlusCircle, Globe, Edit, Trash2, Copy, Eye } from "lucide-react";
+import { PlusCircle, Globe, Edit, Trash2, Copy, Eye, Library, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -13,6 +13,8 @@ import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { format } from "date-fns";
 import CloneWebsiteWarning from "@/components/phishing/CloneWebsiteWarning";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import PhishingTemplateLibrary from "@/components/phishing/PhishingTemplateLibrary";
 
 const PhishingPages = () => {
   const { toast } = useToast();
@@ -20,6 +22,7 @@ const PhishingPages = () => {
   const queryClient = useQueryClient();
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [showCloneWarning, setShowCloneWarning] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("my-pages");
 
   // Fetch phishing pages from Supabase
   const { data: phishingPages, isLoading, refetch } = useQuery({
@@ -147,6 +150,11 @@ const PhishingPages = () => {
     }
   };
 
+  const handleCreateFromTemplate = () => {
+    navigate("/phishing-pages/new");
+    setActiveTab("templates");
+  };
+
   return (
     <DashboardLayout>
       <div className="container mx-auto p-4 max-w-7xl">
@@ -174,124 +182,173 @@ const PhishingPages = () => {
           </div>
         </div>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle>Phishing Page Library</CardTitle>
-            <CardDescription>
-              Browse and manage your fake login pages for phishing campaigns
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="text-center py-8">Loading phishing pages...</div>
-            ) : phishingPages?.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">No phishing pages found</p>
-                <Button 
-                  variant="outline" 
-                  className="mt-4"
-                  onClick={() => navigate("/phishing-pages/new")}
-                >
-                  Create Phishing Page
-                </Button>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {phishingPages?.map((page) => (
-                    <TableRow key={page.id}>
-                      <TableCell className="font-medium">{page.name}</TableCell>
-                      <TableCell>
-                        {page.category ? (
-                          <Badge variant="outline" className="capitalize">
-                            {page.category}
-                          </Badge>
-                        ) : (
-                          "—"
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={page.is_custom ? "default" : "secondary"}>
-                          {page.is_custom ? "Custom" : "Cloned"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(page.created_at), "MMM d, yyyy")}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  onClick={() => navigate(`/phishing-pages/${page.id}/preview`)}
-                                >
-                                  <Eye size={16} />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Preview</TooltipContent>
-                            </Tooltip>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="mb-4">
+            <TabsTrigger value="my-pages" className="flex items-center gap-2">
+              <Eye size={16} />
+              My Pages
+            </TabsTrigger>
+            <TabsTrigger value="templates" className="flex items-center gap-2">
+              <Library size={16} />
+              Template Library
+            </TabsTrigger>
+          </TabsList>
 
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  onClick={() => navigate(`/phishing-pages/${page.id}/edit`)}
-                                >
-                                  <Edit size={16} />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Edit</TooltipContent>
-                            </Tooltip>
+          <TabsContent value="my-pages">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle>Phishing Page Library</CardTitle>
+                <CardDescription>
+                  Browse and manage your fake login pages for phishing campaigns
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="text-center py-8">Loading phishing pages...</div>
+                ) : phishingPages?.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">No phishing pages found</p>
+                    <div className="mt-6 flex flex-col gap-4 md:flex-row md:justify-center">
+                      <Button 
+                        variant="outline" 
+                        onClick={handleCreateFromTemplate}
+                        className="flex items-center gap-2"
+                      >
+                        <Library size={16} />
+                        Use Template
+                        <ChevronRight size={16} className="ml-1" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={handleCloneWebsiteClick}
+                        className="flex items-center gap-2"
+                      >
+                        <Globe size={16} />
+                        Clone Website
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => navigate("/phishing-pages/new")}
+                        className="flex items-center gap-2"
+                      >
+                        <PlusCircle size={16} />
+                        Create Custom Page
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Created</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {phishingPages?.map((page) => (
+                        <TableRow key={page.id}>
+                          <TableCell className="font-medium">{page.name}</TableCell>
+                          <TableCell>
+                            {page.category ? (
+                              <Badge variant="outline" className="capitalize">
+                                {page.category}
+                              </Badge>
+                            ) : (
+                              "—"
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={page.is_custom ? "default" : "secondary"}>
+                              {page.is_custom ? "Custom" : "Cloned"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {format(new Date(page.created_at), "MMM d, yyyy")}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      onClick={() => navigate(`/phishing-pages/${page.id}/preview`)}
+                                    >
+                                      <Eye size={16} />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Preview</TooltipContent>
+                                </Tooltip>
 
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  onClick={() => handleDuplicatePage(page.id)}
-                                >
-                                  <Copy size={16} />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Duplicate</TooltipContent>
-                            </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      onClick={() => navigate(`/phishing-pages/${page.id}/edit`)}
+                                    >
+                                      <Edit size={16} />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Edit</TooltipContent>
+                                </Tooltip>
 
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  disabled={isDeleting === page.id}
-                                  onClick={() => handleDeletePage(page.id)}
-                                >
-                                  <Trash2 size={16} />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Delete</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      onClick={() => handleDuplicatePage(page.id)}
+                                    >
+                                      <Copy size={16} />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Duplicate</TooltipContent>
+                                </Tooltip>
+
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      disabled={isDeleting === page.id}
+                                      onClick={() => handleDeletePage(page.id)}
+                                    >
+                                      <Trash2 size={16} />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Delete</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="templates">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle>Phishing Template Library</CardTitle>
+                <CardDescription>
+                  Browse and use pre-built phishing templates for various platforms
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <PhishingTemplateLibrary />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
       
       <CloneWebsiteWarning 
