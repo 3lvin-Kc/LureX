@@ -116,9 +116,9 @@ export const addFormTracking = (html: string, options: FormTrackingOptions): str
  */
 export const generatePhishingPage = (
   html: string,
+  options: FormTrackingOptions,
   css?: string,
-  js?: string,
-  options: FormTrackingOptions
+  js?: string
 ): string => {
   // Start with base HTML
   let pageHtml = html;

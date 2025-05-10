@@ -2,6 +2,34 @@
 import { supabase } from "@/integrations/supabase/client";
 import { securityLogger, SecurityEventType } from "@/utils/securityLogger";
 
+// Define a type for the template object with optional metadata
+interface Template {
+  id: string;
+  category: string;
+  created_at: string;
+  created_by: string;
+  description: string;
+  html_content: string;
+  is_active: boolean;
+  name: string;
+  subject: string;
+  text_content: string;
+  updated_at: string;
+  version: number;
+  metadata?: {
+    remediationTraining?: string;
+    [key: string]: any;
+  };
+}
+
+// Define a type for the campaign object
+interface Campaign {
+  id: string;
+  name: string;
+  template?: Template | null;
+  [key: string]: any;
+}
+
 /**
  * Service for managing phishing pages and simulations
  * Implements the simulation environment described in phishing.md
@@ -180,7 +208,7 @@ export class PhishingPageService {
           template:template_id(*)
         `)
         .eq("id", campaignId)
-        .single();
+        .single() as { data: Campaign | null };
       
       // Default training content
       let title = success 
@@ -223,15 +251,11 @@ export class PhishingPageService {
         `;
       
       // Use campaign-specific training content if available
-      if (campaign && campaign.template && 
-          typeof campaign.template === 'object' &&
-          campaign.template.metadata &&
-          typeof campaign.template.metadata === 'object') {
-        // Check for remediationTraining in metadata
-        const metadata = campaign.template.metadata as Record<string, any>;
-        if (metadata.remediationTraining) {
-          content = metadata.remediationTraining as string;
-        }
+      if (campaign && 
+          campaign.template && 
+          campaign.template.metadata && 
+          campaign.template.metadata.remediationTraining) {
+        content = campaign.template.metadata.remediationTraining;
       }
       
       // Create the HTML for the training page
