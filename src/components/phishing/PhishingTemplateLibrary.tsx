@@ -1,54 +1,29 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, memo } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  phishingTemplates, 
-  getUniqueCategories, 
-  getUniquePlatforms,
-  searchTemplates,
-  getTemplatesByCategory,
-  PhishingTemplate
-} from "@/utils/phishingTemplateLibrary";
-import { Search, Filter, CheckCircle, ArrowRight } from "lucide-react";
+import { phishingTemplates, getUniqueCategories, getUniquePlatforms, searchTemplates } from "@/utils/phishingTemplateLibrary";
+import { Search, Filter } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter 
-} from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-interface TemplatePreviewProps {
-  template: PhishingTemplate;
-  onSelect: (template: PhishingTemplate) => void;
-}
-
-const TemplatePreview: React.FC<TemplatePreviewProps> = ({ template, onSelect }) => {
+// Memo-ized component to prevent unnecessary re-renders
+const TemplatePreview = memo(({ template, onSelect }) => {
   return (
     <Card className="overflow-hidden transition-all hover:shadow-md cursor-pointer h-full flex flex-col">
       <div className="h-48 bg-gray-100 relative">
         {template.thumbnailUrl ? (
-          <img 
-            src={template.thumbnailUrl} 
-            alt={template.name} 
+          <img
+            src={template.thumbnailUrl}
+            alt={template.name}
             className="w-full h-full object-cover"
             onError={(e) => {
-              (e.target as HTMLImageElement).src = "/assets/templates/placeholder-template.svg";
+              e.currentTarget.src = "/assets/templates/placeholder-template.svg";
             }}
           />
         ) : (
@@ -63,11 +38,13 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({ template, onSelect })
         <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{template.description}</p>
         <div className="flex flex-wrap gap-1 mb-3">
           {template.tags.slice(0, 3).map((tag, index) => (
-            <Badge key={index} variant="outline" className="text-xs">{tag}</Badge>
+            <Badge key={index} variant="outline" className="text-xs">
+              {tag}
+            </Badge>
           ))}
         </div>
-        <Button 
-          onClick={() => onSelect(template)} 
+        <Button
+          onClick={() => onSelect(template)}
           className="mt-auto"
           variant="secondary"
           size="sm"
@@ -77,34 +54,29 @@ const TemplatePreview: React.FC<TemplatePreviewProps> = ({ template, onSelect })
       </CardContent>
     </Card>
   );
-};
+});
 
-interface TemplateDetailsProps {
-  template: PhishingTemplate;
-  onUse: (template: PhishingTemplate) => void;
-  onClose: () => void;
-}
+TemplatePreview.displayName = 'TemplatePreview';
 
-const TemplateDetails: React.FC<TemplateDetailsProps> = ({ template, onUse, onClose }) => {
+const TemplateDetails = memo(({ template, onUse, onClose }) => {
   const [activeTab, setActiveTab] = useState("preview");
-
+  
   return (
     <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle>{template.name}</DialogTitle>
-        <DialogDescription>
-          {template.description}
-        </DialogDescription>
+        <DialogDescription>{template.description}</DialogDescription>
       </DialogHeader>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
+      {/* Use defaultValue to avoid controlled/uncontrolled component warnings */}
+      <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="mt-4">
         <TabsList className="mb-4">
           <TabsTrigger value="preview">Preview</TabsTrigger>
           <TabsTrigger value="html">HTML</TabsTrigger>
           <TabsTrigger value="css">CSS</TabsTrigger>
           <TabsTrigger value="js">JavaScript</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="preview" className="border rounded-md">
           <div className="h-96 overflow-auto border rounded-md">
             <iframe
@@ -125,19 +97,19 @@ const TemplateDetails: React.FC<TemplateDetailsProps> = ({ template, onUse, onCl
             />
           </div>
         </TabsContent>
-        
+
         <TabsContent value="html">
           <pre className="p-4 bg-gray-50 rounded border overflow-x-auto max-h-96 text-sm">
             <code>{template.htmlContent}</code>
           </pre>
         </TabsContent>
-        
+
         <TabsContent value="css">
           <pre className="p-4 bg-gray-50 rounded border overflow-x-auto max-h-96 text-sm">
             <code>{template.cssContent || 'No CSS content'}</code>
           </pre>
         </TabsContent>
-        
+
         <TabsContent value="js">
           <pre className="p-4 bg-gray-50 rounded border overflow-x-auto max-h-96 text-sm">
             <code>{template.jsContent || 'No JavaScript content'}</code>
@@ -155,25 +127,25 @@ const TemplateDetails: React.FC<TemplateDetailsProps> = ({ template, onUse, onCl
       </DialogFooter>
     </DialogContent>
   );
-};
+});
 
-interface PhishingTemplateLibraryProps {
-  onSelect?: (template: PhishingTemplate) => void;
-}
+TemplateDetails.displayName = 'TemplateDetails';
 
-const PhishingTemplateLibrary: React.FC<PhishingTemplateLibraryProps> = ({ onSelect }) => {
+// Main component wrapped with memo to prevent unnecessary re-renders
+const PhishingTemplateLibrary = ({ onSelect }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [selectedPlatform, setSelectedPlatform] = useState<string>("");
-  const [filteredTemplates, setFilteredTemplates] = useState<PhishingTemplate[]>(phishingTemplates);
-  const [selectedTemplate, setSelectedTemplate] = useState<PhishingTemplate | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedPlatform, setSelectedPlatform] = useState("");
+  const [filteredTemplates, setFilteredTemplates] = useState([]);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   
   const categories = ["All", ...getUniqueCategories()];
   const platforms = ["All", ...getUniquePlatforms()];
-  
+
+  // Only re-run this effect when the dependencies change
   useEffect(() => {
     let results = phishingTemplates;
     
@@ -184,23 +156,28 @@ const PhishingTemplateLibrary: React.FC<PhishingTemplateLibraryProps> = ({ onSel
     
     // Apply category filter
     if (selectedCategory && selectedCategory !== "All") {
-      results = results.filter(template => template.category === selectedCategory);
+      results = results.filter((template) => template.category === selectedCategory);
     }
     
     // Apply platform filter
     if (selectedPlatform && selectedPlatform !== "All") {
-      results = results.filter(template => template.platform === selectedPlatform);
+      results = results.filter((template) => template.platform === selectedPlatform);
     }
     
     setFilteredTemplates(results);
   }, [searchQuery, selectedCategory, selectedPlatform]);
-  
-  const handleTemplateClick = (template: PhishingTemplate) => {
+
+  // Initialize the filtered templates on component mount
+  useEffect(() => {
+    setFilteredTemplates(phishingTemplates);
+  }, []);
+
+  const handleTemplateClick = (template) => {
     setSelectedTemplate(template);
     setIsDetailsOpen(true);
   };
-  
-  const handleUseTemplate = async (template: PhishingTemplate) => {
+
+  const handleUseTemplate = async (template) => {
     try {
       // If we have an onSelect prop, use it and don't create a new page
       if (onSelect) {
@@ -218,37 +195,39 @@ const PhishingTemplateLibrary: React.FC<PhishingTemplateLibraryProps> = ({ onSel
           css_content: template.cssContent || "",
           js_content: template.jsContent || "",
           is_custom: false,
-          source_url: "",
-        },
+          source_url: ""
+        }
       ]).select();
-
+      
       if (error) throw error;
       
       toast({
         title: "Template Applied",
         description: `${template.name} template has been added to your phishing pages`,
-        variant: "default",
+        variant: "default"
       });
       
       // Close the dialog and navigate
       setIsDetailsOpen(false);
       navigate("/phishing-pages");
-      
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to create phishing page from template",
-        variant: "destructive",
+        variant: "destructive"
       });
       console.error("Error creating phishing page:", error);
     }
   };
-  
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={18} />
+          <Search 
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+            size={18}
+          />
           <Input
             placeholder="Search templates..."
             value={searchQuery}
@@ -260,31 +239,41 @@ const PhishingTemplateLibrary: React.FC<PhishingTemplateLibraryProps> = ({ onSel
         <div className="flex flex-col gap-2 sm:flex-row">
           <div className="flex items-center gap-2">
             <Filter size={18} className="text-gray-500" />
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <Select 
+              value={selectedCategory} 
+              onValueChange={setSelectedCategory}
+            >
               <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
                 {categories.map((category) => (
-                  <SelectItem key={category} value={category}>{category}</SelectItem>
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           
-          <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
+          <Select 
+            value={selectedPlatform} 
+            onValueChange={setSelectedPlatform}
+          >
             <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="Platform" />
             </SelectTrigger>
             <SelectContent>
               {platforms.map((platform) => (
-                <SelectItem key={platform} value={platform}>{platform}</SelectItem>
+                <SelectItem key={platform} value={platform}>
+                  {platform}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
       </div>
-      
+
       {filteredTemplates.length === 0 ? (
         <div className="text-center py-12">
           <div className="mb-4">
@@ -305,7 +294,15 @@ const PhishingTemplateLibrary: React.FC<PhishingTemplateLibraryProps> = ({ onSel
         </div>
       )}
       
-      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+      <Dialog
+        open={isDetailsOpen}
+        onOpenChange={(open) => {
+          // Only update state if it's different to avoid rendering loops
+          if (isDetailsOpen !== open) {
+            setIsDetailsOpen(open);
+          }
+        }}
+      >
         {selectedTemplate && (
           <TemplateDetails
             template={selectedTemplate}

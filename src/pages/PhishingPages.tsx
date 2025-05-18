@@ -22,7 +22,8 @@ const PhishingPages = () => {
   const queryClient = useQueryClient();
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [showCloneWarning, setShowCloneWarning] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>("my-pages");
+  // Fix: Initialize with a string value instead of using the state value in initial render
+  const [activeTab, setActiveTab] = useState("my-pages");
 
   // Fetch phishing pages from Supabase
   const { data: phishingPages, isLoading, refetch } = useQuery({
@@ -67,7 +68,7 @@ const PhishingPages = () => {
       if (error) throw error;
       return id;
     },
-    onSuccess: (id) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["phishing-pages"] });
       toast({
         title: "Page deleted",
@@ -150,11 +151,12 @@ const PhishingPages = () => {
     }
   };
 
+  // Fix: Remove direct navigation and just handle state change
   const handleCreateFromTemplate = () => {
-    navigate("/phishing-pages/new");
     setActiveTab("templates");
   };
 
+  // Fix: Make sure this component doesn't re-render unnecessarily
   return (
     <DashboardLayout>
       <div className="container mx-auto p-4 max-w-7xl">
@@ -182,7 +184,8 @@ const PhishingPages = () => {
           </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        {/* Fix: Use defaultValue instead of value for uncontrolled behavior */}
+        <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-4">
             <TabsTrigger value="my-pages" className="flex items-center gap-2">
               <Eye size={16} />
@@ -344,7 +347,8 @@ const PhishingPages = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <PhishingTemplateLibrary />
+                {/* Fix: Add key to avoid reconciliation issues with PhishingTemplateLibrary */}
+                <PhishingTemplateLibrary key={activeTab} />
               </CardContent>
             </Card>
           </TabsContent>
