@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect, memo } from "react";
 import { useNavigate } from "react-router-dom";
-import { phishingTemplates, getUniqueCategories, getUniquePlatforms, searchTemplates } from "@/utils/phishingTemplateLibrary";
+import { phishingTemplates, getUniqueCategories, getUniquePlatforms, searchTemplates, PhishingTemplate } from "@/utils/phishingTemplateLibrary";
 import { Search, Filter } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,8 +13,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+// Define props interfaces for memo-ized components
+interface TemplatePreviewProps {
+  template: PhishingTemplate;
+  onSelect: (template: PhishingTemplate) => void;
+}
+
 // Memo-ized component to prevent unnecessary re-renders
-const TemplatePreview = memo(({ template, onSelect }) => {
+const TemplatePreview = memo(({ template, onSelect }: TemplatePreviewProps) => {
   return (
     <Card className="overflow-hidden transition-all hover:shadow-md cursor-pointer h-full flex flex-col">
       <div className="h-48 bg-gray-100 relative">
@@ -58,7 +65,14 @@ const TemplatePreview = memo(({ template, onSelect }) => {
 
 TemplatePreview.displayName = 'TemplatePreview';
 
-const TemplateDetails = memo(({ template, onUse, onClose }) => {
+// Define props interface for TemplateDetails
+interface TemplateDetailsProps {
+  template: PhishingTemplate;
+  onUse: (template: PhishingTemplate) => void;
+  onClose: () => void;
+}
+
+const TemplateDetails = memo(({ template, onUse, onClose }: TemplateDetailsProps) => {
   const [activeTab, setActiveTab] = useState("preview");
   
   return (
@@ -131,15 +145,20 @@ const TemplateDetails = memo(({ template, onUse, onClose }) => {
 
 TemplateDetails.displayName = 'TemplateDetails';
 
+// Define props interface for the main component
+interface PhishingTemplateLibraryProps {
+  onSelect?: (template: PhishingTemplate) => void;
+}
+
 // Main component wrapped with memo to prevent unnecessary re-renders
-const PhishingTemplateLibrary = ({ onSelect }) => {
+const PhishingTemplateLibrary = ({ onSelect }: PhishingTemplateLibraryProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedPlatform, setSelectedPlatform] = useState("");
-  const [filteredTemplates, setFilteredTemplates] = useState([]);
-  const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [filteredTemplates, setFilteredTemplates] = useState<PhishingTemplate[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<PhishingTemplate | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   
   const categories = ["All", ...getUniqueCategories()];
@@ -172,12 +191,12 @@ const PhishingTemplateLibrary = ({ onSelect }) => {
     setFilteredTemplates(phishingTemplates);
   }, []);
 
-  const handleTemplateClick = (template) => {
+  const handleTemplateClick = (template: PhishingTemplate) => {
     setSelectedTemplate(template);
     setIsDetailsOpen(true);
   };
 
-  const handleUseTemplate = async (template) => {
+  const handleUseTemplate = async (template: PhishingTemplate) => {
     try {
       // If we have an onSelect prop, use it and don't create a new page
       if (onSelect) {

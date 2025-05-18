@@ -15,6 +15,7 @@ import { format } from "date-fns";
 import CloneWebsiteWarning from "@/components/phishing/CloneWebsiteWarning";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PhishingTemplateLibrary from "@/components/phishing/PhishingTemplateLibrary";
+import { PhishingTemplate } from "@/utils/phishingTemplateLibrary";
 
 const PhishingPages = () => {
   const { toast } = useToast();
@@ -148,6 +149,43 @@ const PhishingPages = () => {
         description: error instanceof Error ? error.message : "An error occurred",
         variant: "destructive"
       });
+    }
+  };
+
+  // Handler for template selection
+  const handleTemplateSelect = async (template: PhishingTemplate) => {
+    try {
+      const { data, error } = await supabase.from("phishing_pages").insert([
+        {
+          name: template.name,
+          category: template.category,
+          html_content: template.htmlContent,
+          css_content: template.cssContent || "",
+          js_content: template.jsContent || "",
+          is_custom: false,
+          source_url: ""
+        }
+      ]).select();
+      
+      if (error) throw error;
+      
+      queryClient.invalidateQueries({ queryKey: ["phishing-pages"] });
+      toast({
+        title: "Template Applied",
+        description: `${template.name} template has been added to your phishing pages`,
+        variant: "default"
+      });
+      
+      // Switch back to my-pages tab to show the newly created page
+      setActiveTab("my-pages");
+      
+    } catch (error) {
+      toast({
+        title: "Error creating page",
+        description: "Failed to create phishing page from template",
+        variant: "destructive"
+      });
+      console.error("Error creating phishing page:", error);
     }
   };
 
@@ -347,8 +385,8 @@ const PhishingPages = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {/* Fix: Add key to avoid reconciliation issues with PhishingTemplateLibrary */}
-                <PhishingTemplateLibrary key={activeTab} />
+                {/* Fix: Add key and onSelect prop */}
+                <PhishingTemplateLibrary key={activeTab} onSelect={handleTemplateSelect} />
               </CardContent>
             </Card>
           </TabsContent>
