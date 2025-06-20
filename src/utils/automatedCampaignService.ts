@@ -1,6 +1,4 @@
-
 import { securityLogger, SecurityEventType } from "@/utils/securityLogger";
-import { supabase } from "@/integrations/supabase/client";
 import { apiRateLimiter } from "@/utils/rateLimiter";
 import { nanoid } from "nanoid";
 
@@ -87,7 +85,7 @@ export class AutomatedCampaignService {
   private activeMonitors: Map<string, NodeJS.Timeout> = new Map();
   
   private constructor() {
-    // Initialize active campaign monitors on startup
+    // Mock initialization
     this.initializeActiveMonitors();
   }
   
@@ -98,30 +96,13 @@ export class AutomatedCampaignService {
     return AutomatedCampaignService.instance;
   }
   
-  /**
-   * Initialize monitoring for active campaigns
-   */
   private async initializeActiveMonitors(): Promise<void> {
     try {
-      // Get all active campaigns
-      const { data: activeCampaigns, error } = await supabase
-        .from("campaigns")
-        .select("*")
-        .in("status", ["scheduled", "in_progress"]);
-      
-      if (error) {
-        throw error;
-      }
-      
-      // Set up monitoring for each active campaign
-      for (const campaign of activeCampaigns) {
-        this.setupCampaignMonitor(campaign.id);
-      }
-      
+      // Mock implementation - no real database queries
       securityLogger.info(
         SecurityEventType.AUTHORIZATION,
-        "Campaign monitoring initialized",
-        { activeCampaigns: activeCampaigns.length }
+        "Mock: Campaign monitoring initialized",
+        { activeCampaigns: 0 }
       );
     } catch (error) {
       securityLogger.error(
@@ -132,11 +113,7 @@ export class AutomatedCampaignService {
     }
   }
   
-  /**
-   * Create a new campaign with advanced options
-   */
   public async createCampaign(options: CampaignOptions): Promise<string | null> {
-    // Rate limiting check for API abuse prevention
     if (!apiRateLimiter.tryRequest()) {
       securityLogger.warn(
         SecurityEventType.RATE_LIMIT,
@@ -149,47 +126,12 @@ export class AutomatedCampaignService {
     try {
       const campaignId = nanoid();
       
-      // Create the base campaign
-      const { error: campaignError } = await supabase
-        .from("campaigns")
-        .insert({
-          id: campaignId,
-          name: options.name,
-          description: options.description,
-          status: CampaignStatus.DRAFT,
-          provider_id: options.providerId,
-          target_list_id: options.targetListId,
-          template_id: options.primaryTemplateId,
-          schedule_time: options.schedule.startTime,
-          end_time: options.schedule.endTime
-        });
-      
-      if (campaignError) {
-        throw campaignError;
-      }
-      
-      // Create campaign variants if specified
-      if (options.variants && options.variants.length > 0) {
-        for (const variant of options.variants) {
-          // Use a type assertion to bypass the TypeScript error
-          const { error: variantError } = await supabase
-            .from("campaign_variants")
-            .insert({
-              campaign_id: campaignId,
-              variant_name: variant.name,
-              template_id: variant.templateId,
-              distribution_percentage: variant.distributionPercentage
-            } as any);
-          
-          if (variantError) {
-            throw variantError;
-          }
-        }
-      }
+      // Mock campaign creation
+      console.log('Mock: Creating campaign', { campaignId, options });
       
       securityLogger.info(
         SecurityEventType.DATA_ACCESS,
-        "Campaign created successfully",
+        "Mock: Campaign created successfully",
         { campaignId, name: options.name }
       );
       
@@ -204,68 +146,17 @@ export class AutomatedCampaignService {
     }
   }
   
-  /**
-   * Start a campaign immediately or schedule it for later
-   */
   public async startCampaign(campaignId: string, startNow: boolean = true): Promise<boolean> {
     try {
-      // Get campaign details
-      const { data: campaign, error: campaignError } = await supabase
-        .from("campaigns")
-        .select("*")
-        .eq("id", campaignId)
-        .single();
+      console.log('Mock: Starting campaign', { campaignId, startNow });
       
-      if (campaignError) {
-        throw campaignError;
-      }
+      this.setupCampaignMonitor(campaignId);
       
-      if (campaign.status !== CampaignStatus.DRAFT) {
-        throw new Error("Only draft campaigns can be started");
-      }
-      
-      // If starting now, queue the campaign
-      if (startNow) {
-        const response = await supabase.functions.invoke("queue-campaign", {
-          body: { campaignId }
-        });
-        
-        if (response.error) {
-          throw response.error;
-        }
-        
-        // Set up monitoring for the campaign
-        this.setupCampaignMonitor(campaignId);
-        
-        securityLogger.info(
-          SecurityEventType.DATA_ACCESS,
-          "Campaign started successfully",
-          { campaignId, name: campaign.name }
-        );
-      } else {
-        // Just mark as scheduled if not starting now
-        const { error: updateError } = await supabase
-          .from("campaigns")
-          .update({ status: CampaignStatus.SCHEDULED })
-          .eq("id", campaignId);
-        
-        if (updateError) {
-          throw updateError;
-        }
-        
-        // Set up monitoring for scheduled campaign
-        this.setupCampaignMonitor(campaignId);
-        
-        securityLogger.info(
-          SecurityEventType.DATA_ACCESS,
-          "Campaign scheduled successfully",
-          { 
-            campaignId, 
-            name: campaign.name, 
-            scheduledFor: campaign.schedule_time 
-          }
-        );
-      }
+      securityLogger.info(
+        SecurityEventType.DATA_ACCESS,
+        "Mock: Campaign started successfully",
+        { campaignId }
+      );
       
       return true;
     } catch (error) {
@@ -278,20 +169,10 @@ export class AutomatedCampaignService {
     }
   }
   
-  /**
-   * Pause an ongoing campaign
-   */
   public async pauseCampaign(campaignId: string): Promise<boolean> {
     try {
-      const { error } = await supabase.functions.invoke("pause-campaign", {
-        body: { campaignId }
-      });
+      console.log('Mock: Pausing campaign', campaignId);
       
-      if (error) {
-        throw error;
-      }
-      
-      // Clear the monitor if it exists
       if (this.activeMonitors.has(campaignId)) {
         clearInterval(this.activeMonitors.get(campaignId));
         this.activeMonitors.delete(campaignId);
@@ -299,7 +180,7 @@ export class AutomatedCampaignService {
       
       securityLogger.info(
         SecurityEventType.DATA_ACCESS,
-        "Campaign paused successfully",
+        "Mock: Campaign paused successfully",
         { campaignId }
       );
       
@@ -314,20 +195,10 @@ export class AutomatedCampaignService {
     }
   }
   
-  /**
-   * Cancel a campaign entirely
-   */
   public async cancelCampaign(campaignId: string): Promise<boolean> {
     try {
-      const { error } = await supabase.functions.invoke("cancel-campaign", {
-        body: { campaignId }
-      });
+      console.log('Mock: Canceling campaign', campaignId);
       
-      if (error) {
-        throw error;
-      }
-      
-      // Clear the monitor if it exists
       if (this.activeMonitors.has(campaignId)) {
         clearInterval(this.activeMonitors.get(campaignId));
         this.activeMonitors.delete(campaignId);
@@ -335,7 +206,7 @@ export class AutomatedCampaignService {
       
       securityLogger.info(
         SecurityEventType.DATA_ACCESS,
-        "Campaign canceled successfully",
+        "Mock: Campaign canceled successfully",
         { campaignId }
       );
       
@@ -350,20 +221,21 @@ export class AutomatedCampaignService {
     }
   }
   
-  /**
-   * Get real-time metrics for a campaign
-   */
   public async getCampaignMetrics(campaignId: string): Promise<CampaignMetrics | null> {
     try {
-      const { data, error } = await supabase.functions.invoke("campaign-metrics", {
-        body: { campaignId }
-      });
+      // Mock metrics
+      const mockMetrics: CampaignMetrics = {
+        sentCount: 100,
+        deliveredCount: 95,
+        openedCount: 45,
+        clickedCount: 12,
+        dataSubmittedCount: 8,
+        reportedCount: 2,
+        failedCount: 5,
+        updateTime: new Date().toISOString()
+      };
       
-      if (error) {
-        throw error;
-      }
-      
-      return data as CampaignMetrics;
+      return mockMetrics;
     } catch (error) {
       securityLogger.error(
         SecurityEventType.DATA_ACCESS,
@@ -374,75 +246,16 @@ export class AutomatedCampaignService {
     }
   }
   
-  /**
-   * Set up automatic monitoring for a campaign
-   */
   private setupCampaignMonitor(campaignId: string): void {
-    // Clear existing monitor if present
     if (this.activeMonitors.has(campaignId)) {
       clearInterval(this.activeMonitors.get(campaignId));
     }
     
-    // Create a monitor that checks campaign status every minute
+    // Mock monitoring
     const monitorInterval = setInterval(async () => {
-      try {
-        const { data: campaign, error } = await supabase
-          .from("campaigns")
-          .select("id, status, schedule_time, end_time")
-          .eq("id", campaignId)
-          .single();
-        
-        if (error) {
-          throw error;
-        }
-        
-        // If campaign is no longer active, stop monitoring
-        if (campaign.status === CampaignStatus.COMPLETED || 
-            campaign.status === CampaignStatus.CANCELED || 
-            campaign.status === CampaignStatus.FAILED) {
-          clearInterval(monitorInterval);
-          this.activeMonitors.delete(campaignId);
-          return;
-        }
-        
-        // If campaign is scheduled and it's time to start
-        if (campaign.status === CampaignStatus.SCHEDULED) {
-          const scheduleTime = new Date(campaign.schedule_time);
-          const now = new Date();
-          
-          if (now >= scheduleTime) {
-            // Start the campaign
-            await supabase.functions.invoke("queue-campaign", {
-              body: { campaignId }
-            });
-          }
-        }
-        
-        // If campaign has reached its end time
-        if (campaign.status === CampaignStatus.IN_PROGRESS && campaign.end_time) {
-          const endTime = new Date(campaign.end_time);
-          const now = new Date();
-          
-          if (now >= endTime) {
-            // Mark campaign as completed
-            await supabase.functions.invoke("complete-campaign", {
-              body: { campaignId }
-            });
-            
-            clearInterval(monitorInterval);
-            this.activeMonitors.delete(campaignId);
-          }
-        }
-      } catch (error) {
-        securityLogger.error(
-          SecurityEventType.AUTHORIZATION,
-          "Error in campaign monitor",
-          { error, campaignId }
-        );
-      }
-    }, 60000); // Check every minute
+      console.log('Mock: Monitoring campaign', campaignId);
+    }, 60000);
     
-    // Store the monitor interval
     this.activeMonitors.set(campaignId, monitorInterval);
   }
 }

@@ -13,6 +13,14 @@ import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { format } from "date-fns";
 
+interface Template {
+  id: string;
+  name: string;
+  category?: string;
+  version: number;
+  created_at: string;
+}
+
 const Templates = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -33,7 +41,7 @@ const Templates = () => {
       const { data, error } = await query;
 
       if (error) throw error;
-      return data;
+      return data as Template[];
     },
   });
 
@@ -49,8 +57,8 @@ const Templates = () => {
       
       // Extract unique categories
       const uniqueCategories = Array.from(
-        new Set(data.map(item => item.category).filter(Boolean))
-      );
+        new Set(data.map((item: any) => item.category).filter(Boolean))
+      ) as string[];
       
       return uniqueCategories;
     },
@@ -115,7 +123,7 @@ const Templates = () => {
             >
               All Templates
             </Button>
-            {categories?.map(category => (
+            {categories?.map((category: string) => (
               <Button
                 key={category}
                 variant={selectedCategory === category ? "default" : "outline"}
