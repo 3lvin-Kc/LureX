@@ -1,12 +1,24 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { ArrowLeft, RefreshCcw } from "lucide-react";
+
+// Mock data for phishing pages
+const mockPhishingPages = [
+  {
+    id: "1",
+    name: "Login Page Clone",
+    category: "Banking",
+    html_content: "<form><input type='email' placeholder='Email'><input type='password' placeholder='Password'><button>Login</button></form>",
+    css_content: "body { font-family: Arial; }",
+    js_content: "console.log('Mock phishing page');",
+    created_at: "2024-01-01T00:00:00Z"
+  }
+];
 
 const PhishingPagePreview = () => {
   const { id } = useParams<{ id: string }>();
@@ -14,25 +26,23 @@ const PhishingPagePreview = () => {
   const { toast } = useToast();
   const [page, setPage] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [iframeKey, setIframeKey] = useState(0); // Used to force iframe refresh
+  const [iframeKey, setIframeKey] = useState(0);
   const [previewContent, setPreviewContent] = useState("");
 
   useEffect(() => {
     const fetchPage = async () => {
       try {
         setLoading(true);
-        const { data, error } = await supabase
-          .from("phishing_pages")
-          .select("*")
-          .eq("id", id)
-          .single();
-
-        if (error) throw error;
-        setPage(data);
+        // Mock data fetch
+        const foundPage = mockPhishingPages.find(p => p.id === id);
+        if (!foundPage) {
+          throw new Error("Page not found");
+        }
         
-        // Generate the preview content once we have the page data
-        if (data) {
-          const content = generatePreviewContent(data);
+        setPage(foundPage);
+        
+        if (foundPage) {
+          const content = generatePreviewContent(foundPage);
           setPreviewContent(content);
         }
       } catch (error) {

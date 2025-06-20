@@ -4,7 +4,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -31,6 +30,19 @@ const formSchema = z.object({
   js_content: z.string().optional(),
 });
 
+// Mock data for phishing pages
+const mockPhishingPages = [
+  {
+    id: "1",
+    name: "Login Page Clone",
+    category: "Banking",
+    html_content: "<form><input type='email' placeholder='Email'><input type='password' placeholder='Password'><button>Login</button></form>",
+    css_content: "body { font-family: Arial; }",
+    js_content: "console.log('Mock phishing page');",
+    created_at: "2024-01-01T00:00:00Z"
+  }
+];
+
 const EditPhishingPage = () => {
   const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
@@ -53,20 +65,18 @@ const EditPhishingPage = () => {
     const fetchPage = async () => {
       setIsLoading(true);
       try {
-        const { data, error } = await supabase
-          .from("phishing_pages")
-          .select("*")
-          .eq("id", id)
-          .single();
-
-        if (error) throw error;
+        // Mock data fetch
+        const foundPage = mockPhishingPages.find(p => p.id === id);
+        if (!foundPage) {
+          throw new Error("Page not found");
+        }
         
         form.reset({
-          name: data.name,
-          category: data.category || "",
-          html_content: data.html_content || "",
-          css_content: data.css_content || "",
-          js_content: data.js_content || "",
+          name: foundPage.name,
+          category: foundPage.category || "",
+          html_content: foundPage.html_content || "",
+          css_content: foundPage.css_content || "",
+          js_content: foundPage.js_content || "",
         });
       } catch (error) {
         console.error("Error fetching page:", error);
@@ -88,19 +98,8 @@ const EditPhishingPage = () => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSaving(true);
     try {
-      const { error } = await supabase
-        .from("phishing_pages")
-        .update({
-          name: values.name,
-          category: values.category,
-          html_content: values.html_content,
-          css_content: values.css_content,
-          js_content: values.js_content,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", id);
-
-      if (error) throw error;
+      // Mock update
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       toast({
         title: "Success",

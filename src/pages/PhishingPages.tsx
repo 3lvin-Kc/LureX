@@ -1,7 +1,5 @@
 
 import React, { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { PlusCircle, Globe, Edit, Trash2, Copy, Eye, Library, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,79 +15,46 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PhishingTemplateLibrary from "@/components/phishing/PhishingTemplateLibrary";
 import { PhishingTemplate } from "@/utils/phishingTemplateLibrary";
 
+// Mock data for phishing pages
+const mockPhishingPages = [
+  {
+    id: "1",
+    name: "Login Page Clone",
+    category: "Banking",
+    html_content: "<form><input type='email' placeholder='Email'><input type='password' placeholder='Password'><button>Login</button></form>",
+    css_content: "body { font-family: Arial; }",
+    js_content: "console.log('Mock phishing page');",
+    is_custom: false,
+    source_url: "https://example.com",
+    created_at: "2024-01-01T00:00:00Z"
+  }
+];
+
 const PhishingPages = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const [phishingPages, setPhishingPages] = useState(mockPhishingPages);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [showCloneWarning, setShowCloneWarning] = useState(false);
-  // Fix: Initialize with a string value instead of using the state value in initial render
   const [activeTab, setActiveTab] = useState("my-pages");
 
-  // Fetch phishing pages from Supabase
-  const { data: phishingPages, isLoading, refetch } = useQuery({
-    queryKey: ["phishing-pages"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("phishing_pages")
-        .select("*")
-        .order("created_at", { ascending: false });
-      
-      if (error) {
-        toast({
-          title: "Error fetching pages",
-          description: error.message,
-          variant: "destructive"
-        });
-        return [];
-      }
-      
-      return data || [];
-    },
-  });
-
-  // Poll for updates every 5 seconds while on this page
-  useEffect(() => {
-    const interval = setInterval(() => {
-      refetch();
-    }, 5000);
-    
-    return () => clearInterval(interval);
-  }, [refetch]);
-
-  // Delete phishing page mutation
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      setIsDeleting(id);
-      const { error } = await supabase
-        .from("phishing_pages")
-        .delete()
-        .eq("id", id);
-      
-      if (error) throw error;
-      return id;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["phishing-pages"] });
+  const handleDeletePage = (id: string) => {
+    setIsDeleting(id);
+    try {
+      setPhishingPages(prev => prev.filter(page => page.id !== id));
       toast({
         title: "Page deleted",
         description: "Phishing page has been deleted successfully"
       });
-    },
-    onError: (error) => {
+    } catch (error) {
       toast({
         title: "Error deleting page",
         description: error instanceof Error ? error.message : "An error occurred",
         variant: "destructive"
       });
-    },
-    onSettled: () => {
+    } finally {
       setIsDeleting(null);
     }
-  });
-
-  const handleDeletePage = (id: string) => {
-    deleteMutation.mutate(id);
   };
 
   const handleCloneWebsiteClick = () => {
@@ -106,38 +71,25 @@ const PhishingPages = () => {
 
   const handleDuplicatePage = async (pageId: string) => {
     try {
-      // First, get the page to duplicate
-      const { data: pageData, error: fetchError } = await supabase
-        .from("phishing_pages")
-        .select("*")
-        .eq("id", pageId)
-        .single();
+      const pageData = phishingPages.find(p => p.id === pageId);
+      if (!pageData) return;
       
-      if (fetchError) throw fetchError;
-      
-      // Create a duplicate without the id field
       const { name, category, source_url, html_content, css_content, js_content, is_custom } = pageData;
       const newName = `${name} (Copy)`;
       
-      const { data: newPage, error: insertError } = await supabase
-        .from("phishing_pages")
-        .insert([
-          { 
-            name: newName, 
-            category, 
-            source_url, 
-            html_content, 
-            css_content, 
-            js_content, 
-            is_custom 
-          }
-        ])
-        .select()
-        .single();
+      const newPage = {
+        id: Date.now().toString(),
+        name: newName,
+        category,
+        source_url,
+        html_content,
+        css_content,
+        js_content,
+        is_custom,
+        created_at: new Date().toISOString()
+      };
       
-      if (insertError) throw insertError;
-      
-      queryClient.invalidateQueries({ queryKey: ["phishing-pages"] });
+      setPhishingPages(prev => [...prev, newPage]);
       toast({
         title: "Page duplicated",
         description: `"${name}" has been duplicated successfully`
@@ -155,28 +107,25 @@ const PhishingPages = () => {
   // Handler for template selection
   const handleTemplateSelect = async (template: PhishingTemplate) => {
     try {
-      const { data, error } = await supabase.from("phishing_pages").insert([
-        {
-          name: template.name,
-          category: template.category,
-          html_content: template.htmlContent,
-          css_content: template.cssContent || "",
-          js_content: template.jsContent || "",
-          is_custom: false,
-          source_url: ""
-        }
-      ]).select();
+      const newPage = {
+        id: Date.now().toString(),
+        name: template.name,
+        category: template.category,
+        html_content: template.htmlContent,
+        css_content: template.cssContent || "",
+        js_content: template.jsContent || "",
+        is_custom: false,
+        source_url: "",
+        created_at: new Date().toISOString()
+      };
       
-      if (error) throw error;
-      
-      queryClient.invalidateQueries({ queryKey: ["phishing-pages"] });
+      setPhishingPages(prev => [...prev, newPage]);
       toast({
         title: "Template Applied",
         description: `${template.name} template has been added to your phishing pages`,
         variant: "default"
       });
       
-      // Switch back to my-pages tab to show the newly created page
       setActiveTab("my-pages");
       
     } catch (error) {
@@ -189,12 +138,10 @@ const PhishingPages = () => {
     }
   };
 
-  // Fix: Remove direct navigation and just handle state change
   const handleCreateFromTemplate = () => {
     setActiveTab("templates");
   };
 
-  // Fix: Make sure this component doesn't re-render unnecessarily
   return (
     <DashboardLayout>
       <div className="container mx-auto p-4 max-w-7xl">
@@ -222,7 +169,6 @@ const PhishingPages = () => {
           </div>
         </div>
 
-        {/* Fix: Use defaultValue instead of value for uncontrolled behavior */}
         <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-4">
             <TabsTrigger value="my-pages" className="flex items-center gap-2">
@@ -244,9 +190,7 @@ const PhishingPages = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {isLoading ? (
-                  <div className="text-center py-8">Loading phishing pages...</div>
-                ) : phishingPages?.length === 0 ? (
+                {phishingPages?.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-muted-foreground">No phishing pages found</p>
                     <div className="mt-6 flex flex-col gap-4 md:flex-row md:justify-center">
@@ -385,7 +329,6 @@ const PhishingPages = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {/* Fix: Add key and onSelect prop */}
                 <PhishingTemplateLibrary key={activeTab} onSelect={handleTemplateSelect} />
               </CardContent>
             </Card>

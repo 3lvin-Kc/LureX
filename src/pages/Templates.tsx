@@ -1,8 +1,5 @@
 
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { PlusCircle, Copy, Eye, Edit, Trash2, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -11,91 +8,94 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import { PlusCircle, Edit, Trash2, Copy, Eye, Wand2 } from "lucide-react";
 import { format } from "date-fns";
 
-interface Template {
-  id: string;
-  name: string;
-  category?: string;
-  version: number;
-  created_at: string;
-}
+// Mock data for templates
+const mockTemplates = [
+  {
+    id: "1",
+    name: "Password Reset Notification",
+    subject: "Password Reset Required",
+    category: "Security",
+    html_content: "<p>Your password needs to be reset. Click here to continue.</p>",
+    text_content: "Your password needs to be reset.",
+    description: "Standard password reset phishing template",
+    version: 1,
+    created_at: "2024-01-01T00:00:00Z"
+  },
+  {
+    id: "2",
+    name: "IT Support Alert",
+    subject: "Urgent: Security Update Required",
+    category: "IT",
+    html_content: "<p>Your system requires an immediate security update.</p>",
+    text_content: "Your system requires an immediate security update.",
+    description: "IT support impersonation template",
+    version: 1,
+    created_at: "2024-01-02T00:00:00Z"
+  }
+];
 
 const Templates = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-
-  const { data: templates, isLoading, error, refetch } = useQuery({
-    queryKey: ["templates", selectedCategory],
-    queryFn: async () => {
-      let query = supabase
-        .from("email_templates")
-        .select("*")
-        .order("created_at", { ascending: false });
-      
-      if (selectedCategory) {
-        query = query.eq("category", selectedCategory);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data as Template[];
-    },
-  });
-
-  const { data: categories } = useQuery({
-    queryKey: ["template-categories"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("email_templates")
-        .select("category")
-        .not("category", "is", null);
-
-      if (error) throw error;
-      
-      // Extract unique categories
-      const uniqueCategories = Array.from(
-        new Set(data.map((item: any) => item.category).filter(Boolean))
-      ) as string[];
-      
-      return uniqueCategories;
-    },
-  });
+  const [templates, setTemplates] = useState(mockTemplates);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   const handleDeleteTemplate = async (id: string) => {
+    setIsDeleting(id);
     try {
-      const { error } = await supabase
-        .from("email_templates")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-
+      // Mock deletion
+      setTemplates(prev => prev.filter(template => template.id !== id));
       toast({
         title: "Template deleted",
-        description: "The template has been successfully deleted.",
+        description: "Email template has been deleted successfully"
       });
-
-      refetch();
     } catch (error) {
-      console.error("Error deleting template:", error);
       toast({
-        title: "Error",
-        description: "Failed to delete template",
-        variant: "destructive",
+        title: "Error deleting template",
+        description: "Failed to delete email template",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDeleting(null);
+    }
+  };
+
+  const handleDuplicateTemplate = async (templateId: string) => {
+    try {
+      const templateToDuplicate = templates.find(t => t.id === templateId);
+      if (!templateToDuplicate) return;
+
+      const newTemplate = {
+        ...templateToDuplicate,
+        id: Date.now().toString(),
+        name: `${templateToDuplicate.name} (Copy)`,
+        created_at: new Date().toISOString()
+      };
+
+      setTemplates(prev => [...prev, newTemplate]);
+      toast({
+        title: "Template duplicated",
+        description: `"${templateToDuplicate.name}" has been duplicated successfully`
+      });
+    } catch (error) {
+      toast({
+        title: "Error duplicating template",
+        description: "Failed to duplicate email template",
+        variant: "destructive"
       });
     }
   };
 
-  if (error) {
+  const handleGenerateWithAI = () => {
     toast({
-      title: "Error",
-      description: "Failed to load templates",
-      variant: "destructive",
+      title: "AI Generation not implemented",
+      description: "AI template generation functionality is not yet available",
+      variant: "destructive"
     });
-  }
+  };
 
   return (
     <DashboardLayout>
@@ -103,37 +103,17 @@ const Templates = () => {
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-bold">Email Templates</h1>
-            <p className="text-muted-foreground">Create and manage reusable phishing email templates</p>
+            <p className="text-muted-foreground">Manage email templates for your phishing campaigns</p>
           </div>
-          <Button 
-            onClick={() => navigate("/template/new")}
-            className="flex items-center gap-2"
-          >
-            <PlusCircle size={16} />
-            Create Template
-          </Button>
-        </div>
-
-        <div className="mb-6">
-          <div className="flex flex-wrap gap-2">
-            <Button 
-              variant={selectedCategory === null ? "default" : "outline"}
-              size="sm"
-              onClick={() => setSelectedCategory(null)}
-            >
-              All Templates
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleGenerateWithAI}>
+              <Wand2 size={16} className="mr-2" />
+              Generate with AI
             </Button>
-            {categories?.map((category: string) => (
-              <Button
-                key={category}
-                variant={selectedCategory === category ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedCategory(category)}
-                className="capitalize"
-              >
-                {category}
-              </Button>
-            ))}
+            <Button onClick={() => navigate("/templates/new")}>
+              <PlusCircle size={16} className="mr-2" />
+              New Template
+            </Button>
           </div>
         </div>
 
@@ -141,21 +121,16 @@ const Templates = () => {
           <CardHeader className="pb-3">
             <CardTitle>Template Library</CardTitle>
             <CardDescription>
-              Browse and manage your phishing email templates. Templates can include links to phishing pages and file attachments.
+              Browse and manage your email templates for phishing campaigns
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="text-center py-8">Loading templates...</div>
-            ) : templates?.length === 0 ? (
+            {templates.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-muted-foreground">No templates found</p>
-                <Button 
-                  variant="outline" 
-                  className="mt-4"
-                  onClick={() => navigate("/template/new")}
-                >
-                  Create Template
+                <p className="text-muted-foreground mb-4">No templates found</p>
+                <Button onClick={() => navigate("/templates/new")}>
+                  <PlusCircle size={16} className="mr-2" />
+                  Create Your First Template
                 </Button>
               </div>
             ) : (
@@ -163,6 +138,7 @@ const Templates = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
+                    <TableHead>Subject</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Version</TableHead>
                     <TableHead>Created</TableHead>
@@ -170,17 +146,14 @@ const Templates = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {templates?.map((template) => (
+                  {templates.map((template) => (
                     <TableRow key={template.id}>
                       <TableCell className="font-medium">{template.name}</TableCell>
+                      <TableCell>{template.subject}</TableCell>
                       <TableCell>
-                        {template.category ? (
-                          <Badge variant="outline" className="capitalize">
-                            {template.category}
-                          </Badge>
-                        ) : (
-                          "—"
-                        )}
+                        <Badge variant="outline" className="capitalize">
+                          {template.category}
+                        </Badge>
                       </TableCell>
                       <TableCell>v{template.version}</TableCell>
                       <TableCell>
@@ -194,7 +167,7 @@ const Templates = () => {
                                 <Button
                                   variant="outline"
                                   size="icon"
-                                  onClick={() => navigate(`/template/${template.id}/preview`)}
+                                  onClick={() => navigate(`/templates/${template.id}/preview`)}
                                 >
                                   <Eye size={16} />
                                 </Button>
@@ -207,7 +180,7 @@ const Templates = () => {
                                 <Button
                                   variant="outline"
                                   size="icon"
-                                  onClick={() => navigate(`/template/${template.id}/edit`)}
+                                  onClick={() => navigate(`/templates/${template.id}/edit`)}
                                 >
                                   <Edit size={16} />
                                 </Button>
@@ -220,7 +193,7 @@ const Templates = () => {
                                 <Button
                                   variant="outline"
                                   size="icon"
-                                  onClick={() => navigate(`/template/${template.id}/duplicate`)}
+                                  onClick={() => handleDuplicateTemplate(template.id)}
                                 >
                                   <Copy size={16} />
                                 </Button>
@@ -233,24 +206,8 @@ const Templates = () => {
                                 <Button
                                   variant="outline"
                                   size="icon"
-                                  onClick={() => navigate(`/template/${template.id}/versions`)}
-                                >
-                                  <FolderOpen size={16} />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>View Versions</TooltipContent>
-                            </Tooltip>
-
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  onClick={() => {
-                                    if (confirm("Are you sure you want to delete this template?")) {
-                                      handleDeleteTemplate(template.id);
-                                    }
-                                  }}
+                                  disabled={isDeleting === template.id}
+                                  onClick={() => handleDeleteTemplate(template.id)}
                                 >
                                   <Trash2 size={16} />
                                 </Button>

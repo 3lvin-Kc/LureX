@@ -1,437 +1,77 @@
 
-import React, { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { PlusCircle, Users, FileUp, Edit, Trash2, X, Loader2 } from "lucide-react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import { PlusCircle, Edit, Trash2, Upload, Download, Users } from "lucide-react";
 import { format } from "date-fns";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+
+// Mock data for target lists
+const mockTargetLists = [
+  {
+    id: "1",
+    name: "All Employees",
+    description: "Complete employee directory",
+    target_count: 150,
+    created_at: "2024-01-15T10:00:00Z",
+    updated_at: "2024-01-15T10:00:00Z"
+  },
+  {
+    id: "2", 
+    name: "Marketing Team",
+    description: "Marketing department staff",
+    target_count: 25,
+    created_at: "2024-01-20T14:30:00Z",
+    updated_at: "2024-01-20T14:30:00Z"
+  }
+];
 
 const TargetLists = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isViewTargetsDialogOpen, setIsViewTargetsDialogOpen] = useState(false);
-  const [newListData, setNewListData] = useState({ name: "", description: "" });
-  const [editListData, setEditListData] = useState({ id: "", name: "", description: "" });
-  const [currentTargets, setCurrentTargets] = useState([]);
-  const [csvFile, setCsvFile] = useState<File | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  const { data: targetLists, isLoading, error, refetch } = useQuery({
-    queryKey: ["targetLists"],
-    queryFn: async () => {
-      try {
-        // First get all target lists
-        const { data: lists, error: listsError } = await supabase
-          .from("target_lists")
-          .select("*")
-          .order("created_at", { ascending: false });
-
-        if (listsError) throw listsError;
-
-        // For each list, count the number of targets
-        const listsWithCounts = await Promise.all(
-          lists.map(async (list) => {
-            const { count, error: countError } = await supabase
-              .from("targets")
-              .select("*", { count: "exact", head: true })
-              .eq("list_id", list.id);
-
-            if (countError) throw countError;
-
-            return {
-              ...list,
-              target_count: count || 0,
-            };
-          })
-        );
-
-        return listsWithCounts;
-      } catch (err) {
-        console.error("Error fetching target lists:", err);
-        throw err;
-      }
-    },
-  });
-
-  // Function to load targets for a specific list
-  const loadTargets = async (listId) => {
-    try {
-      setIsSubmitting(true);
-      const { data, error } = await supabase
-        .from("targets")
-        .select("*")
-        .eq("list_id", listId)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setCurrentTargets(data || []);
-      setIsViewTargetsDialogOpen(true);
-    } catch (error) {
-      console.error("Error loading targets:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load targets",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Function to load a target list for editing
-  const loadListForEdit = (list) => {
-    setEditListData({
-      id: list.id,
-      name: list.name,
-      description: list.description || "",
-    });
-    setIsEditDialogOpen(true);
-  };
-
-  // Create target list mutation
-  const createListMutation = useMutation({
-    mutationFn: async (listData: { name: string; description: string }) => {
-      const { data, error } = await supabase
-        .from("target_lists")
-        .insert([{ 
-          name: listData.name, 
-          description: listData.description
-        }])
-        .select();
-
-      if (error) {
-        console.error("Create list error:", error);
-        throw error;
-      }
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["targetLists"] });
-      setNewListData({ name: "", description: "" });
-      setIsCreateDialogOpen(false);
-      toast({
-        title: "Success",
-        description: "Target list created successfully",
-      });
-    },
-    onError: (error: any) => {
-      setErrorMessage(error.message || "Failed to create target list");
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create target list",
-        variant: "destructive",
-      });
-    },
-    onSettled: () => {
-      setIsSubmitting(false);
-    }
-  });
-
-  // Update target list mutation
-  const updateListMutation = useMutation({
-    mutationFn: async (listData: { id: string; name: string; description: string }) => {
-      const { data, error } = await supabase
-        .from("target_lists")
-        .update({ 
-          name: listData.name, 
-          description: listData.description
-        })
-        .eq("id", listData.id)
-        .select();
-
-      if (error) {
-        console.error("Update list error:", error);
-        throw error;
-      }
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["targetLists"] });
-      setEditListData({ id: "", name: "", description: "" });
-      setIsEditDialogOpen(false);
-      toast({
-        title: "Success",
-        description: "Target list updated successfully",
-      });
-    },
-    onError: (error: any) => {
-      setErrorMessage(error.message || "Failed to update target list");
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update target list",
-        variant: "destructive",
-      });
-    },
-    onSettled: () => {
-      setIsSubmitting(false);
-    }
-  });
-
-  // Delete target list mutation
-  const deleteListMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("target_lists")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-      return id;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["targetLists"] });
-      toast({
-        title: "Success",
-        description: "Target list deleted successfully",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete target list",
-        variant: "destructive",
-      });
-    }
-  });
-
-  const handleCreateList = async () => {
-    try {
-      setIsSubmitting(true);
-      setErrorMessage(null);
-      
-      if (!newListData.name) {
-        toast({
-          title: "Error",
-          description: "List name is required",
-          variant: "destructive",
-        });
-        setIsSubmitting(false);
-        return;
-      }
-      
-      createListMutation.mutate(newListData);
-    } catch (error: any) {
-      setErrorMessage(error.message || "Failed to create target list");
-      toast({
-        title: "Error",
-        description: error.message || "Failed to create target list",
-        variant: "destructive",
-      });
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleUpdateList = async () => {
-    try {
-      setIsSubmitting(true);
-      setErrorMessage(null);
-      
-      if (!editListData.name) {
-        toast({
-          title: "Error",
-          description: "List name is required",
-          variant: "destructive",
-        });
-        setIsSubmitting(false);
-        return;
-      }
-      
-      updateListMutation.mutate(editListData);
-    } catch (error: any) {
-      setErrorMessage(error.message || "Failed to update target list");
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update target list",
-        variant: "destructive",
-      });
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleImportList = async () => {
-    try {
-      setIsSubmitting(true);
-      setErrorMessage(null);
-      
-      if (!csvFile) {
-        toast({
-          title: "Error",
-          description: "Please select a CSV file to import",
-          variant: "destructive",
-        });
-        setIsSubmitting(false);
-        return;
-      }
-      
-      if (!newListData.name) {
-        toast({
-          title: "Error",
-          description: "List name is required",
-          variant: "destructive",
-        });
-        setIsSubmitting(false);
-        return;
-      }
-      
-      // First create the list
-      const { data: listData, error: listError } = await supabase
-        .from("target_lists")
-        .insert([{ 
-          name: newListData.name, 
-          description: newListData.description
-        }])
-        .select();
-
-      if (listError) {
-        console.error("List creation error:", listError);
-        throw listError;
-      }
-      
-      if (!listData || listData.length === 0) {
-        throw new Error("Failed to create target list");
-      }
-      
-      const listId = listData[0].id;
-      
-      // Then parse and import the CSV data
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          const content = e.target?.result as string;
-          const rows = content.split("\n");
-          
-          // Skip header row and parse CSV
-          const header = rows[0].split(",");
-          const emailIndex = header.findIndex(col => col.toLowerCase().includes("email"));
-          const firstNameIndex = header.findIndex(col => col.toLowerCase().includes("first") || col.toLowerCase().includes("fname"));
-          const lastNameIndex = header.findIndex(col => col.toLowerCase().includes("last") || col.toLowerCase().includes("lname"));
-          
-          if (emailIndex === -1) {
-            throw new Error("CSV must contain an email column");
-          }
-          
-          const targets = [];
-          
-          // Start from row 1 to skip header
-          for (let i = 1; i < rows.length; i++) {
-            if (!rows[i].trim()) continue; // Skip empty rows
-            
-            const columns = rows[i].split(",");
-            
-            if (columns.length > emailIndex) {
-              const email = columns[emailIndex].trim();
-              
-              if (email) { // Only add if email exists
-                const target = {
-                  list_id: listId,
-                  email,
-                  first_name: firstNameIndex !== -1 && columns.length > firstNameIndex ? columns[firstNameIndex].trim() : null,
-                  last_name: lastNameIndex !== -1 && columns.length > lastNameIndex ? columns[lastNameIndex].trim() : null,
-                };
-                
-                targets.push(target);
-              }
-            }
-          }
-          
-          if (targets.length === 0) {
-            throw new Error("No valid targets found in CSV");
-          }
-          
-          // Insert targets in batches of 100
-          const batchSize = 100;
-          for (let i = 0; i < targets.length; i += batchSize) {
-            const batch = targets.slice(i, i + batchSize);
-            const { error: insertError } = await supabase
-              .from("targets")
-              .insert(batch);
-              
-            if (insertError) {
-              console.error("Target insert error:", insertError);
-              throw insertError;
-            }
-          }
-          
-          toast({
-            title: "Success",
-            description: `Imported ${targets.length} targets to "${newListData.name}"`,
-          });
-          
-          setNewListData({ name: "", description: "" });
-          setCsvFile(null);
-          setIsImportDialogOpen(false);
-          queryClient.invalidateQueries({ queryKey: ["targetLists"] });
-        } catch (error: any) {
-          setErrorMessage(error.message || "Failed to import targets");
-          toast({
-            title: "Import Error",
-            description: error.message || "Failed to import targets",
-            variant: "destructive",
-          });
-        } finally {
-          setIsSubmitting(false);
-        }
-      };
-      
-      reader.onerror = () => {
-        setErrorMessage("Failed to read CSV file");
-        toast({
-          title: "File Error",
-          description: "Failed to read CSV file",
-          variant: "destructive",
-        });
-        setIsSubmitting(false);
-      };
-      
-      reader.readAsText(csvFile);
-      
-    } catch (error: any) {
-      setErrorMessage(error.message || "Failed to import target list");
-      toast({
-        title: "Error",
-        description: error.message || "Failed to import target list",
-        variant: "destructive",
-      });
-      setIsSubmitting(false);
-    }
-  };
+  const [targetLists, setTargetLists] = useState(mockTargetLists);
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   const handleDeleteList = async (id: string) => {
-    if (confirm("Are you sure you want to delete this list? This action cannot be undone.")) {
-      deleteListMutation.mutate(id);
+    setIsDeleting(id);
+    try {
+      // Mock deletion
+      setTargetLists(prev => prev.filter(list => list.id !== id));
+      toast({
+        title: "List deleted",
+        description: "Target list has been deleted successfully"
+      });
+    } catch (error) {
+      toast({
+        title: "Error deleting list",
+        description: "Failed to delete target list",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDeleting(null);
     }
   };
 
-  if (error) {
+  const handleImportTargets = () => {
     toast({
-      title: "Error",
-      description: "Failed to load target lists",
-      variant: "destructive",
+      title: "Import not implemented",
+      description: "CSV import functionality is not yet available",
+      variant: "destructive"
     });
-  }
+  };
+
+  const handleExportTargets = () => {
+    toast({
+      title: "Export not implemented", 
+      description: "CSV export functionality is not yet available",
+      variant: "destructive"
+    });
+  };
 
   return (
     <DashboardLayout>
@@ -442,19 +82,16 @@ const TargetLists = () => {
             <p className="text-muted-foreground">Manage your phishing campaign target lists</p>
           </div>
           <div className="flex gap-2">
-            <Button 
-              variant="outline"
-              onClick={() => setIsImportDialogOpen(true)}
-              className="flex items-center gap-2"
-            >
-              <FileUp size={16} />
-              Import List
+            <Button variant="outline" onClick={handleImportTargets}>
+              <Upload size={16} className="mr-2" />
+              Import CSV
             </Button>
-            <Button 
-              onClick={() => setIsCreateDialogOpen(true)}
-              className="flex items-center gap-2"
-            >
-              <PlusCircle size={16} />
+            <Button variant="outline" onClick={handleExportTargets}>
+              <Download size={16} className="mr-2" />
+              Export
+            </Button>
+            <Button onClick={() => navigate("/target-lists/new")}>
+              <PlusCircle size={16} className="mr-2" />
               New List
             </Button>
           </div>
@@ -464,21 +101,17 @@ const TargetLists = () => {
           <CardHeader className="pb-3">
             <CardTitle>Target Lists</CardTitle>
             <CardDescription>
-              Manage target lists for your phishing campaigns
+              Manage recipient lists for your phishing campaigns
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
-              <div className="text-center py-8">Loading target lists...</div>
-            ) : targetLists?.length === 0 ? (
+            {targetLists.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-muted-foreground">No target lists found</p>
-                <Button 
-                  variant="outline" 
-                  className="mt-4"
-                  onClick={() => setIsCreateDialogOpen(true)}
-                >
-                  Create Target List
+                <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                <p className="text-muted-foreground mb-4">No target lists found</p>
+                <Button onClick={() => navigate("/target-lists/new")}>
+                  <PlusCircle size={16} className="mr-2" />
+                  Create Your First List
                 </Button>
               </div>
             ) : (
@@ -493,15 +126,14 @@ const TargetLists = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {targetLists?.map((list) => (
+                  {targetLists.map((list) => (
                     <TableRow key={list.id}>
                       <TableCell className="font-medium">{list.name}</TableCell>
                       <TableCell>{list.description || "—"}</TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Users size={16} />
-                          {list.target_count}
-                        </div>
+                        <Badge variant="secondary">
+                          {list.target_count} targets
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         {format(new Date(list.created_at), "MMM d, yyyy")}
@@ -514,25 +146,12 @@ const TargetLists = () => {
                                 <Button
                                   variant="outline"
                                   size="icon"
-                                  onClick={() => loadTargets(list.id)}
-                                >
-                                  <Users size={16} />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>View Targets</TooltipContent>
-                            </Tooltip>
-
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  onClick={() => loadListForEdit(list)}
+                                  onClick={() => navigate(`/target-lists/${list.id}/edit`)}
                                 >
                                   <Edit size={16} />
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent>Edit List</TooltipContent>
+                              <TooltipContent>Edit</TooltipContent>
                             </Tooltip>
 
                             <Tooltip>
@@ -540,12 +159,13 @@ const TargetLists = () => {
                                 <Button
                                   variant="outline"
                                   size="icon"
+                                  disabled={isDeleting === list.id}
                                   onClick={() => handleDeleteList(list.id)}
                                 >
                                   <Trash2 size={16} />
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent>Delete List</TooltipContent>
+                              <TooltipContent>Delete</TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
                         </div>
@@ -557,225 +177,6 @@ const TargetLists = () => {
             )}
           </CardContent>
         </Card>
-
-        {/* Create New List Dialog */}
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Target List</DialogTitle>
-              <DialogDescription>
-                Add a new list to organize your phishing campaign targets
-              </DialogDescription>
-            </DialogHeader>
-            {errorMessage && (
-              <div className="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg">
-                <p>Error: {errorMessage}</p>
-              </div>
-            )}
-            <div className="space-y-4 py-2">
-              <div className="space-y-2">
-                <Label htmlFor="list-name">List Name</Label>
-                <Input 
-                  id="list-name" 
-                  placeholder="HR Department Targets" 
-                  value={newListData.name}
-                  onChange={(e) => setNewListData(prev => ({ ...prev, name: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="list-description">Description (Optional)</Label>
-                <Textarea 
-                  id="list-description" 
-                  placeholder="Targets for the HR department phishing campaign" 
-                  value={newListData.description}
-                  onChange={(e) => setNewListData(prev => ({ ...prev, description: e.target.value }))}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
-              <Button onClick={handleCreateList} disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  "Create List"
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Edit List Dialog */}
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Edit Target List</DialogTitle>
-              <DialogDescription>
-                Update the target list information
-              </DialogDescription>
-            </DialogHeader>
-            {errorMessage && (
-              <div className="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg">
-                <p>Error: {errorMessage}</p>
-              </div>
-            )}
-            <div className="space-y-4 py-2">
-              <div className="space-y-2">
-                <Label htmlFor="edit-list-name">List Name</Label>
-                <Input 
-                  id="edit-list-name" 
-                  placeholder="HR Department Targets" 
-                  value={editListData.name}
-                  onChange={(e) => setEditListData(prev => ({ ...prev, name: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-list-description">Description (Optional)</Label>
-                <Textarea 
-                  id="edit-list-description" 
-                  placeholder="Targets for the HR department phishing campaign" 
-                  value={editListData.description}
-                  onChange={(e) => setEditListData(prev => ({ ...prev, description: e.target.value }))}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
-              <Button onClick={handleUpdateList} disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Updating...
-                  </>
-                ) : (
-                  "Update List"
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* View Targets Dialog */}
-        <Dialog open={isViewTargetsDialogOpen} onOpenChange={setIsViewTargetsDialogOpen}>
-          <DialogContent className="max-w-4xl">
-            <DialogHeader>
-              <DialogTitle>View Targets</DialogTitle>
-              <DialogDescription>
-                List of targets in this target list
-              </DialogDescription>
-            </DialogHeader>
-            <div className="max-h-[60vh] overflow-y-auto">
-              {currentTargets.length === 0 ? (
-                <div className="py-4 text-center">
-                  <p>No targets found in this list.</p>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Email</TableHead>
-                      <TableHead>First Name</TableHead>
-                      <TableHead>Last Name</TableHead>
-                      <TableHead>Department</TableHead>
-                      <TableHead>Position</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {currentTargets.map((target) => (
-                      <TableRow key={target.id}>
-                        <TableCell>{target.email}</TableCell>
-                        <TableCell>{target.first_name || "—"}</TableCell>
-                        <TableCell>{target.last_name || "—"}</TableCell>
-                        <TableCell>{target.department || "—"}</TableCell>
-                        <TableCell>{target.position || "—"}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsViewTargetsDialogOpen(false)}>Close</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Import List Dialog */}
-        <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Import Target List</DialogTitle>
-              <DialogDescription>
-                Import targets from a CSV file
-              </DialogDescription>
-            </DialogHeader>
-            {errorMessage && (
-              <div className="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg">
-                <p>Error: {errorMessage}</p>
-              </div>
-            )}
-            <div className="space-y-4 py-2">
-              <div className="space-y-2">
-                <Label htmlFor="import-list-name">List Name</Label>
-                <Input 
-                  id="import-list-name" 
-                  placeholder="Imported Targets" 
-                  value={newListData.name}
-                  onChange={(e) => setNewListData(prev => ({ ...prev, name: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="import-list-description">Description (Optional)</Label>
-                <Textarea 
-                  id="import-list-description" 
-                  placeholder="Targets imported from CSV" 
-                  value={newListData.description}
-                  onChange={(e) => setNewListData(prev => ({ ...prev, description: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="csv-file">CSV File</Label>
-                <div className="flex items-center gap-2">
-                  <Input 
-                    id="csv-file" 
-                    type="file" 
-                    accept=".csv" 
-                    onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
-                  />
-                  {csvFile && (
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8" 
-                      onClick={() => setCsvFile(null)}
-                    >
-                      <X size={16} />
-                    </Button>
-                  )}
-                </div>
-                <p className="text-sm text-muted-foreground mt-1">
-                  CSV must include column for email (required), first name and last name (optional)
-                </p>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsImportDialogOpen(false)} disabled={isSubmitting}>Cancel</Button>
-              <Button onClick={handleImportList} disabled={isSubmitting || !csvFile}>
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Importing...
-                  </>
-                ) : (
-                  "Import List"
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
     </DashboardLayout>
   );

@@ -1,6 +1,5 @@
 
-import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,185 +14,43 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import { ArrowLeft, LoaderCircle, FileCode } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supabase } from "@/integrations/supabase/client";
-import PhishingTemplateLibrary from "@/components/phishing/PhishingTemplateLibrary";
-import { PhishingTemplate } from "@/utils/phishingTemplateLibrary";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import { ArrowLeft, LoaderCircle } from "lucide-react";
 
 const formSchema = z.object({
-  name: z.string().min(1, { message: "Name is required" }),
+  name: z.string().min(1, { message: "Page name is required" }),
   category: z.string().optional(),
-  htmlContent: z.string().min(1, { message: "HTML content is required" }),
-  cssContent: z.string().optional(),
-  jsContent: z.string().optional(),
+  html_content: z.string().optional(),
+  css_content: z.string().optional(),
+  js_content: z.string().optional(),
 });
-
-// Default HTML template for a login page
-const defaultLoginTemplate = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    .login-container {
-      background: white;
-      padding: 40px;
-      border-radius: 5px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      width: 350px;
-    }
-    .logo {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    h1 {
-      text-align: center;
-      color: #333;
-      margin-bottom: 30px;
-    }
-    .form-group {
-      margin-bottom: 20px;
-    }
-    label {
-      display: block;
-      margin-bottom: 5px;
-      color: #555;
-    }
-    input[type="text"],
-    input[type="password"],
-    input[type="email"] {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      box-sizing: border-box;
-      font-size: 16px;
-    }
-    button {
-      width: 100%;
-      padding: 12px;
-      background-color: #4285f4;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 16px;
-    }
-    button:hover {
-      background-color: #357ae8;
-    }
-    .footer {
-      text-align: center;
-      margin-top: 20px;
-      font-size: 14px;
-      color: #666;
-    }
-    a {
-      color: #4285f4;
-      text-decoration: none;
-    }
-  </style>
-</head>
-<body>
-  <div class="login-container">
-    <div class="logo">
-      <img src="https://via.placeholder.com/150x50" alt="Company Logo" />
-    </div>
-    <h1>Sign In</h1>
-    <form id="loginForm" onsubmit="return false;">
-      <div class="form-group">
-        <label for="email">Email</label>
-        <input type="email" id="email" name="email" placeholder="Enter your email" required />
-      </div>
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input type="password" id="password" name="password" placeholder="Enter your password" required />
-      </div>
-      <div class="form-group">
-        <button type="submit">Sign In</button>
-      </div>
-    </form>
-    <div class="footer">
-      <p>Forgot password? <a href="#">Reset it here</a></p>
-      <p>Don't have an account? <a href="#">Sign up</a></p>
-    </div>
-  </div>
-  
-  <script>
-    document.getElementById('loginForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      
-      // In a real phishing page, this would send the credentials to a server
-      console.log('Credentials captured:', { email, password });
-      
-      // Show a security awareness message
-      alert('This was a security awareness test. In a real attack, your credentials could have been stolen.');
-    });
-  </script>
-</body>
-</html>`;
 
 const CreatePhishingPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const location = useLocation();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>("custom");
-
-  // Get HTML content from location state if available (from cloned website)
-  const stateHtml = location.state?.html || '';
+  const [isCreating, setIsCreating] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      category: "Custom",
-      htmlContent: stateHtml || defaultLoginTemplate,
-      cssContent: "",
-      jsContent: "",
+      category: "",
+      html_content: "",
+      css_content: "",
+      js_content: "",
     },
   });
 
-  // Set the HTML content when it becomes available from location state
-  useEffect(() => {
-    if (stateHtml) {
-      form.setValue('htmlContent', stateHtml);
-    }
-  }, [stateHtml, form]);
-
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    setIsSubmitting(true);
+    setIsCreating(true);
     try {
-      const { data, error } = await supabase.from("phishing_pages").insert([
-        {
-          name: values.name,
-          category: values.category,
-          html_content: values.htmlContent,
-          css_content: values.cssContent,
-          js_content: values.jsContent,
-          is_custom: true,
-        },
-      ]).select();
-
-      if (error) throw error;
+      // Mock page creation
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       toast({
         title: "Success",
@@ -201,30 +58,15 @@ const CreatePhishingPage = () => {
       });
       navigate("/phishing-pages");
     } catch (error) {
+      console.error("Error creating page:", error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create phishing page",
+        description: "Failed to create phishing page",
         variant: "destructive",
       });
     } finally {
-      setIsSubmitting(false);
+      setIsCreating(false);
     }
-  };
-
-  const handleTemplateSelect = (template: PhishingTemplate) => {
-    form.setValue("name", template.name);
-    form.setValue("category", template.category);
-    form.setValue("htmlContent", template.htmlContent);
-    form.setValue("cssContent", template.cssContent || "");
-    form.setValue("jsContent", template.jsContent || "");
-    
-    // Switch to the custom tab to show the filled form
-    setActiveTab("custom");
-    
-    toast({
-      title: "Template Selected",
-      description: `${template.name} template has been loaded for editing`,
-    });
   };
 
   return (
@@ -239,181 +81,139 @@ const CreatePhishingPage = () => {
             <ArrowLeft className="w-4 h-4 mr-2" /> Back to Pages
           </Button>
           <h1 className="text-3xl font-bold">Create Phishing Page</h1>
-          <p className="text-muted-foreground">Create a custom phishing page or use a template</p>
+          <p className="text-muted-foreground">Create a custom phishing page for your campaigns</p>
         </div>
 
         <Card>
           <CardHeader>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid grid-cols-2">
-                <TabsTrigger value="custom" className="flex items-center gap-2">
-                  <FileCode size={16} /> Custom Page
-                </TabsTrigger>
-                <TabsTrigger value="templates" className="flex items-center gap-2">
-                  <svg 
-                    width="16" 
-                    height="16" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    className="shrink-0"
-                  >
-                    <path 
-                      d="M4.5 9.5V5.5C4.5 4.94772 4.94772 4.5 5.5 4.5H9.5M4.5 14.5V18.5C4.5 19.0523 4.94772 19.5 5.5 19.5H9.5M14.5 4.5H18.5C19.0523 4.5 19.5 4.94772 19.5 5.5V9.5M14.5 19.5H18.5C19.0523 19.5 19.5 19.0523 19.5 18.5V14.5M9 12H15M12 9V15" 
-                      stroke="currentColor" 
-                      strokeWidth="1.5" 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  Use Template
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+            <CardTitle>Page Details</CardTitle>
+            <CardDescription>
+              Configure your custom phishing page content and settings
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <TabsContent value="custom" className="mt-0">
-              <CardDescription className="mb-6">
-                Enter the details and content for your custom phishing page
-              </CardDescription>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Page Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Company Login Page" {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            A descriptive name for your phishing page
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Page Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter page name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                    <FormField
-                      control={form.control}
-                      name="category"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Category</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a category" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="Custom">Custom</SelectItem>
-                              <SelectItem value="Social">Social Media</SelectItem>
-                              <SelectItem value="Banking">Banking</SelectItem>
-                              <SelectItem value="Corporate">Corporate</SelectItem>
-                              <SelectItem value="Cloud">Cloud Services</SelectItem>
-                              <SelectItem value="E-commerce">E-commerce</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormDescription>
-                            Category helps organize your phishing pages
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <FormField
-                    control={form.control}
-                    name="htmlContent"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>HTML Content</FormLabel>
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
                         <FormControl>
-                          <textarea
-                            className="min-h-[300px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 font-mono"
-                            placeholder="<!DOCTYPE html>..."
-                            {...field}
-                          />
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a category" />
+                          </SelectTrigger>
                         </FormControl>
-                        <FormDescription>
-                          The HTML structure of your phishing page
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                        <SelectContent>
+                          <SelectItem value="Social">Social Media</SelectItem>
+                          <SelectItem value="Banking">Banking</SelectItem>
+                          <SelectItem value="Corporate">Corporate</SelectItem>
+                          <SelectItem value="Cloud">Cloud Services</SelectItem>
+                          <SelectItem value="E-commerce">E-commerce</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                  <FormField
-                    control={form.control}
-                    name="cssContent"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>CSS Content (Optional)</FormLabel>
-                        <FormControl>
-                          <textarea
-                            className="min-h-[150px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 font-mono"
-                            placeholder="body { ... }"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          CSS styles to enhance the appearance of your page
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <FormField
+                  control={form.control}
+                  name="html_content"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>HTML Content</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          {...field} 
+                          className="font-mono h-64"
+                          placeholder="<html>...</html>"
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        HTML markup for the phishing page
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                  <FormField
-                    control={form.control}
-                    name="jsContent"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>JavaScript Content (Optional)</FormLabel>
-                        <FormControl>
-                          <textarea
-                            className="min-h-[150px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 font-mono"
-                            placeholder="document.addEventListener('DOMContentLoaded', function() { ... });"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          JavaScript to handle form submissions and interactions
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <FormField
+                  control={form.control}
+                  name="css_content"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>CSS Content</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          {...field} 
+                          className="font-mono h-40"
+                          placeholder="body { ... }"
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        CSS styles for the phishing page
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                  <div className="flex justify-end">
-                    <Button type="submit" disabled={isSubmitting}>
-                      {isSubmitting ? (
-                        <>
-                          <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-                          Creating...
-                        </>
-                      ) : (
-                        "Create Phishing Page"
-                      )}
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </TabsContent>
-            
-            <TabsContent value="templates" className="mt-0">
-              <CardDescription className="mb-6">
-                Choose from our library of phishing templates for common platforms
-              </CardDescription>
-              <PhishingTemplateLibrary onSelect={handleTemplateSelect} />
-            </TabsContent>
+                <FormField
+                  control={form.control}
+                  name="js_content"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>JavaScript Content</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          {...field} 
+                          className="font-mono h-40"
+                          placeholder="function() { ... }"
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        JavaScript code for the phishing page
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="flex justify-end gap-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => navigate("/phishing-pages")}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={isCreating}>
+                    {isCreating && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                    Create Page
+                  </Button>
+                </div>
+              </form>
+            </Form>
           </CardContent>
         </Card>
       </div>
