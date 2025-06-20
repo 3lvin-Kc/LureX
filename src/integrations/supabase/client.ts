@@ -5,6 +5,7 @@
 interface MockSupabaseResponse<T> {
   data: T | null;
   error: Error | null;
+  count?: number | null;
 }
 
 interface MockSupabaseQuery<T> {
@@ -16,6 +17,7 @@ interface MockSupabaseQuery<T> {
   not: (column: string, operator: string, value: any) => MockSupabaseQuery<T>;
   order: (column: string, options?: { ascending?: boolean }) => MockSupabaseQuery<T>;
   single: () => Promise<MockSupabaseResponse<T>>;
+  maybeSingle: () => Promise<MockSupabaseResponse<T>>;
   then: (callback: (result: MockSupabaseResponse<T[]>) => any) => Promise<any>;
 }
 
@@ -132,11 +134,20 @@ class MockSupabaseQueryImpl<T> implements MockSupabaseQuery<T> {
     };
   }
 
+  async maybeSingle(): Promise<MockSupabaseResponse<T>> {
+    const data = this.getMockData();
+    return {
+      data: Array.isArray(data) ? (data.length > 0 ? data[0] : null) : data,
+      error: null
+    };
+  }
+
   async then(callback: (result: MockSupabaseResponse<T[]>) => any): Promise<any> {
     const data = this.getMockData();
     const result = {
       data: Array.isArray(data) ? data : [data],
-      error: null
+      error: null,
+      count: Array.isArray(data) ? data.length : 1
     };
     return callback(result);
   }

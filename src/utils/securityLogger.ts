@@ -12,7 +12,16 @@ export enum SecurityEventType {
   RATE_LIMIT = 'rate_limit',
   AUTHORIZATION = 'authorization',
   DATA_MODIFICATION = 'data_modification',
-  SUSPICIOUS_ACTIVITY = 'suspicious_activity'
+  SUSPICIOUS_ACTIVITY = 'suspicious_activity',
+  INPUT_VALIDATION = 'input_validation',
+  AUTHENTICATION = 'authentication'
+}
+
+// Add SecurityEventLevel for compatibility
+export enum SecurityEventLevel {
+  INFO = 'info',
+  WARN = 'warn',
+  ERROR = 'error'
 }
 
 interface SecurityEvent {
@@ -60,11 +69,28 @@ export class SecurityLogger {
     console.log(`[Security ${level.toUpperCase()}]`, event);
   }
   
-  public validateInput(input: string, context: string): { safe: boolean; reason?: string } {
+  public validateInput(input: string, context: string): { safe: boolean; reason?: string; issues?: string[] } {
     // Mock validation - just check for obvious issues
-    if (input.includes('<script>') || input.includes('javascript:')) {
-      return { safe: false, reason: 'Potentially malicious script detected' };
+    const issues: string[] = [];
+    
+    if (input.includes('<script>')) {
+      issues.push('Script tag detected');
     }
+    if (input.includes('javascript:')) {
+      issues.push('JavaScript protocol detected');
+    }
+    if (input.includes('onload=') || input.includes('onerror=')) {
+      issues.push('Event handler detected');
+    }
+    
+    if (issues.length > 0) {
+      return { 
+        safe: false, 
+        reason: 'Potentially malicious content detected',
+        issues 
+      };
+    }
+    
     return { safe: true };
   }
 }

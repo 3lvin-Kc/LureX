@@ -1,8 +1,9 @@
+
 /**
  * Client-side rate limiter utility to prevent API abuse
  */
 
-import { securityLogger, SecurityEventLevel, SecurityEventType } from "./securityLogger";
+import { securityLogger, SecurityEventType } from "./securityLogger";
 
 interface RateLimitOptions {
   maxRequests: number;    // Maximum number of requests allowed
