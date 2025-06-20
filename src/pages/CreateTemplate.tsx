@@ -6,11 +6,33 @@ import TemplateForm from "@/components/templates/TemplateForm";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 const CreateTemplate = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const isEditing = !!id;
+
+  const handleTemplateSubmit = async (data: any) => {
+    try {
+      // Mock template creation/update
+      console.log(isEditing ? 'Updating template:' : 'Creating template:', data);
+      
+      toast({
+        title: isEditing ? "Template Updated" : "Template Created",
+        description: `Your email template has been ${isEditing ? 'updated' : 'created'} successfully.`,
+      });
+      
+      navigate("/templates");
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: `Failed to ${isEditing ? 'update' : 'create'} template. Please try again.`,
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -35,7 +57,7 @@ const CreateTemplate = () => {
           </p>
         </div>
 
-        <TemplateForm templateId={id} />
+        <TemplateForm onSubmit={handleTemplateSubmit} />
       </div>
     </DashboardLayout>
   );

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Eye } from "lucide-react";
-import { PhishingTemplate, getPhishingTemplates } from "@/utils/phishingTemplateLibrary";
+import { PhishingTemplate, phishingTemplates } from "@/utils/phishingTemplateLibrary";
 
 interface PhishingTemplateLibraryProps {
   onSelect?: (template: PhishingTemplate) => void;
@@ -17,7 +17,7 @@ const PhishingTemplateLibrary: React.FC<PhishingTemplateLibraryProps> = ({ onSel
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [previewTemplate, setPreviewTemplate] = useState<PhishingTemplate | null>(null);
 
-  const templates = getPhishingTemplates();
+  const templates = phishingTemplates;
   
   const filteredTemplates = templates.filter(template => {
     const matchesSearch = template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -57,7 +57,7 @@ const PhishingTemplateLibrary: React.FC<PhishingTemplateLibraryProps> = ({ onSel
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
-            {categories.map(category => (
+            {categories.map((category: string) => (
               <SelectItem key={category} value={category}>
                 {category}
               </SelectItem>

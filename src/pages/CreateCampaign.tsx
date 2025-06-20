@@ -5,10 +5,12 @@ import CampaignForm from '@/components/campaigns/CampaignForm';
 import { CampaignSimulationHelper } from '@/components/campaigns/CampaignSimulationHelper';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useToast } from '@/hooks/use-toast';
 
 const CreateCampaign = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('campaign');
+  const { toast } = useToast();
   
   useEffect(() => {
     // Simulate a brief loading period to ensure the component is fully mounted
@@ -18,6 +20,24 @@ const CreateCampaign = () => {
     
     return () => clearTimeout(timer);
   }, []);
+
+  const handleCampaignSubmit = async (data: any) => {
+    try {
+      // Mock campaign creation
+      console.log('Creating campaign with data:', data);
+      
+      toast({
+        title: "Campaign Created",
+        description: "Your phishing campaign has been created successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create campaign. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
   
   return (
     <DashboardLayout>
@@ -38,7 +58,7 @@ const CreateCampaign = () => {
                 </CardContent>
               </Card>
             ) : (
-              <CampaignForm />
+              <CampaignForm onSubmit={handleCampaignSubmit} />
             )}
           </TabsContent>
           

@@ -988,6 +988,11 @@ input:focus {
   }
 ];
 
+// Helper function to get all templates
+export const getPhishingTemplates = (): PhishingTemplate[] => {
+  return phishingTemplates;
+};
+
 // Helper function to get template by ID
 export const getTemplateById = (id: string): PhishingTemplate | undefined => {
   return phishingTemplates.find(template => template.id === id);
