@@ -1,7 +1,7 @@
 
 /**
- * IMPORTANT: This file is now a simplified version without authentication.
- * It contains stub functions to maintain compatibility with existing code.
+ * Simplified authentication security service for frontend-only implementation
+ * Contains mock functions to maintain compatibility with existing code
  */
 
 export enum AuthMethod {
@@ -33,9 +33,7 @@ interface AuthResult {
 export class AuthSecurityService {
   private static instance: AuthSecurityService;
   
-  private constructor() {
-    // Empty constructor
-  }
+  private constructor() {}
   
   public static getInstance(): AuthSecurityService {
     if (!AuthSecurityService.instance) {
@@ -66,7 +64,7 @@ export class AuthSecurityService {
   }
   
   public clearSession(): void {
-    // Do nothing
+    // Mock implementation
   }
 }
 

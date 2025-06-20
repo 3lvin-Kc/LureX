@@ -1,6 +1,5 @@
+
 import React, { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { PlusCircle, BarChart3, Send, Clock, AlertCircle, CheckCircle, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,54 +12,56 @@ import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { format } from "date-fns";
 
+// Mock data for frontend-only implementation
+const mockCampaigns = [
+  {
+    id: "1",
+    name: "Q1 Security Training",
+    status: "completed",
+    schedule_time: "2024-01-15T09:00:00Z",
+    template: { name: "Phishing Awareness Template" },
+    target_list: { name: "All Employees" },
+    created_at: "2024-01-10T09:00:00Z"
+  },
+  {
+    id: "2", 
+    name: "Finance Department Test",
+    status: "in_progress",
+    schedule_time: "2024-02-01T10:00:00Z",
+    template: { name: "Banking Simulation" },
+    target_list: { name: "Finance Team" },
+    created_at: "2024-01-25T09:00:00Z"
+  },
+  {
+    id: "3",
+    name: "Executive Spear Phishing",
+    status: "draft",
+    schedule_time: null,
+    template: { name: "CEO Impersonation" },
+    target_list: { name: "Leadership Team" },
+    created_at: "2024-02-05T09:00:00Z"
+  }
+];
+
 const Campaigns = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("all");
-
-  const { data: campaigns, isLoading, error, refetch } = useQuery({
-    queryKey: ["campaigns"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("campaigns")
-        .select(`
-          *,
-          template:template_id(name),
-          target_list:target_list_id(name)
-        `)
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return data;
-    },
-  });
+  const [campaigns] = useState(mockCampaigns);
+  const [isLoading] = useState(false);
 
   const handleStartCampaign = async (campaignId: string) => {
     try {
-      const response = await fetch(`${window.location.origin}/api/queue-campaign`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ campaignId }),
-      });
-
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.error || "Failed to start campaign");
-      }
-      
+      // Mock implementation
+      console.log('Mock: Starting campaign', campaignId);
       toast({
         title: "Campaign Started",
-        description: data.message,
+        description: "Campaign has been queued for execution",
       });
-      
-      refetch();
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message,
+        description: "Failed to start campaign",
         variant: "destructive",
       });
     }
@@ -103,14 +104,6 @@ const Campaigns = () => {
   const filteredCampaigns = activeTab === "all" 
     ? campaigns 
     : campaigns?.filter(campaign => campaign.status === activeTab);
-
-  if (error) {
-    toast({
-      title: "Error",
-      description: "Failed to load campaigns",
-      variant: "destructive",
-    });
-  }
 
   return (
     <DashboardLayout>

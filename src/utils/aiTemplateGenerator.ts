@@ -1,6 +1,9 @@
 
+/**
+ * Mock AI template generator for frontend-only implementation
+ */
+
 import { securityLogger, SecurityEventType } from "@/utils/securityLogger";
-import { supabase } from "@/integrations/supabase/client";
 
 export enum TemplateType {
   EMAIL = 'email',
@@ -24,7 +27,7 @@ export enum SophisticationLevel {
   BASIC = 'basic',
   INTERMEDIATE = 'intermediate',
   ADVANCED = 'advanced',
-  TARGETED = 'targeted' // For highly targeted spear phishing
+  TARGETED = 'targeted'
 }
 
 export interface TemplateGenerationOptions {
@@ -35,11 +38,11 @@ export interface TemplateGenerationOptions {
   includeUrgency?: boolean;
   includeSocialEngineering?: boolean;
   targetDemographic?: string;
-  brandImpersonation?: string; // e.g., "Microsoft", "PayPal"
-  contextualEvent?: string; // e.g., "tax season", "company merger"
-  targetedPosition?: string; // e.g., "finance department", "executives"
-  language?: string; // Default "en"
-  customPrompt?: string; // Additional customization instructions
+  brandImpersonation?: string;
+  contextualEvent?: string;
+  targetedPosition?: string;
+  language?: string;
+  customPrompt?: string;
 }
 
 export interface GeneratedTemplate {
@@ -54,14 +57,10 @@ export interface GeneratedTemplate {
     generationOptions: TemplateGenerationOptions;
     aiModel: string;
     generatedAt: string;
-    indicators: string[]; // Phishing indicators present in the template
+    indicators: string[];
   };
 }
 
-/**
- * AI-powered phishing template generator
- * Creates realistic phishing templates based on specified parameters
- */
 export class AITemplateGenerator {
   private static instance: AITemplateGenerator;
   
@@ -74,116 +73,62 @@ export class AITemplateGenerator {
     return AITemplateGenerator.instance;
   }
   
-  /**
-   * Generate a new phishing template using the AI model
-   */
   public async generateTemplate(
     options: TemplateGenerationOptions
   ): Promise<GeneratedTemplate | null> {
     try {
-      // Log the template generation request
       securityLogger.info(
         SecurityEventType.API_ACCESS,
-        "Template generation requested",
+        "Mock: Template generation requested",
         { options }
       );
       
-      // Call the Supabase Edge Function to generate the template
-      const { data, error } = await supabase.functions.invoke("generate-template", {
-        body: { options }
-      });
+      // Mock template generation
+      const mockTemplate: GeneratedTemplate = {
+        id: `mock-${Date.now()}`,
+        type: options.type,
+        subject: `Mock ${options.industry} Template`,
+        htmlContent: `<div>Mock HTML content for ${options.industry} industry</div>`,
+        textContent: `Mock text content for ${options.industry} industry`,
+        metadata: {
+          industry: options.industry,
+          sophisticationLevel: options.sophisticationLevel,
+          generationOptions: options,
+          aiModel: "mock-ai",
+          generatedAt: new Date().toISOString(),
+          indicators: ["Mock indicator 1", "Mock indicator 2"]
+        }
+      };
       
-      if (error) {
-        securityLogger.error(
-          SecurityEventType.API_ACCESS,
-          "Template generation failed",
-          { error, options }
-        );
-        return null;
-      }
-      
-      // Log successful template generation
-      securityLogger.info(
-        SecurityEventType.API_ACCESS,
-        "Template generation successful",
-        { templateId: data.id, type: options.type }
-      );
-      
-      return data as GeneratedTemplate;
+      return mockTemplate;
     } catch (error) {
       securityLogger.error(
         SecurityEventType.API_ACCESS,
-        "Error in template generation",
+        "Error in mock template generation",
         { error, options }
       );
       return null;
     }
   }
   
-  /**
-   * Save a generated template to the database
-   */
-  public async saveTemplate(
-    template: GeneratedTemplate
-  ): Promise<boolean> {
+  public async saveTemplate(template: GeneratedTemplate): Promise<boolean> {
     try {
-      let { type, subject, htmlContent, textContent, metadata } = template;
-      
-      // Store based on the template type
-      if (type === TemplateType.EMAIL) {
-        const { error } = await supabase.from("email_templates").insert({
-          name: `AI Generated - ${metadata.industry} - ${new Date().toISOString().split('T')[0]}`,
-          description: `AI-generated ${metadata.sophisticationLevel} level template for ${metadata.industry} industry`,
-          subject: subject || "Important Information", // Fallback subject
-          html_content: htmlContent || "",
-          text_content: textContent,
-          category: metadata.industry
-        });
-        
-        if (error) {
-          throw error;
-        }
-      } else {
-        // Handle other template types (SMS, social media, voice script)
-        // Would implement additional storage logic for other template types
-      }
-      
+      // Mock save - would normally save to database
+      console.log('Mock: Saving template', template);
       return true;
     } catch (error) {
       securityLogger.error(
         SecurityEventType.DATA_ACCESS,
-        "Failed to save AI-generated template",
+        "Failed to save mock template",
         { error, templateId: template.id }
       );
       return false;
     }
   }
   
-  /**
-   * Analyze content to detect phishing indicators
-   */
-  public async analyzePhishingContent(
-    content: string
-  ): Promise<string[]> {
-    try {
-      // Call the Supabase Edge Function to analyze the content
-      const { data, error } = await supabase.functions.invoke("analyze-phishing", {
-        body: { content }
-      });
-      
-      if (error) {
-        throw error;
-      }
-      
-      return data.indicators as string[];
-    } catch (error) {
-      securityLogger.error(
-        SecurityEventType.API_ACCESS,
-        "Error analyzing phishing content",
-        { error }
-      );
-      return ["Error analyzing content"];
-    }
+  public async analyzePhishingContent(content: string): Promise<string[]> {
+    console.log('Mock: Analyzing phishing content', content);
+    return ["Mock phishing indicator"];
   }
 }
 
