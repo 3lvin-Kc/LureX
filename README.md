@@ -1,69 +1,85 @@
-# Welcome to your Lovable project
 
-## Project info
+# PhishGuard - Frontend-Only Phishing Simulation Platform
 
-**URL**: https://lovable.dev/projects/225ad618-8fb0-4732-8502-f62656f25994
+A comprehensive phishing simulation platform built with React, TypeScript, and Tailwind CSS. This is currently a frontend-only implementation with mock data for demonstration and development purposes.
 
-## How can I edit this code?
+## Features
 
-There are several ways of editing your application.
+- **Campaign Management**: Create and manage phishing simulation campaigns
+- **Email Templates**: Design and customize phishing email templates
+- **Phishing Pages**: Create realistic phishing landing pages
+- **Target Lists**: Manage employee contact lists for simulations
+- **Analytics & Reporting**: Track campaign performance and user interactions
+- **Security Training**: Integrated awareness training modules
 
-**Use Lovable**
+## Tech Stack
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/225ad618-8fb0-4732-8502-f62656f25994) and start prompting.
+- **Frontend**: React 18, TypeScript, Vite
+- **Styling**: Tailwind CSS, Shadcn/ui
+- **State Management**: TanStack Query
+- **Routing**: React Router
+- **Icons**: Lucide React
+- **Charts**: Recharts
 
-Changes made via Lovable will be committed automatically to this repo.
+## Getting Started
 
-**Use your preferred IDE**
+### Prerequisites
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- Node.js 18+ 
+- npm or yarn
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Installation
 
-Follow these steps:
+1. Clone the repository
+```bash
+git clone <repository-url>
+cd phishguard
+```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+2. Install dependencies
+```bash
+npm install
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+3. Start the development server
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+4. Open your browser and navigate to `http://localhost:8080`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Current State
 
-**Use GitHub Codespaces**
+This application is currently **frontend-only** with mock data implementations. All backend integrations have been removed and the application operates entirely with simulated functionality for:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+- User authentication (mock login)
+- Data storage (local state/localStorage)
+- Email delivery (simulated)
+- Analytics (mock data)
 
-## What technologies are used for this project?
+## MVP Development
 
-This project is built with .
+See `current2.md` for detailed MVP requirements and development roadmap to transform this into a production-ready application.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Project Structure
 
-## How can I deploy this project?
+```
+src/
+├── components/          # Reusable UI components
+├── pages/              # Page components
+├── utils/              # Utility functions
+├── hooks/              # Custom React hooks
+├── lib/                # Library configurations
+└── assets/             # Static assets
+```
 
-Simply open [Lovable](https://lovable.dev/projects/225ad618-8fb0-4732-8502-f62656f25994) and click on Share -> Publish.
+## Scripts
 
-## I want to use a custom domain - is that possible?
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
 
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+## Contributing
+
+This is a frontend-only demonstration. For production deployment, backend services will need to be implemented according to the MVP specification in `current2.md`.

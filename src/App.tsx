@@ -40,11 +40,11 @@ const applySecurityHeaders = () => {
   cspHeader.httpEquiv = 'Content-Security-Policy';
   cspHeader.content = 
     "default-src 'self';" +
-    "script-src 'self' 'unsafe-inline' https://apis.google.com;" + // Unlock as needed
+    "script-src 'self' 'unsafe-inline' https://apis.google.com;" +
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;" +
     "img-src 'self' data: https: blob:;" +
     "font-src 'self' https://fonts.gstatic.com;" +
-    "connect-src 'self' https://api.openai.com;" + // Add other APIs as needed
+    "connect-src 'self' https://api.openai.com;" +
     "frame-src 'self';" +
     "object-src 'none';";
   
