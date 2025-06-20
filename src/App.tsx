@@ -44,7 +44,7 @@ const applySecurityHeaders = () => {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;" +
     "img-src 'self' data: https: blob:;" +
     "font-src 'self' https://fonts.gstatic.com;" +
-    "connect-src 'self' https://*.supabase.co https://api.openai.com;" + // Add other APIs as needed
+    "connect-src 'self' https://api.openai.com;" + // Add other APIs as needed
     "frame-src 'self';" +
     "object-src 'none';";
   
