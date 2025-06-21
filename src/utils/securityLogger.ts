@@ -1,11 +1,13 @@
-
 export enum SecurityEventType {
   AUTHENTICATION = 'authentication',
   AUTHORIZATION = 'authorization', 
   DATA_ACCESS = 'data_access',
   INPUT_VALIDATION = 'input_validation',
   SUSPICIOUS_ACTIVITY = 'suspicious_activity',
-  SYSTEM_ERROR = 'system_error'
+  SYSTEM_ERROR = 'system_error',
+  API_ACCESS = 'api_access',
+  RATE_LIMIT = 'rate_limit',
+  PHISHING_PAGE_ACCESS = 'phishing_page_access'
 }
 
 interface SecurityEvent {
