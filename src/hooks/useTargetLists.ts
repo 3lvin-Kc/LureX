@@ -44,7 +44,17 @@ export const useTargetLists = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setTargetLists(data || []);
+      
+      // Type cast the data to match our interfaces
+      const typedData = (data || []).map(list => ({
+        ...list,
+        targets: list.targets?.map((target: any) => ({
+          ...target,
+          custom_fields: target.custom_fields || {}
+        }))
+      }));
+      
+      setTargetLists(typedData);
     } catch (error: any) {
       toast({
         title: "Error",

@@ -38,7 +38,14 @@ export const useCampaigns = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setCampaigns(data || []);
+      
+      // Type cast the data to match our Campaign interface
+      const typedData = (data || []).map(item => ({
+        ...item,
+        status: item.status as Campaign['status']
+      }));
+      
+      setCampaigns(typedData);
     } catch (error: any) {
       toast({
         title: "Error",
