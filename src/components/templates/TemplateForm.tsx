@@ -190,7 +190,7 @@ const TemplateForm: React.FC<TemplateFormProps> = ({ onSubmit, initialData, isEd
                           />
                         </FormControl>
                         <FormDescription>
-                          HTML markup for the email template. Use {{name}}, {{email}}, etc. for personalization
+                          HTML markup for the email template. Use variables like {"{name}"}, {"{email}"}, etc. for personalization
                         </FormDescription>
                         <FormMessage />
                       </FormItem>

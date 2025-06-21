@@ -8,58 +8,35 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import { PlusCircle, Edit, Trash2, Copy, Eye, Wand2 } from "lucide-react";
+import { Edit, Trash2, Copy, Eye, Wand2 } from "lucide-react";
 import { format } from "date-fns";
-
-// Mock data for templates
-const mockTemplates = [
-  {
-    id: "1",
-    name: "Password Reset Notification",
-    subject: "Password Reset Required",
-    category: "Security",
-    html_content: "<p>Your password needs to be reset. Click here to continue.</p>",
-    text_content: "Your password needs to be reset.",
-    description: "Standard password reset phishing template",
-    version: 1,
-    created_at: "2024-01-01T00:00:00Z"
-  },
-  {
-    id: "2",
-    name: "IT Support Alert",
-    subject: "Urgent: Security Update Required",
-    category: "IT",
-    html_content: "<p>Your system requires an immediate security update.</p>",
-    text_content: "Your system requires an immediate security update.",
-    description: "IT support impersonation template",
-    version: 1,
-    created_at: "2024-01-02T00:00:00Z"
-  }
-];
+import { useTemplates } from "@/hooks/useTemplates";
+import { supabase } from "@/integrations/supabase/client";
 
 const Templates = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [templates, setTemplates] = useState(mockTemplates);
-  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const { templates: templatesData, loading, deleteTemplate } = useTemplates();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [templates, setTemplates] = useState(templatesData);
+
+  React.useEffect(() => {
+    setTemplates(templatesData);
+  }, [templatesData]);
 
   const handleDeleteTemplate = async (id: string) => {
-    setIsDeleting(id);
     try {
-      // Mock deletion
-      setTemplates(prev => prev.filter(template => template.id !== id));
+      await deleteTemplate(id);
       toast({
         title: "Template deleted",
         description: "Email template has been deleted successfully"
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error deleting template",
-        description: "Failed to delete email template",
+        description: error.message || "Failed to delete email template",
         variant: "destructive"
       });
-    } finally {
-      setIsDeleting(null);
     }
   };
 
@@ -68,34 +45,97 @@ const Templates = () => {
       const templateToDuplicate = templates.find(t => t.id === templateId);
       if (!templateToDuplicate) return;
 
-      const newTemplate = {
-        ...templateToDuplicate,
-        id: Date.now().toString(),
-        name: `${templateToDuplicate.name} (Copy)`,
-        created_at: new Date().toISOString()
-      };
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
 
-      setTemplates(prev => [...prev, newTemplate]);
+      const { data, error } = await supabase
+        .from('email_templates')
+        .insert({
+          name: `${templateToDuplicate.name} (Copy)`,
+          subject: templateToDuplicate.subject,
+          html_content: templateToDuplicate.html_content,
+          text_content: templateToDuplicate.text_content,
+          category: templateToDuplicate.category,
+          description: templateToDuplicate.description,
+          version: 1,
+          user_id: user.id
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setTemplates(prev => [...prev, data]);
       toast({
         title: "Template duplicated",
         description: `"${templateToDuplicate.name}" has been duplicated successfully`
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error duplicating template",
-        description: "Failed to duplicate email template",
+        description: error.message || "Failed to duplicate email template",
         variant: "destructive"
       });
     }
   };
 
-  const handleGenerateWithAI = () => {
-    toast({
-      title: "AI Generation not implemented",
-      description: "AI template generation functionality is not yet available",
-      variant: "destructive"
-    });
+  const handleGenerateWithAI = async () => {
+    setIsGenerating(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({
+          title: "Authentication required",
+          description: "Please sign in to generate templates with AI",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const response = await supabase.functions.invoke('generate-template-ai', {
+        body: { 
+          prompt: "Generate a professional phishing email template for security awareness training that simulates a password reset request" 
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'AI generation failed');
+      }
+
+      if (response.data?.success) {
+        setTemplates(prev => [...prev, response.data.data]);
+        toast({
+          title: "Template generated",
+          description: "AI-generated template has been created successfully"
+        });
+      } else {
+        throw new Error(response.data?.error || 'AI generation failed');
+      }
+    } catch (error: any) {
+      toast({
+        title: "AI generation failed",
+        description: error.message || "Failed to generate template with AI",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGenerating(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="container mx-auto p-4 max-w-7xl">
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -106,13 +146,13 @@ const Templates = () => {
             <p className="text-muted-foreground">Manage email templates for your phishing campaigns</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={handleGenerateWithAI}>
+            <Button 
+              variant="outline" 
+              onClick={handleGenerateWithAI}
+              disabled={isGenerating}
+            >
               <Wand2 size={16} className="mr-2" />
-              Generate with AI
-            </Button>
-            <Button onClick={() => navigate("/templates/new")}>
-              <PlusCircle size={16} className="mr-2" />
-              New Template
+              {isGenerating ? "Generating..." : "Generate with AI"}
             </Button>
           </div>
         </div>
@@ -128,9 +168,9 @@ const Templates = () => {
             {templates.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-muted-foreground mb-4">No templates found</p>
-                <Button onClick={() => navigate("/templates/new")}>
-                  <PlusCircle size={16} className="mr-2" />
-                  Create Your First Template
+                <Button onClick={handleGenerateWithAI} disabled={isGenerating}>
+                  <Wand2 size={16} className="mr-2" />
+                  {isGenerating ? "Generating..." : "Generate Your First Template"}
                 </Button>
               </div>
             ) : (
@@ -206,7 +246,6 @@ const Templates = () => {
                                 <Button
                                   variant="outline"
                                   size="icon"
-                                  disabled={isDeleting === template.id}
                                   onClick={() => handleDeleteTemplate(template.id)}
                                 >
                                   <Trash2 size={16} />
