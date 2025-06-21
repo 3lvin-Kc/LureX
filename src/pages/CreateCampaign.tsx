@@ -6,14 +6,17 @@ import { CampaignSimulationHelper } from '@/components/campaigns/CampaignSimulat
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
+import { useCampaigns } from '@/hooks/useCampaigns';
 
 const CreateCampaign = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('campaign');
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { createCampaign } = useCampaigns();
   
   useEffect(() => {
-    // Simulate a brief loading period to ensure the component is fully mounted
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 300);
@@ -23,19 +26,20 @@ const CreateCampaign = () => {
 
   const handleCampaignSubmit = async (data: any) => {
     try {
-      // Mock campaign creation
-      console.log('Creating campaign with data:', data);
+      await createCampaign({
+        name: data.name,
+        description: data.description,
+        status: data.schedule_time ? 'scheduled' : 'draft',
+        schedule_time: data.schedule_time,
+        template_id: data.template_id,
+        target_list_id: data.target_list_id,
+        phishing_page_id: data.phishing_page_id,
+      });
       
-      toast({
-        title: "Campaign Created",
-        description: "Your phishing campaign has been created successfully.",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to create campaign. Please try again.",
-        variant: "destructive",
-      });
+      navigate('/campaigns');
+    } catch (error: any) {
+      console.error('Campaign creation error:', error);
+      // Error is already handled by the hook
     }
   };
   

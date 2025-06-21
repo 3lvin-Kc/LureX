@@ -21,11 +21,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { ArrowLeft, LoaderCircle } from "lucide-react";
+import { usePhishingPages } from "@/hooks/usePhishingPages";
 
 const formSchema = z.object({
   name: z.string().min(1, { message: "Page name is required" }),
   category: z.string().optional(),
-  html_content: z.string().optional(),
+  html_content: z.string().min(1, { message: "HTML content is required" }),
   css_content: z.string().optional(),
   js_content: z.string().optional(),
 });
@@ -34,6 +35,7 @@ const CreatePhishingPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isCreating, setIsCreating] = useState(false);
+  const { createPage } = usePhishingPages();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -49,21 +51,19 @@ const CreatePhishingPage = () => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsCreating(true);
     try {
-      // Mock page creation
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      toast({
-        title: "Success",
-        description: "Phishing page created successfully",
+      await createPage({
+        name: values.name,
+        category: values.category,
+        html_content: values.html_content,
+        css_content: values.css_content || "",
+        js_content: values.js_content || "",
+        is_custom: true,
       });
+      
       navigate("/phishing-pages");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating page:", error);
-      toast({
-        title: "Error",
-        description: "Failed to create phishing page",
-        variant: "destructive",
-      });
+      // Error handling is done in the hook
     } finally {
       setIsCreating(false);
     }
@@ -129,6 +129,7 @@ const CreatePhishingPage = () => {
                           <SelectItem value="Corporate">Corporate</SelectItem>
                           <SelectItem value="Cloud">Cloud Services</SelectItem>
                           <SelectItem value="E-commerce">E-commerce</SelectItem>
+                          <SelectItem value="Government">Government</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -146,7 +147,7 @@ const CreatePhishingPage = () => {
                         <Textarea 
                           {...field} 
                           className="font-mono h-64"
-                          placeholder="<html>...</html>"
+                          placeholder="<html><body>Your phishing page content here...</body></html>"
                         />
                       </FormControl>
                       <FormDescription>
@@ -162,12 +163,12 @@ const CreatePhishingPage = () => {
                   name="css_content"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>CSS Content</FormLabel>
+                      <FormLabel>CSS Content (Optional)</FormLabel>
                       <FormControl>
                         <Textarea 
                           {...field} 
                           className="font-mono h-40"
-                          placeholder="body { ... }"
+                          placeholder="body { font-family: Arial; }"
                         />
                       </FormControl>
                       <FormDescription>
@@ -183,12 +184,12 @@ const CreatePhishingPage = () => {
                   name="js_content"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>JavaScript Content</FormLabel>
+                      <FormLabel>JavaScript Content (Optional)</FormLabel>
                       <FormControl>
                         <Textarea 
                           {...field} 
                           className="font-mono h-40"
-                          placeholder="function() { ... }"
+                          placeholder="// Your JavaScript code here"
                         />
                       </FormControl>
                       <FormDescription>

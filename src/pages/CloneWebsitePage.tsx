@@ -4,12 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import { ArrowLeft, Globe, LoaderCircle } from "lucide-react";
+import { ArrowLeft, Globe, LoaderCircle, AlertTriangle } from "lucide-react";
+import { phishingPageService } from "@/utils/phishingPageService";
 
 const CloneWebsitePage = () => {
   const { toast } = useToast();
@@ -31,10 +31,25 @@ const CloneWebsitePage = () => {
       return;
     }
 
+    // Validate URL format
+    try {
+      new URL(formData.url);
+    } catch {
+      toast({
+        title: "Invalid URL",
+        description: "Please enter a valid URL (e.g., https://example.com)",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsCloning(true);
     try {
-      // Mock cloning process
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await phishingPageService.cloneWebsite(
+        formData.url,
+        formData.name,
+        formData.category || undefined
+      );
       
       toast({
         title: "Website Cloned Successfully",
@@ -42,10 +57,11 @@ const CloneWebsitePage = () => {
       });
       
       navigate("/phishing-pages");
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Cloning error:", error);
       toast({
         title: "Cloning Failed",
-        description: "Failed to clone the website. Please try again.",
+        description: error.message || "Failed to clone the website. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -118,17 +134,22 @@ const CloneWebsitePage = () => {
                   <SelectItem value="Cloud">Cloud Services</SelectItem>
                   <SelectItem value="E-commerce">E-commerce</SelectItem>
                   <SelectItem value="Government">Government</SelectItem>
+                  <SelectItem value="Cloned">Cloned</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
-              <h4 className="font-medium text-yellow-800 mb-2">⚠️ Important Notes</h4>
-              <ul className="text-sm text-yellow-700 space-y-1">
-                <li>• Only clone websites you have permission to use for testing</li>
-                <li>• This is for authorized phishing simulations only</li>
-                <li>• The cloned page will be modified to include tracking capabilities</li>
-                <li>• Some interactive elements may not function identically</li>
+            <div className="bg-amber-50 border border-amber-200 rounded-md p-4">
+              <h4 className="font-medium text-amber-800 mb-2 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4" />
+                Legal & Ethical Guidelines
+              </h4>
+              <ul className="text-sm text-amber-700 space-y-1">
+                <li>• Only clone websites you have explicit permission to use for testing</li>
+                <li>• This tool is for authorized phishing simulations only</li>
+                <li>• The cloned page will include tracking capabilities for metrics</li>
+                <li>• Some dynamic elements may require manual adjustment</li>
+                <li>• Ensure compliance with your organization's security policies</li>
               </ul>
             </div>
 
@@ -137,6 +158,7 @@ const CloneWebsitePage = () => {
                 variant="outline"
                 onClick={() => navigate("/phishing-pages")}
                 className="flex-1"
+                disabled={isCloning}
               >
                 Cancel
               </Button>
@@ -146,7 +168,7 @@ const CloneWebsitePage = () => {
                 className="flex-1"
               >
                 {isCloning && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-                {isCloning ? "Cloning..." : "Clone Website"}
+                {isCloning ? "Cloning Website..." : "Clone Website"}
               </Button>
             </div>
           </CardContent>

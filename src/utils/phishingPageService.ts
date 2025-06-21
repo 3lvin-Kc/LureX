@@ -1,19 +1,18 @@
 
-/**
- * Mock phishing page service for frontend-only implementation
- */
-
+import { supabase } from "@/integrations/supabase/client";
 import { securityLogger, SecurityEventType } from "@/utils/securityLogger";
 
 export interface PhishingPageData {
   id: string;
   name: string;
   category: string;
-  htmlContent: string;
-  cssContent?: string;
-  jsContent?: string;
-  isCustom: boolean;
-  sourceUrl?: string;
+  html_content: string;
+  css_content?: string;
+  js_content?: string;
+  is_custom: boolean;
+  source_url?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export class PhishingPageService {
@@ -28,34 +27,49 @@ export class PhishingPageService {
     return PhishingPageService.instance;
   }
   
-  public async cloneWebsite(url: string): Promise<PhishingPageData | null> {
+  public async cloneWebsite(url: string, name: string, category?: string): Promise<PhishingPageData> {
     try {
       securityLogger.info(
         SecurityEventType.DATA_ACCESS,
-        "Mock: Cloning website",
-        { url }
+        "Cloning website",
+        { url, name }
       );
       
-      // Mock website cloning
-      const mockPage: PhishingPageData = {
-        id: `mock-${Date.now()}`,
-        name: `Cloned from ${url}`,
-        category: 'Cloned',
-        htmlContent: `<html><body><h1>Mock cloned content from ${url}</h1></body></html>`,
-        cssContent: 'body { font-family: Arial; }',
-        jsContent: 'console.log("Mock cloned page");',
-        isCustom: false,
-        sourceUrl: url
-      };
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Authentication required');
+      }
+
+      const response = await supabase.functions.invoke('clone-website', {
+        body: { url, name, category },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to clone website');
+      }
+
+      if (!response.data?.success) {
+        throw new Error(response.data?.error || 'Cloning failed');
+      }
+
+      securityLogger.info(
+        SecurityEventType.DATA_ACCESS,
+        "Website cloned successfully",
+        { url, name, id: response.data.data.id }
+      );
+
+      return response.data.data;
       
-      return mockPage;
-    } catch (error) {
+    } catch (error: any) {
       securityLogger.error(
         SecurityEventType.DATA_ACCESS,
         "Failed to clone website",
-        { error, url }
+        { error: error.message, url, name }
       );
-      return null;
+      throw error;
     }
   }
   
@@ -63,30 +77,20 @@ export class PhishingPageService {
     try {
       securityLogger.info(
         SecurityEventType.API_ACCESS,
-        "Mock: Generating page from AI",
+        "Generating page from AI (placeholder - not implemented)",
         { prompt }
       );
       
-      // Mock AI generation
-      const mockPage: PhishingPageData = {
-        id: `mock-ai-${Date.now()}`,
-        name: `AI Generated: ${prompt.substring(0, 30)}...`,
-        category: 'AI Generated',
-        htmlContent: `<html><body><h1>AI Generated Content</h1><p>Based on: ${prompt}</p></body></html>`,
-        cssContent: 'body { font-family: Arial; background: #f0f0f0; }',
-        jsContent: 'console.log("AI generated page");',
-        isCustom: true,
-        sourceUrl: undefined
-      };
+      // This would require an AI API integration - placeholder for now
+      throw new Error("AI generation not implemented yet - use manual creation or website cloning");
       
-      return mockPage;
-    } catch (error) {
+    } catch (error: any) {
       securityLogger.error(
         SecurityEventType.API_ACCESS,
         "Failed to generate AI page",
-        { error, prompt }
+        { error: error.message, prompt }
       );
-      return null;
+      throw error;
     }
   }
 }

@@ -1,115 +1,157 @@
 
-import React from 'react';
+import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, CheckCircle, HelpCircle, Mail, MousePointer, User } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Mail, Users, Globe, BarChart3, Shield, Target, Clock, CheckCircle } from "lucide-react";
 
-interface CampaignSimulationHelperProps {
-  campaignId?: string;
-}
+export const CampaignSimulationHelper: React.FC = () => {
+  const steps = [
+    {
+      icon: Mail,
+      title: "Email Template",
+      description: "Create or select a phishing email template that mimics legitimate communications",
+      details: ["Realistic subject lines", "Professional formatting", "Social engineering tactics", "Call-to-action links"]
+    },
+    {
+      icon: Users,
+      title: "Target List",
+      description: "Define your target audience with email addresses and personal information",
+      details: ["Employee email addresses", "Names and departments", "Job titles and roles", "Custom personalization fields"]
+    },
+    {
+      icon: Globe,
+      title: "Landing Page",
+      description: "Set up a phishing page that targets will see when they click the email link",
+      details: ["Cloned legitimate websites", "Credential harvesting forms", "Fake login pages", "Tracking capabilities"]
+    },
+    {
+      icon: Target,
+      title: "Campaign Launch",
+      description: "Execute the phishing simulation and monitor target interactions",
+      details: ["Scheduled or immediate sending", "Email delivery tracking", "Click-through monitoring", "Data collection"]
+    },
+    {
+      icon: BarChart3,
+      title: "Results & Analytics",
+      description: "Analyze the results to identify security awareness gaps",
+      details: ["Email open rates", "Link click rates", "Credential submission", "Training recommendations"]
+    }
+  ];
 
-export const CampaignSimulationHelper: React.FC<CampaignSimulationHelperProps> = ({ 
-  campaignId 
-}) => {
-  const { toast } = useToast();
-  
+  const metrics = [
+    { label: "Email Delivered", description: "Percentage of emails successfully delivered", icon: CheckCircle },
+    { label: "Emails Opened", description: "Users who opened the phishing email", icon: Mail },
+    { label: "Links Clicked", description: "Users who clicked on malicious links", icon: Target },
+    { label: "Data Submitted", description: "Users who entered credentials or data", icon: Shield },
+    { label: "Reported as Phishing", description: "Users who correctly identified the threat", icon: CheckCircle }
+  ];
+
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-xl">How Phishing Simulations Work</CardTitle>
-        <CardDescription>
-          Understanding the mechanics behind your phishing campaigns
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4 text-sm">
-        <div className="flex items-start gap-3">
-          <div className="bg-blue-100 p-2 rounded-full">
-            <Mail className="h-5 w-5 text-blue-600" />
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="w-5 h-5" />
+            How Phishing Simulations Work
+          </CardTitle>
+          <CardDescription>
+            Understanding the process of creating and executing effective phishing simulations for security awareness training
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-6">
+            {steps.map((step, index) => {
+              const Icon = step.icon;
+              return (
+                <div key={index} className="flex gap-4 p-4 border rounded-lg">
+                  <div className="flex-shrink-0">
+                    <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-full">
+                      <Icon className="w-5 h-5 text-blue-600" />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge variant="outline">{index + 1}</Badge>
+                      <h3 className="text-lg font-semibold">{step.title}</h3>
+                    </div>
+                    <p className="text-muted-foreground mb-3">{step.description}</p>
+                    <ul className="grid grid-cols-2 gap-2">
+                      {step.details.map((detail, detailIndex) => (
+                        <li key={detailIndex} className="text-sm text-gray-600 flex items-center gap-1">
+                          <div className="w-1 h-1 bg-blue-500 rounded-full"></div>
+                          {detail}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-          <div>
-            <h4 className="font-medium">1. Email Delivery</h4>
-            <p className="text-muted-foreground">
-              Each email has unique tracking codes to monitor opens and clicks
-              from individual recipients.
-            </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="w-5 h-5" />
+            Key Metrics & Analytics
+          </CardTitle>
+          <CardDescription>
+            Important metrics to track during your phishing simulation campaigns
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {metrics.map((metric, index) => {
+              const Icon = metric.icon;
+              return (
+                <div key={index} className="flex items-start gap-3 p-3 border rounded-lg">
+                  <Icon className="w-5 h-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium">{metric.label}</h4>
+                    <p className="text-sm text-muted-foreground">{metric.description}</p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </div>
-        
-        <Separator />
-        
-        <div className="flex items-start gap-3">
-          <div className="bg-amber-100 p-2 rounded-full">
-            <MousePointer className="h-5 w-5 text-amber-600" />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="w-5 h-5" />
+            Best Practices
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+              <h4 className="font-medium text-green-800 mb-2">Do's</h4>
+              <ul className="text-sm text-green-700 space-y-1">
+                <li>• Get proper authorization before conducting simulations</li>
+                <li>• Use realistic but identifiable phishing scenarios</li>
+                <li>• Provide immediate feedback and training to participants</li>
+                <li>• Track progress over time with multiple campaigns</li>
+                <li>• Focus on education rather than punishment</li>
+              </ul>
+            </div>
+            
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+              <h4 className="font-medium text-red-800 mb-2">Don'ts</h4>
+              <ul className="text-sm text-red-700 space-y-1">
+                <li>• Don't conduct simulations without proper approval</li>
+                <li>• Avoid overly sophisticated attacks that could cause panic</li>
+                <li>• Don't shame or penalize employees for falling for simulations</li>
+                <li>• Avoid running campaigns during high-stress periods</li>
+                <li>• Don't forget to provide follow-up training resources</li>
+              </ul>
+            </div>
           </div>
-          <div>
-            <h4 className="font-medium">2. Link Redirection</h4>
-            <p className="text-muted-foreground">
-              When links are clicked, recipients are first sent through our secure
-              tracking server before being redirected to the simulation page.
-            </p>
-          </div>
-        </div>
-        
-        <Separator />
-        
-        <div className="flex items-start gap-3">
-          <div className="bg-green-100 p-2 rounded-full">
-            <User className="h-5 w-5 text-green-600" />
-          </div>
-          <div>
-            <h4 className="font-medium">3. Safe Simulation</h4>
-            <p className="text-muted-foreground">
-              Phishing pages look authentic but are completely isolated from real systems.
-              No actual credentials or sensitive data are stored.
-            </p>
-          </div>
-        </div>
-        
-        <Separator />
-        
-        <div className="flex items-start gap-3">
-          <div className="bg-purple-100 p-2 rounded-full">
-            <CheckCircle className="h-5 w-5 text-purple-600" />
-          </div>
-          <div>
-            <h4 className="font-medium">4. Educational Opportunity</h4>
-            <p className="text-muted-foreground">
-              After interaction, employees receive immediate training based on their response,
-              helping build awareness and improve security behaviors.
-            </p>
-          </div>
-        </div>
-        
-        <div className="pt-3">
-          <Button 
-            variant="outline" 
-            size="sm"
-            className="text-xs"
-            onClick={() => {
-              toast({
-                title: "Documentation Available",
-                description: "Phishing simulation documentation has been added to your dashboard.",
-              });
-            }}
-          >
-            <HelpCircle className="mr-2 h-4 w-4" />
-            Learn More About Phishing Simulations
-          </Button>
-        </div>
-        
-        <div className="mt-4 bg-amber-50 p-3 rounded-md flex items-start">
-          <AlertCircle className="h-5 w-5 text-amber-500 mr-2 shrink-0 mt-0.5" />
-          <p className="text-amber-800 text-xs">
-            Remember that phishing simulations are educational tools designed to improve
-            security awareness. Always ensure employees understand the purpose and benefit
-            of these exercises.
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
-
-export default CampaignSimulationHelper;

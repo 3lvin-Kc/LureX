@@ -1,142 +1,126 @@
 
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { useToast } from "@/hooks/use-toast";
-import { securityLogger, SecurityEventType } from "@/utils/securityLogger";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { LoaderCircle, Calendar, Mail, Users, Globe } from "lucide-react";
+import { useTemplates } from "@/hooks/useTemplates";
+import { useTargetLists } from "@/hooks/useTargetLists";
+import { usePhishingPages } from "@/hooks/usePhishingPages";
 
 const formSchema = z.object({
-  name: z.string().min(1, "Campaign name is required"),
+  name: z.string().min(1, { message: "Campaign name is required" }),
   description: z.string().optional(),
-  template_id: z.string().min(1, "Template is required"),
-  target_list_id: z.string().min(1, "Target list is required"),
-  provider_id: z.string().min(1, "Email provider is required"),
+  template_id: z.string().min(1, { message: "Email template is required" }),
+  target_list_id: z.string().min(1, { message: "Target list is required" }),
+  phishing_page_id: z.string().min(1, { message: "Phishing page is required" }),
   schedule_time: z.string().optional(),
-  enable_tracking: z.boolean().default(true),
 });
 
-type FormData = z.infer<typeof formSchema>;
-
 interface CampaignFormProps {
-  onSubmit: (data: FormData) => void;
-  isLoading?: boolean;
-  initialData?: Partial<FormData>;
+  onSubmit: (data: any) => Promise<void>;
 }
 
-const CampaignForm: React.FC<CampaignFormProps> = ({
-  onSubmit,
-  isLoading = false,
-  initialData = {},
-}) => {
-  const { toast } = useToast();
-  const [templates] = useState([
-    { id: "1", name: "Password Reset Template" },
-    { id: "2", name: "IT Support Alert" }
-  ]);
-  const [targetLists] = useState([
-    { id: "1", name: "All Employees" },
-    { id: "2", name: "Marketing Team" }
-  ]);
-  const [providers] = useState([
-    { id: "1", name: "SMTP Provider" },
-    { id: "2", name: "SendGrid" }
-  ]);
+const CampaignForm: React.FC<CampaignFormProps> = ({ onSubmit }) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isScheduled, setIsScheduled] = useState(false);
+  
+  const { templates, loading: templatesLoading } = useTemplates();
+  const { targetLists, loading: targetListsLoading } = useTargetLists();
+  const { pages, loading: pagesLoading } = usePhishingPages();
 
-  const form = useForm<FormData>({
+  const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: initialData.name || "",
-      description: initialData.description || "",
-      template_id: initialData.template_id || "",
-      target_list_id: initialData.target_list_id || "",
-      provider_id: initialData.provider_id || "",
-      schedule_time: initialData.schedule_time || "",
-      enable_tracking: initialData.enable_tracking ?? true,
+      name: "",
+      description: "",
+      template_id: "",
+      target_list_id: "",
+      phishing_page_id: "",
+      schedule_time: "",
     },
   });
 
-  const handleSubmit = (data: FormData) => {
-    // Validate campaign name
-    const nameValidation = securityLogger.validateInput(data.name, 'campaign_name');
-    if (!nameValidation.safe) {
-      securityLogger.warn(
-        SecurityEventType.INPUT_VALIDATION,
-        "Invalid campaign name detected",
-        { reason: nameValidation.reason, issues: nameValidation.issues }
-      );
-      toast({
-        title: "Validation Error",
-        description: nameValidation.reason,
-        variant: "destructive",
-      });
-      return;
+  const handleSubmit = async (values: z.infer<typeof formSchema>) => {
+    setIsSubmitting(true);
+    try {
+      await onSubmit(values);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    // Validate description if provided
-    if (data.description) {
-      const descValidation = securityLogger.validateInput(data.description, 'campaign_description');
-      if (!descValidation.safe) {
-        securityLogger.warn(
-          SecurityEventType.INPUT_VALIDATION,
-          "Invalid campaign description detected",
-          { reason: descValidation.reason, issues: descValidation.issues }
-        );
-        toast({
-          title: "Validation Error", 
-          description: descValidation.reason,
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-
-    onSubmit(data);
   };
+
+  const formatDateTime = (date: Date) => {
+    return date.toISOString().slice(0, 16);
+  };
+
+  const minDateTime = formatDateTime(new Date(Date.now() + 5 * 60 * 1000)); // 5 minutes from now
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Campaign Details</CardTitle>
+        <CardTitle>Campaign Configuration</CardTitle>
         <CardDescription>
-          Configure your phishing simulation campaign
+          Set up your phishing simulation campaign with email templates, target lists, and landing pages
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Campaign Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter campaign name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Campaign Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter campaign name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="schedule"
+                  checked={isScheduled}
+                  onChange={(e) => setIsScheduled(e.target.checked)}
+                  className="rounded"
+                />
+                <label htmlFor="schedule" className="text-sm font-medium">
+                  Schedule campaign for later
+                </label>
+              </div>
+            </div>
 
             <FormField
               control={form.control}
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description</FormLabel>
+                  <FormLabel>Description (Optional)</FormLabel>
                   <FormControl>
-                    <Textarea
-                      placeholder="Enter campaign description"
-                      className="resize-none"
-                      {...field}
+                    <Textarea 
+                      placeholder="Brief description of this campaign..."
+                      className="h-20"
+                      {...field} 
                     />
                   </FormControl>
                   <FormMessage />
@@ -144,122 +128,161 @@ const CampaignForm: React.FC<CampaignFormProps> = ({
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="template_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email Template</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+            {isScheduled && (
+              <FormField
+                control={form.control}
+                name="schedule_time"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      Schedule Time
+                    </FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select email template" />
-                      </SelectTrigger>
+                      <Input 
+                        type="datetime-local"
+                        min={minDateTime}
+                        {...field} 
+                      />
                     </FormControl>
-                    <SelectContent>
-                      {templates.map((template) => (
-                        <SelectItem key={template.id} value={template.id}>
-                          {template.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormDescription>
+                      Choose when to automatically start this campaign
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
-            <FormField
-              control={form.control}
-              name="target_list_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Target List</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select target list" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {targetLists.map((list) => (
-                        <SelectItem key={list.id} value={list.id}>
-                          {list.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <FormField
+                control={form.control}
+                name="template_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      <Mail className="w-4 h-4" />
+                      Email Template
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select template" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {templatesLoading ? (
+                          <SelectItem value="" disabled>Loading templates...</SelectItem>
+                        ) : templates.length === 0 ? (
+                          <SelectItem value="" disabled>No templates available</SelectItem>
+                        ) : (
+                          templates.map((template) => (
+                            <SelectItem key={template.id} value={template.id}>
+                              {template.name} ({template.category})
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      The email template to send to targets
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="provider_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email Provider</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select email provider" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {providers.map((provider) => (
-                        <SelectItem key={provider.id} value={provider.id}>
-                          {provider.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="target_list_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      <Users className="w-4 h-4" />
+                      Target List
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select target list" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {targetListsLoading ? (
+                          <SelectItem value="" disabled>Loading target lists...</SelectItem>
+                        ) : targetLists.length === 0 ? (
+                          <SelectItem value="" disabled>No target lists available</SelectItem>
+                        ) : (
+                          targetLists.map((list) => (
+                            <SelectItem key={list.id} value={list.id}>
+                              {list.name} ({list.target_count} targets)
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      The list of people to target
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="schedule_time"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Schedule Time (Optional)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="datetime-local"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="phishing_page_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      <Globe className="w-4 h-4" />
+                      Landing Page
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select landing page" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {pagesLoading ? (
+                          <SelectItem value="" disabled>Loading pages...</SelectItem>
+                        ) : pages.length === 0 ? (
+                          <SelectItem value="" disabled>No phishing pages available</SelectItem>
+                        ) : (
+                          pages.map((page) => (
+                            <SelectItem key={page.id} value={page.id}>
+                              {page.name} {page.category && `(${page.category})`}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      The page targets will see when they click the email
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-            <FormField
-              control={form.control}
-              name="enable_tracking"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <FormLabel className="text-base">Enable Tracking</FormLabel>
-                    <div className="text-sm text-muted-foreground">
-                      Track email opens and link clicks
-                    </div>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+              <h4 className="font-medium text-blue-800 mb-2">Campaign Requirements</h4>
+              <ul className="text-sm text-blue-700 space-y-1">
+                <li>• Ensure you have created at least one email template</li>
+                <li>• Create a target list with email addresses</li>
+                <li>• Set up a phishing page (landing page) for targets to visit</li>
+                <li>• All components must be created before launching the campaign</li>
+              </ul>
+            </div>
 
-            <Button type="submit" disabled={isLoading} className="w-full">
-              {isLoading ? "Creating Campaign..." : "Create Campaign"}
-            </Button>
+            <div className="flex justify-end gap-4 pt-4">
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                {isScheduled ? "Schedule Campaign" : "Create Campaign"}
+              </Button>
+            </div>
           </form>
         </Form>
       </CardContent>
