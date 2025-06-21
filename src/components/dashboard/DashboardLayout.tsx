@@ -1,107 +1,116 @@
 
-import React, { useState } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import React from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
+  Shield, 
   BarChart3, 
-  Users, 
   Mail, 
+  Users, 
+  Globe, 
+  FileText, 
   Settings, 
-  Menu, 
-  Home,
-  GanttChart,
-  MonitorPlay,
-  FileText as FileDocument,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { Separator } from '@/components/ui/separator';
-import { useIsMobile } from '@/hooks/use-mobile';
+  LogOut,
+  User
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { useToast } from "@/hooks/use-toast";
 
-type DashboardLayoutProps = {
-  children: React.ReactNode;
-};
-
-const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const isMobile = useIsMobile();
-  const navigate = useNavigate();
+const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut, user } = useAuth();
+  const { toast } = useToast();
 
-  const navItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: Home },
-    { path: '/campaigns', label: 'Campaigns', icon: GanttChart },
-    { path: '/phishing-pages', label: 'Phishing Pages', icon: MonitorPlay },
-    { path: '/templates', label: 'Email Templates', icon: Mail },
-    { path: '/target-lists', label: 'Target Lists', icon: Users },
-    { path: '/reports', label: 'Reports & Logs', icon: FileDocument },
-    { path: '/settings', label: 'Settings', icon: Settings },
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Signed Out",
+        description: "You have been successfully signed out.",
+      });
+      navigate('/');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to sign out. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const menuItems = [
+    { path: "/dashboard", icon: BarChart3, label: "Dashboard" },
+    { path: "/campaigns", icon: Mail, label: "Campaigns" },
+    { path: "/templates", icon: FileText, label: "Templates" },
+    { path: "/phishing-pages", icon: Globe, label: "Phishing Pages" },
+    { path: "/target-lists", icon: Users, label: "Target Lists" },
+    { path: "/reports", icon: BarChart3, label: "Reports" },
+    { path: "/settings", icon: Settings, label: "Settings" },
   ];
 
-  const NavItems = () => (
-    <div className="space-y-2">
-      {navItems.map((item) => (
-        <Button
-          key={item.path}
-          variant={location.pathname === item.path ? "secondary" : "ghost"}
-          className="w-full justify-start"
-          asChild
-        >
-          <Link to={item.path} onClick={() => setSidebarOpen(false)}>
-            <item.icon className="mr-2 h-5 w-5" />
-            {item.label}
-          </Link>
-        </Button>
-      ))}
-    </div>
-  );
-
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      {!isMobile && (
-        <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4 hidden md:block">
-          <div className="flex items-center justify-center h-16 mb-8">
-            <Link to="/dashboard" className="text-xl font-bold">Phishing Platform</Link>
+    <div className="min-h-screen bg-gray-50">
+      {/* Sidebar */}
+      <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-lg">
+        <div className="flex flex-col h-full">
+          {/* Logo */}
+          <div className="flex items-center px-6 py-4 border-b">
+            <Shield className="h-8 w-8 text-blue-600" />
+            <span className="ml-2 text-xl font-bold text-gray-900">PhishGuard</span>
           </div>
-          <NavItems />
+
+          {/* Navigation */}
+          <nav className="flex-1 px-4 py-6 space-y-2">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = location.pathname === item.path;
+              
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+                    isActive
+                      ? "bg-blue-50 text-blue-600 border-r-2 border-blue-600"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  }`}
+                >
+                  <Icon className="h-5 w-5 mr-3" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* User section */}
+          <div className="border-t p-4">
+            <div className="flex items-center mb-4">
+              <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-full">
+                <User className="h-4 w-4 text-blue-600" />
+              </div>
+              <div className="ml-3 min-w-0 flex-1">
+                <p className="text-sm font-medium text-gray-900 truncate">
+                  {user?.email}
+                </p>
+                <p className="text-sm text-gray-500">User</p>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-gray-600 hover:text-gray-900"
+              onClick={handleSignOut}
+            >
+              <LogOut className="h-4 w-4 mr-3" />
+              Sign Out
+            </Button>
+          </div>
         </div>
-      )}
+      </div>
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
-          {isMobile && (
-            <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Menu className="h-6 w-6" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-64">
-                <SheetHeader className="mb-6">
-                  <SheetTitle>
-                    <Link to="/dashboard" onClick={() => setSidebarOpen(false)}>
-                      Phishing Platform
-                    </Link>
-                  </SheetTitle>
-                </SheetHeader>
-                <NavItems />
-              </SheetContent>
-            </Sheet>
-          )}
-          <div className="md:hidden font-bold text-lg">
-            <Link to="/dashboard">Phishing Platform</Link>
-          </div>
-          <div className="flex items-center">
-            <span className="text-sm mr-4">Demo User</span>
-          </div>
-        </header>
-
-        <main className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
+      {/* Main content */}
+      <div className="ml-64">
+        <main className="min-h-screen">
           {children}
         </main>
       </div>

@@ -5,7 +5,11 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
-import { securityLogger, SecurityEventType } from "@/utils/securityLogger";
+import { sec
+
+ityLogger, SecurityEventType } from "@/utils/securityLogger";
+import { AuthProvider } from "@/components/auth/AuthProvider";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import Features from "./pages/Features";
 import Templates from "./pages/Templates";
@@ -32,6 +36,7 @@ import PhishingPagePreview from "./pages/PhishingPagePreview";
 import EditPhishingPage from "./pages/EditPhishingPage";
 import CreateTemplate from "./pages/CreateTemplate";
 import Guide from "./pages/Guide";
+import Auth from "./pages/Auth";
 
 // Apply security headers
 const applySecurityHeaders = () => {
@@ -44,7 +49,7 @@ const applySecurityHeaders = () => {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;" +
     "img-src 'self' data: https: blob:;" +
     "font-src 'self' https://fonts.gstatic.com;" +
-    "connect-src 'self' https://api.openai.com;" +
+    "connect-src 'self' https://pjfbjfjvuwqjqyuvwriq.supabase.co;" +
     "frame-src 'self';" +
     "object-src 'none';";
   
@@ -95,44 +100,48 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/features" element={<Features />} />
-            <Route path="/guide" element={<Guide />} />
-            <Route path="/help" element={<Help />} />
-            <Route path="/pricing" element={<Pricing />} />
-            <Route path="/compliance" element={<Compliance />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/privacy" element={<PrivacyPolicy />} />
-            <Route path="/terms" element={<TermsOfService />} />
-            <Route path="/gdpr" element={<GDPRCompliance />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/campaigns" element={<Campaigns />} />
-            <Route path="/campaign/new" element={<CreateCampaign />} />
-            <Route path="/templates" element={<Templates />} />
-            <Route path="/template/new" element={<CreateTemplate />} />
-            <Route path="/template/:id/edit" element={<CreateTemplate />} />
-            <Route path="/template/:id/preview" element={<CreateTemplate />} />
-            <Route path="/template/:id/duplicate" element={<CreateTemplate />} />
-            <Route path="/template/:id/versions" element={<CreateTemplate />} />
-            <Route path="/phishing-pages" element={<PhishingPages />} />
-            <Route path="/target-lists" element={<TargetLists />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/phishing-pages/new" element={<CreatePhishingPage />} />
-            <Route path="/phishing-pages/create-from-url" element={<CloneWebsitePage />} />
-            <Route path="/phishing-pages/:id/preview" element={<PhishingPagePreview />} />
-            <Route path="/phishing-pages/:id/edit" element={<EditPhishingPage />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/features" element={<Features />} />
+              <Route path="/guide" element={<Guide />} />
+              <Route path="/help" element={<Help />} />
+              <Route path="/pricing" element={<Pricing />} />
+              <Route path="/compliance" element={<Compliance />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/terms" element={<TermsOfService />} />
+              <Route path="/gdpr" element={<GDPRCompliance />} />
+              
+              {/* Protected routes */}
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
+              <Route path="/campaign/new" element={<ProtectedRoute><CreateCampaign /></ProtectedRoute>} />
+              <Route path="/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
+              <Route path="/template/new" element={<ProtectedRoute><CreateTemplate /></ProtectedRoute>} />
+              <Route path="/template/:id/edit" element={<ProtectedRoute><CreateTemplate /></ProtectedRoute>} />
+              <Route path="/phishing-pages" element={<ProtectedRoute><PhishingPages /></ProtectedRoute>} />
+              <Route path="/phishing-pages/new" element={<ProtectedRoute><CreatePhishingPage /></ProtectedRoute>} />
+              <Route path="/phishing-pages/create-from-url" element={<ProtectedRoute><CloneWebsitePage /></ProtectedRoute>} />
+              <Route path="/phishing-pages/:id/preview" element={<ProtectedRoute><PhishingPagePreview /></ProtectedRoute>} />
+              <Route path="/phishing-pages/:id/edit" element={<ProtectedRoute><EditPhishingPage /></ProtectedRoute>} />
+              <Route path="/target-lists" element={<ProtectedRoute><TargetLists /></ProtectedRoute>} />
+              <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 };
