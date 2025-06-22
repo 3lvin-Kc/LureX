@@ -172,9 +172,9 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ onSubmit }) => {
                       </FormControl>
                       <SelectContent>
                         {templatesLoading ? (
-                          <SelectItem value="" disabled>Loading templates...</SelectItem>
+                          <SelectItem value="loading" disabled>Loading templates...</SelectItem>
                         ) : templates.length === 0 ? (
-                          <SelectItem value="" disabled>No templates available</SelectItem>
+                          <SelectItem value="no-templates" disabled>No templates available</SelectItem>
                         ) : (
                           templates.map((template) => (
                             <SelectItem key={template.id} value={template.id}>
@@ -209,9 +209,9 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ onSubmit }) => {
                       </FormControl>
                       <SelectContent>
                         {targetListsLoading ? (
-                          <SelectItem value="" disabled>Loading target lists...</SelectItem>
+                          <SelectItem value="loading" disabled>Loading target lists...</SelectItem>
                         ) : targetLists.length === 0 ? (
-                          <SelectItem value="" disabled>No target lists available</SelectItem>
+                          <SelectItem value="no-lists" disabled>No target lists available</SelectItem>
                         ) : (
                           targetLists.map((list) => (
                             <SelectItem key={list.id} value={list.id}>
@@ -246,9 +246,9 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ onSubmit }) => {
                       </FormControl>
                       <SelectContent>
                         {pagesLoading ? (
-                          <SelectItem value="" disabled>Loading pages...</SelectItem>
+                          <SelectItem value="loading" disabled>Loading pages...</SelectItem>
                         ) : pages.length === 0 ? (
-                          <SelectItem value="" disabled>No phishing pages available</SelectItem>
+                          <SelectItem value="no-pages" disabled>No phishing pages available</SelectItem>
                         ) : (
                           pages.map((page) => (
                             <SelectItem key={page.id} value={page.id}>

@@ -31,15 +31,24 @@ const CreateCampaign = () => {
         description: data.description,
         status: data.schedule_time ? 'scheduled' : 'draft',
         schedule_time: data.schedule_time,
-        template_id: data.template_id,
+        email_template_id: data.template_id,
         target_list_id: data.target_list_id,
         phishing_page_id: data.phishing_page_id,
+      });
+      
+      toast({
+        title: "Campaign created",
+        description: "Your campaign has been created successfully"
       });
       
       navigate('/campaigns');
     } catch (error: any) {
       console.error('Campaign creation error:', error);
-      // Error is already handled by the hook
+      toast({
+        title: "Error creating campaign",
+        description: error.message || "Failed to create campaign",
+        variant: "destructive"
+      });
     }
   };
   
