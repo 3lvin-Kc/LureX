@@ -49,21 +49,10 @@ const CreatePhishingPage = () => {
         html_content: values.html_content,
         css_content: values.css_content,
         js_content: values.js_content,
-        is_custom: true,
       });
-      
-      toast({
-        title: 'Success',
-        description: 'Phishing page created successfully',
-      });
-      
       navigate('/phishing-pages');
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to create phishing page',
-        variant: 'destructive',
-      });
+      // Error handling is done in the hook
     } finally {
       setIsSubmitting(false);
     }

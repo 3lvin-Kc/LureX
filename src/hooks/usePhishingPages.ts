@@ -12,6 +12,7 @@ export interface PhishingPage {
   css_content?: string;
   js_content?: string;
   category?: string;
+  is_custom?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -76,6 +77,39 @@ export const usePhishingPages = () => {
     }
   };
 
+  const updatePage = async (id: string, updates: Partial<PhishingPage>) => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('phishing_pages')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      setPages(prev => prev.map(page => 
+        page.id === id ? data : page
+      ));
+      
+      toast({
+        title: "Success",
+        description: "Phishing page updated successfully",
+      });
+      
+      return data;
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to update phishing page",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   const deletePage = async (id: string) => {
     if (!user) return;
 
@@ -110,6 +144,7 @@ export const usePhishingPages = () => {
     pages,
     loading,
     createPage,
+    updatePage,
     deletePage,
     refetchPages: fetchPages,
   };

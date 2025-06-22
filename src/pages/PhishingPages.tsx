@@ -16,24 +16,16 @@ import { usePhishingPages } from "@/hooks/usePhishingPages";
 const PhishingPages = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { pages, loading } = usePhishingPages();
+  const { pages, loading, deletePage } = usePhishingPages();
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [showCloneWarning, setShowCloneWarning] = useState(false);
 
-  const handleDeletePage = (id: string) => {
+  const handleDeletePage = async (id: string) => {
     setIsDeleting(id);
     try {
-      // TODO: Implement actual delete functionality
-      toast({
-        title: "Page deleted",
-        description: "Phishing page has been deleted successfully"
-      });
+      await deletePage(id);
     } catch (error) {
-      toast({
-        title: "Error deleting page",
-        description: error instanceof Error ? error.message : "An error occurred",
-        variant: "destructive"
-      });
+      // Error handling is done in the hook
     } finally {
       setIsDeleting(null);
     }
@@ -237,14 +229,14 @@ const PhishingPages = () => {
             )}
           </CardContent>
         </Card>
+
+        <CloneWebsiteWarning 
+          open={showCloneWarning}
+          onOpenChange={setShowCloneWarning}
+          onProceed={handleCloneProceed}
+          onCancel={handleCloneCancel}
+        />
       </div>
-      
-      <CloneWebsiteWarning 
-        open={showCloneWarning}
-        onOpenChange={setShowCloneWarning}
-        onProceed={handleCloneProceed}
-        onCancel={handleCloneCancel}
-      />
     </DashboardLayout>
   );
 };

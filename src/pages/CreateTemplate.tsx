@@ -21,7 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate, useParams } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import { ArrowLeft, Save, Eye } from "lucide-react";
+import { ArrowLeft, Save, Eye, Sparkles } from "lucide-react";
 import { useTemplates } from "@/hooks/useTemplates";
 
 const formSchema = z.object({
@@ -39,7 +39,7 @@ const CreateTemplate = () => {
   const { id } = useParams();
   const { templates, createTemplate, updateTemplate, loading } = useTemplates();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [previewMode, setPreviewMode] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [currentTemplate, setCurrentTemplate] = useState<any>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -76,7 +76,12 @@ const CreateTemplate = () => {
     try {
       if (id && currentTemplate) {
         await updateTemplate(id, {
-          ...values,
+          name: values.name,
+          subject: values.subject,
+          category: values.category,
+          description: values.description,
+          html_content: values.html_content,
+          text_content: values.text_content,
           version: currentTemplate.version + 1,
         });
         toast({
@@ -85,7 +90,12 @@ const CreateTemplate = () => {
         });
       } else {
         await createTemplate({
-          ...values,
+          name: values.name,
+          subject: values.subject,
+          category: values.category,
+          description: values.description,
+          html_content: values.html_content,
+          text_content: values.text_content,
           version: 1,
         });
         toast({
@@ -102,6 +112,86 @@ const CreateTemplate = () => {
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const generateWithAI = async () => {
+    const category = form.getValues("category");
+    if (!category) {
+      toast({
+        title: "Category Required",
+        description: "Please select a category first to generate content with AI",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=AIzaSyDc2WVnTL4_qP-PzCGYGpgBwZvZmOe9y0E', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: `Generate a professional phishing email template for cybersecurity awareness training. Category: ${category}. 
+              
+              Please respond with a JSON object containing:
+              - name: A descriptive name for the template
+              - subject: An engaging email subject line
+              - html_content: Professional HTML email content (full HTML structure)
+              - description: Brief description of the template's purpose
+              
+              The content should be realistic but clearly for educational/training purposes. Focus on ${category.toLowerCase()} scenarios.`
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 2048,
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      
+      if (!generatedText) {
+        throw new Error('No content generated');
+      }
+
+      // Extract JSON from the response
+      const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('Invalid response format');
+      }
+
+      const templateData = JSON.parse(jsonMatch[0]);
+      
+      // Update form with generated content
+      form.setValue("name", templateData.name || "AI Generated Template");
+      form.setValue("subject", templateData.subject || "Important Security Update");
+      form.setValue("html_content", templateData.html_content || "<p>Generated content</p>");
+      form.setValue("description", templateData.description || "AI generated template");
+
+      toast({
+        title: "Content Generated",
+        description: "AI has generated template content successfully"
+      });
+    } catch (error: any) {
+      console.error('AI Generation Error:', error);
+      toast({
+        title: "Generation Failed",
+        description: "Failed to generate content with AI. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -228,6 +318,19 @@ const CreateTemplate = () => {
                         </FormItem>
                       )}
                     />
+
+                    <div className="flex items-center gap-4 mb-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={generateWithAI}
+                        disabled={isGenerating}
+                        className="flex items-center gap-2"
+                      >
+                        <Sparkles size={16} />
+                        {isGenerating ? "Generating..." : "Generate with AI"}
+                      </Button>
+                    </div>
 
                     <FormField
                       control={form.control}
