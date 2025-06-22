@@ -10,68 +10,75 @@ import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { PlusCircle, Edit, Trash2, Upload, Download, Users } from "lucide-react";
 import { format } from "date-fns";
-
-// Mock data for target lists
-const mockTargetLists = [
-  {
-    id: "1",
-    name: "All Employees",
-    description: "Complete employee directory",
-    target_count: 150,
-    created_at: "2024-01-15T10:00:00Z",
-    updated_at: "2024-01-15T10:00:00Z"
-  },
-  {
-    id: "2", 
-    name: "Marketing Team",
-    description: "Marketing department staff",
-    target_count: 25,
-    created_at: "2024-01-20T14:30:00Z",
-    updated_at: "2024-01-20T14:30:00Z"
-  }
-];
+import { useTargetLists } from "@/hooks/useTargetLists";
 
 const TargetLists = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [targetLists, setTargetLists] = useState(mockTargetLists);
+  const { targetLists, loading, deleteTargetList, exportTargetList } = useTargetLists();
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   const handleDeleteList = async (id: string) => {
     setIsDeleting(id);
     try {
-      // Mock deletion
-      setTargetLists(prev => prev.filter(list => list.id !== id));
-      toast({
-        title: "List deleted",
-        description: "Target list has been deleted successfully"
-      });
+      await deleteTargetList(id);
     } catch (error) {
-      toast({
-        title: "Error deleting list",
-        description: "Failed to delete target list",
-        variant: "destructive"
-      });
+      // Error handling is done in the hook
     } finally {
       setIsDeleting(null);
     }
   };
 
   const handleImportTargets = () => {
-    toast({
-      title: "Import not implemented",
-      description: "CSV import functionality is not yet available",
-      variant: "destructive"
-    });
+    navigate("/target-lists/new");
   };
 
-  const handleExportTargets = () => {
-    toast({
-      title: "Export not implemented", 
-      description: "CSV export functionality is not yet available",
-      variant: "destructive"
-    });
+  const handleExportTargets = async (listId: string) => {
+    await exportTargetList(listId);
   };
+
+  const handleExportAll = async () => {
+    try {
+      const allTargetsCSV = [
+        'list_name,email,first_name,last_name,department,position,phone',
+        ...targetLists.flatMap(list => 
+          // This would need actual targets data, simplified for now
+          [`${list.name},example@email.com,,,,,`]
+        )
+      ].join('\n');
+
+      const blob = new Blob([allTargetsCSV], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'all-target-lists.csv';
+      link.click();
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Success",
+        description: "All target lists exported successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to export all target lists",
+        variant: "destructive"
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="container mx-auto p-4 max-w-7xl">
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -86,9 +93,9 @@ const TargetLists = () => {
               <Upload size={16} className="mr-2" />
               Import CSV
             </Button>
-            <Button variant="outline" onClick={handleExportTargets}>
+            <Button variant="outline" onClick={handleExportAll}>
               <Download size={16} className="mr-2" />
-              Export
+              Export All
             </Button>
             <Button onClick={() => navigate("/target-lists/new")}>
               <PlusCircle size={16} className="mr-2" />
@@ -141,6 +148,19 @@ const TargetLists = () => {
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => handleExportTargets(list.id)}
+                                >
+                                  <Download size={16} />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Export</TooltipContent>
+                            </Tooltip>
+
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button

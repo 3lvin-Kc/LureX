@@ -4,17 +4,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 
-export interface Target {
-  id: string;
-  email: string;
-  first_name?: string;
-  last_name?: string;
-  position?: string;
-  department?: string;
-  phone?: string;
-  custom_fields?: Record<string, any>;
-}
-
 export interface TargetList {
   id: string;
   name: string;
@@ -22,7 +11,19 @@ export interface TargetList {
   target_count: number;
   created_at: string;
   updated_at: string;
-  targets?: Target[];
+}
+
+export interface Target {
+  id: string;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  department?: string;
+  position?: string;
+  phone?: string;
+  custom_fields?: any;
+  list_id: string;
+  created_at: string;
 }
 
 export const useTargetLists = () => {
@@ -37,24 +38,11 @@ export const useTargetLists = () => {
     try {
       const { data, error } = await supabase
         .from('target_lists')
-        .select(`
-          *,
-          targets(*)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
-      // Type cast the data to match our interfaces
-      const typedData = (data || []).map(list => ({
-        ...list,
-        targets: list.targets?.map((target: any) => ({
-          ...target,
-          custom_fields: target.custom_fields || {}
-        }))
-      }));
-      
-      setTargetLists(typedData);
+      setTargetLists(data || []);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -66,28 +54,40 @@ export const useTargetLists = () => {
     }
   };
 
-  const createTargetList = async (targetList: Omit<TargetList, 'id' | 'created_at' | 'updated_at' | 'target_count' | 'targets'>) => {
+  const createTargetList = async (list: Omit<TargetList, 'id' | 'created_at' | 'updated_at' | 'target_count'>, targets: Omit<Target, 'id' | 'created_at' | 'list_id'>[]) => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
+      const { data: listData, error: listError } = await supabase
         .from('target_lists')
         .insert([{
-          ...targetList,
+          ...list,
           user_id: user.id,
+          target_count: targets.length,
         }])
         .select()
         .single();
 
-      if (error) throw error;
+      if (listError) throw listError;
+
+      if (targets.length > 0) {
+        const { error: targetsError } = await supabase
+          .from('targets')
+          .insert(targets.map(target => ({
+            ...target,
+            list_id: listData.id,
+          })));
+
+        if (targetsError) throw targetsError;
+      }
       
-      setTargetLists(prev => [data, ...prev]);
+      setTargetLists(prev => [listData, ...prev]);
       toast({
         title: "Success",
         description: "Target list created successfully",
       });
       
-      return data;
+      return listData;
     } catch (error: any) {
       toast({
         title: "Error",
@@ -98,40 +98,9 @@ export const useTargetLists = () => {
     }
   };
 
-  const addTargetsToList = async (listId: string, targets: Omit<Target, 'id'>[]) => {
-    try {
-      const { data, error } = await supabase
-        .from('targets')
-        .insert(
-          targets.map(target => ({
-            ...target,
-            list_id: listId,
-          }))
-        )
-        .select();
-
-      if (error) throw error;
-
-      // Refresh the target lists to get updated counts
-      await fetchTargetLists();
-      
-      toast({
-        title: "Success",
-        description: `Added ${targets.length} targets to the list`,
-      });
-      
-      return data;
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to add targets to list",
-        variant: "destructive",
-      });
-      throw error;
-    }
-  };
-
   const deleteTargetList = async (id: string) => {
+    if (!user) return;
+
     try {
       const { error } = await supabase
         .from('target_lists')
@@ -139,7 +108,7 @@ export const useTargetLists = () => {
         .eq('id', id);
 
       if (error) throw error;
-
+      
       setTargetLists(prev => prev.filter(list => list.id !== id));
       toast({
         title: "Success",
@@ -155,6 +124,46 @@ export const useTargetLists = () => {
     }
   };
 
+  const exportTargetList = async (listId: string) => {
+    if (!user) return;
+
+    try {
+      const { data: targets, error } = await supabase
+        .from('targets')
+        .select('*')
+        .eq('list_id', listId);
+
+      if (error) throw error;
+
+      const csvContent = [
+        'email,first_name,last_name,department,position,phone',
+        ...targets.map(target => 
+          [target.email, target.first_name || '', target.last_name || '', 
+           target.department || '', target.position || '', target.phone || ''].join(',')
+        )
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `target-list-${listId}.csv`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Success",
+        description: "Target list exported successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to export target list",
+        variant: "destructive",
+      });
+    }
+  };
+
   useEffect(() => {
     fetchTargetLists();
   }, [user]);
@@ -163,8 +172,8 @@ export const useTargetLists = () => {
     targetLists,
     loading,
     createTargetList,
-    addTargetsToList,
     deleteTargetList,
+    exportTargetList,
     refetchTargetLists: fetchTargetLists,
   };
 };

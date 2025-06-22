@@ -7,39 +7,35 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Download, FileText, TrendingUp, Users, Mail, MousePointer } from "lucide-react";
-
-// Mock data for reports
-const mockCampaignData = [
-  { name: "Q1 2024", sent: 1200, opened: 480, clicked: 96, submitted: 24 },
-  { name: "Q2 2024", sent: 1400, opened: 560, clicked: 112, submitted: 28 },
-  { name: "Q3 2024", sent: 1300, opened: 520, clicked: 104, submitted: 26 },
-  { name: "Q4 2024", sent: 1500, opened: 600, clicked: 120, submitted: 30 }
-];
-
-const mockDepartmentData = [
-  { name: "IT", value: 35, color: "#0088FE" },
-  { name: "HR", value: 25, color: "#00C49F" },
-  { name: "Finance", value: 20, color: "#FFBB28" },
-  { name: "Marketing", value: 15, color: "#FF8042" },
-  { name: "Operations", value: 5, color: "#8884D8" }
-];
+import { useReports } from "@/hooks/useReports";
 
 const Reports = () => {
-  const { toast } = useToast();
+  const { reportData, loading, exportToPDF, exportToCSV } = useReports();
   const [selectedPeriod, setSelectedPeriod] = useState("quarterly");
   const [selectedDepartment, setSelectedDepartment] = useState("all");
 
-  const handleExportReport = (format: string) => {
-    toast({
-      title: "Export not implemented",
-      description: `${format.toUpperCase()} export functionality is not yet available`,
-      variant: "destructive"
-    });
+  const handleExportPDF = async () => {
+    await exportToPDF();
   };
+
+  const handleExportCSV = async () => {
+    await exportToCSV();
+  };
+
+  if (loading || !reportData) {
+    return (
+      <DashboardLayout>
+        <div className="container mx-auto p-4 max-w-7xl">
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -50,11 +46,11 @@ const Reports = () => {
             <p className="text-muted-foreground">Comprehensive phishing simulation reports</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => handleExportReport("pdf")}>
+            <Button variant="outline" onClick={handleExportPDF}>
               <FileText size={16} className="mr-2" />
               Export PDF
             </Button>
-            <Button variant="outline" onClick={() => handleExportReport("csv")}>
+            <Button variant="outline" onClick={handleExportCSV}>
               <Download size={16} className="mr-2" />
               Export CSV
             </Button>
@@ -68,8 +64,8 @@ const Reports = () => {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">24</div>
-              <p className="text-xs text-muted-foreground">+12% from last month</p>
+              <div className="text-2xl font-bold">{reportData.totalCampaigns}</div>
+              <p className="text-xs text-muted-foreground">Active campaigns</p>
             </CardContent>
           </Card>
           <Card>
@@ -78,8 +74,8 @@ const Reports = () => {
               <Mail className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">5,400</div>
-              <p className="text-xs text-muted-foreground">+8% from last month</p>
+              <div className="text-2xl font-bold">{reportData.emailsSent.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground">Total sent</p>
             </CardContent>
           </Card>
           <Card>
@@ -88,8 +84,8 @@ const Reports = () => {
               <MousePointer className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">8.2%</div>
-              <p className="text-xs text-muted-foreground">-2% from last month</p>
+              <div className="text-2xl font-bold">{reportData.clickRate}%</div>
+              <p className="text-xs text-muted-foreground">Average click rate</p>
             </CardContent>
           </Card>
           <Card>
@@ -98,8 +94,8 @@ const Reports = () => {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">1,250</div>
-              <p className="text-xs text-muted-foreground">+5% from last month</p>
+              <div className="text-2xl font-bold">{reportData.participants.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground">Total participants</p>
             </CardContent>
           </Card>
         </div>
@@ -121,7 +117,7 @@ const Reports = () => {
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={mockCampaignData}>
+                    <BarChart data={reportData.campaignData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="name" />
                       <YAxis />
@@ -143,7 +139,7 @@ const Reports = () => {
                   <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
                       <Pie
-                        data={mockDepartmentData}
+                        data={reportData.departmentData}
                         cx="50%"
                         cy="50%"
                         outerRadius={100}
@@ -151,7 +147,7 @@ const Reports = () => {
                         dataKey="value"
                         label
                       >
-                        {mockDepartmentData.map((entry, index) => (
+                        {reportData.departmentData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
@@ -181,30 +177,22 @@ const Reports = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    <TableRow>
-                      <TableCell className="font-medium">Q4 Security Awareness</TableCell>
-                      <TableCell>300</TableCell>
-                      <TableCell>120</TableCell>
-                      <TableCell>24</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Progress value={8} className="w-16" />
-                          <span className="text-sm">8%</span>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell className="font-medium">Holiday Phishing Test</TableCell>
-                      <TableCell>450</TableCell>
-                      <TableCell>180</TableCell>
-                      <TableCell>36</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Progress value={8} className="w-16" />
-                          <span className="text-sm">8%</span>
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                    {reportData.campaignData.map((campaign, index) => (
+                      <TableRow key={index}>
+                        <TableCell className="font-medium">{campaign.name}</TableCell>
+                        <TableCell>{campaign.sent}</TableCell>
+                        <TableCell>{campaign.opened}</TableCell>
+                        <TableCell>{campaign.clicked}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Progress value={campaign.sent > 0 ? (campaign.clicked / campaign.sent) * 100 : 0} className="w-16" />
+                            <span className="text-sm">
+                              {campaign.sent > 0 ? Math.round((campaign.clicked / campaign.sent) * 100 * 10) / 10 : 0}%
+                            </span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -219,7 +207,7 @@ const Reports = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {mockDepartmentData.map((dept) => (
+                  {reportData.departmentData.map((dept) => (
                     <div key={dept.name} className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div 
@@ -248,7 +236,10 @@ const Reports = () => {
               <CardContent>
                 <div className="text-center py-8">
                   <TrendingUp className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">Trend analysis coming soon</p>
+                  <p className="text-muted-foreground">Trend analysis based on your campaign data</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Your organization shows {reportData.clickRate < 10 ? 'excellent' : reportData.clickRate < 20 ? 'good' : 'concerning'} security awareness levels
+                  </p>
                 </div>
               </CardContent>
             </Card>
