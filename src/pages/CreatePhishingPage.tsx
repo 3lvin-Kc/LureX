@@ -1,141 +1,139 @@
 
-import React, { useState } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import { ArrowLeft, LoaderCircle } from "lucide-react";
-import { usePhishingPages } from "@/hooks/usePhishingPages";
+import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
+import { usePhishingPages } from '@/hooks/usePhishingPages';
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import { ArrowLeft, Save } from 'lucide-react';
 
 const formSchema = z.object({
-  name: z.string().min(1, { message: "Page name is required" }),
+  name: z.string().min(1, 'Name is required'),
   category: z.string().optional(),
-  html_content: z.string().min(1, { message: "HTML content is required" }),
+  html_content: z.string().min(1, 'HTML content is required'),
   css_content: z.string().optional(),
   js_content: z.string().optional(),
 });
 
 const CreatePhishingPage = () => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [isCreating, setIsCreating] = useState(false);
   const { createPage } = usePhishingPages();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
-      category: "",
-      html_content: "",
-      css_content: "",
-      js_content: "",
+      name: '',
+      category: '',
+      html_content: '',
+      css_content: '',
+      js_content: '',
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    setIsCreating(true);
+  const handleSubmit = async (values: z.infer<typeof formSchema>) => {
+    setIsSubmitting(true);
     try {
       await createPage({
         name: values.name,
         category: values.category,
         html_content: values.html_content,
-        css_content: values.css_content || "",
-        js_content: values.js_content || "",
+        css_content: values.css_content,
+        js_content: values.js_content,
         is_custom: true,
       });
       
-      navigate("/phishing-pages");
-    } catch (error: any) {
-      console.error("Error creating page:", error);
-      // Error handling is done in the hook
+      toast({
+        title: 'Success',
+        description: 'Phishing page created successfully',
+      });
+      
+      navigate('/phishing-pages');
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to create phishing page',
+        variant: 'destructive',
+      });
     } finally {
-      setIsCreating(false);
+      setIsSubmitting(false);
     }
   };
 
   return (
     <DashboardLayout>
       <div className="container mx-auto p-4 max-w-4xl">
-        <div className="mb-6">
+        <div className="flex items-center gap-4 mb-6">
           <Button
-            variant="ghost"
-            onClick={() => navigate("/phishing-pages")}
-            className="mb-2"
+            variant="outline"
+            size="icon"
+            onClick={() => navigate('/phishing-pages')}
           >
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Pages
+            <ArrowLeft size={16} />
           </Button>
-          <h1 className="text-3xl font-bold">Create Phishing Page</h1>
-          <p className="text-muted-foreground">Create a custom phishing page for your campaigns</p>
+          <div>
+            <h1 className="text-3xl font-bold">Create Phishing Page</h1>
+            <p className="text-muted-foreground">Create a custom phishing page for your campaigns</p>
+          </div>
         </div>
 
         <Card>
           <CardHeader>
             <CardTitle>Page Details</CardTitle>
-            <CardDescription>
-              Configure your custom phishing page content and settings
-            </CardDescription>
+            <CardDescription>Configure your custom phishing page</CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Page Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter page name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="category"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Category</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
+              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Page Name</FormLabel>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a category" />
-                          </SelectTrigger>
+                          <Input placeholder="Enter page name" {...field} />
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Social">Social Media</SelectItem>
-                          <SelectItem value="Banking">Banking</SelectItem>
-                          <SelectItem value="Corporate">Corporate</SelectItem>
-                          <SelectItem value="Cloud">Cloud Services</SelectItem>
-                          <SelectItem value="E-commerce">E-commerce</SelectItem>
-                          <SelectItem value="Government">Government</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="category"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Category (Optional)</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select category" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="banking">Banking</SelectItem>
+                            <SelectItem value="social-media">Social Media</SelectItem>
+                            <SelectItem value="email">Email</SelectItem>
+                            <SelectItem value="corporate">Corporate</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 <FormField
                   control={form.control}
@@ -144,15 +142,12 @@ const CreatePhishingPage = () => {
                     <FormItem>
                       <FormLabel>HTML Content</FormLabel>
                       <FormControl>
-                        <Textarea 
-                          {...field} 
-                          className="font-mono h-64"
-                          placeholder="<html><body>Your phishing page content here...</body></html>"
+                        <Textarea
+                          placeholder="Enter your HTML content here..."
+                          className="min-h-40 font-mono text-sm"
+                          {...field}
                         />
                       </FormControl>
-                      <FormDescription>
-                        HTML markup for the phishing page
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -165,15 +160,12 @@ const CreatePhishingPage = () => {
                     <FormItem>
                       <FormLabel>CSS Content (Optional)</FormLabel>
                       <FormControl>
-                        <Textarea 
-                          {...field} 
-                          className="font-mono h-40"
-                          placeholder="body { font-family: Arial; }"
+                        <Textarea
+                          placeholder="Enter your CSS content here..."
+                          className="min-h-32 font-mono text-sm"
+                          {...field}
                         />
                       </FormControl>
-                      <FormDescription>
-                        CSS styles for the phishing page
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -186,15 +178,12 @@ const CreatePhishingPage = () => {
                     <FormItem>
                       <FormLabel>JavaScript Content (Optional)</FormLabel>
                       <FormControl>
-                        <Textarea 
-                          {...field} 
-                          className="font-mono h-40"
-                          placeholder="// Your JavaScript code here"
+                        <Textarea
+                          placeholder="Enter your JavaScript content here..."
+                          className="min-h-32 font-mono text-sm"
+                          {...field}
                         />
                       </FormControl>
-                      <FormDescription>
-                        JavaScript code for the phishing page
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -204,12 +193,12 @@ const CreatePhishingPage = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => navigate("/phishing-pages")}
+                    onClick={() => navigate('/phishing-pages')}
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={isCreating}>
-                    {isCreating && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting && <Save className="mr-2 h-4 w-4 animate-spin" />}
                     Create Page
                   </Button>
                 </div>

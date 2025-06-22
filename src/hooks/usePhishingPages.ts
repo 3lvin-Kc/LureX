@@ -77,63 +77,6 @@ export const usePhishingPages = () => {
     }
   };
 
-  const updatePage = async (id: string, updates: Partial<PhishingPage>) => {
-    try {
-      const { data, error } = await supabase
-        .from('phishing_pages')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setPages(prev => 
-        prev.map(page => 
-          page.id === id ? { ...page, ...data } : page
-        )
-      );
-
-      toast({
-        title: "Success",
-        description: "Phishing page updated successfully",
-      });
-
-      return data;
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to update phishing page",
-        variant: "destructive",
-      });
-      throw error;
-    }
-  };
-
-  const deletePage = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('phishing_pages')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
-      setPages(prev => prev.filter(page => page.id !== id));
-      toast({
-        title: "Success",
-        description: "Phishing page deleted successfully",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to delete phishing page",
-        variant: "destructive",
-      });
-      throw error;
-    }
-  };
-
   useEffect(() => {
     fetchPages();
   }, [user]);
@@ -142,8 +85,6 @@ export const usePhishingPages = () => {
     pages,
     loading,
     createPage,
-    updatePage,
-    deletePage,
     refetchPages: fetchPages,
   };
 };
