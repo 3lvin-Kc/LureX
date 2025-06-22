@@ -10,6 +10,9 @@ export interface Campaign {
   description?: string;
   status: 'draft' | 'scheduled' | 'in_progress' | 'completed' | 'canceled' | 'failed';
   schedule_time?: string;
+  template_id?: string;
+  target_list_id?: string;
+  phishing_page_id?: string;
   created_at: string;
   updated_at: string;
   template?: { name: string };
