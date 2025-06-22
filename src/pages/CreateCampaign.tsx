@@ -31,7 +31,7 @@ const CreateCampaign = () => {
         description: data.description,
         status: data.schedule_time ? 'scheduled' : 'draft',
         schedule_time: data.schedule_time,
-        email_template_id: data.template_id,
+        template_id: data.template_id,
         target_list_id: data.target_list_id,
         phishing_page_id: data.phishing_page_id,
       });
