@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { Resend } from 'npm:resend@2.0.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -17,6 +18,8 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 );
+
+const resend = new Resend(Deno.env.get('RESEND_API_KEY') ?? '');
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -72,21 +75,55 @@ serve(async (req) => {
       );
     }
 
-    // Mock email sending (in production, integrate with real email service)
+    // Real email sending with Resend
     const emailResults = [];
+    const trackingDomain = Deno.env.get('SUPABASE_URL') ?? '';
+    
     for (const target of targets || []) {
       try {
-        // Mock email sending delay
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Generate unique tracking ID
+        const trackingId = crypto.randomUUID();
         
-        // Log email metrics
+        // Add tracking pixel and click tracking to HTML content
+        const trackingPixel = `<img src="${trackingDomain}/functions/v1/track-email-open?id=${trackingId}" width="1" height="1" style="display:none;" />`;
+        const htmlContentWithTracking = template.html_content + trackingPixel;
+        
+        // Replace links with tracking URLs
+        const trackedHtmlContent = htmlContentWithTracking.replace(
+          /<a\s+href="([^"]+)"/g, 
+          `<a href="${trackingDomain}/functions/v1/track-email-click?id=${trackingId}&url=$1"`
+        );
+
+        // Send email via Resend
+        const emailResponse = await resend.emails.send({
+          from: 'PhishGuard <noreply@phishguard.com>',
+          to: [target.email],
+          subject: template.subject,
+          html: trackedHtmlContent,
+          text: template.text_content || undefined,
+          headers: {
+            'X-Campaign-ID': campaignId,
+            'X-Target-ID': target.id,
+            'X-Tracking-ID': trackingId,
+          },
+        });
+
+        if (emailResponse.error) {
+          throw new Error(emailResponse.error.message);
+        }
+
+        // Log successful email sending with tracking ID
         const { error: metricsError } = await supabase
           .from('campaign_metrics')
           .insert({
             campaign_id: campaignId,
-            target_id: target.id,
-            event_type: 'sent',
-            timestamp: new Date().toISOString(),
+            target_email: target.email,
+            sent_at: new Date().toISOString(),
+            additional_data: { 
+              tracking_id: trackingId,
+              email_id: emailResponse.data?.id,
+              resend_id: emailResponse.data?.id 
+            }
           });
 
         if (metricsError) {
@@ -97,11 +134,25 @@ serve(async (req) => {
           targetId: target.id,
           email: target.email,
           status: 'sent',
+          trackingId: trackingId,
+          emailId: emailResponse.data?.id,
           timestamp: new Date().toISOString()
         });
 
-        console.log(`Mock email sent to: ${target.email}`);
+        console.log(`Email sent successfully to: ${target.email}, Tracking ID: ${trackingId}`);
       } catch (error) {
+        // Log failed email
+        await supabase
+          .from('campaign_metrics')
+          .insert({
+            campaign_id: campaignId,
+            target_email: target.email,
+            additional_data: { 
+              error: error.message,
+              failed_at: new Date().toISOString()
+            }
+          });
+
         emailResults.push({
           targetId: target.id,
           email: target.email,
@@ -109,6 +160,8 @@ serve(async (req) => {
           error: error.message,
           timestamp: new Date().toISOString()
         });
+
+        console.error(`Failed to send email to ${target.email}:`, error);
       }
     }
 
@@ -124,7 +177,8 @@ serve(async (req) => {
         campaign_id: campaignId,
         emails_sent: emailResults.filter(r => r.status === 'sent').length,
         emails_failed: emailResults.filter(r => r.status === 'failed').length,
-        results: emailResults
+        results: emailResults,
+        tracking_enabled: true
       }),
       { 
         status: 200, 

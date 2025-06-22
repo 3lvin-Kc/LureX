@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -106,41 +105,36 @@ export const useCampaigns = () => {
         )
       );
 
-      // If starting campaign, trigger email sending
+      // If starting campaign, trigger real email sending via Resend
       if (status === 'in_progress') {
         const campaign = campaigns.find(c => c.id === id);
         if (campaign && campaign.template_id && campaign.target_list_id) {
           try {
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
-              const response = await fetch('/functions/v1/send-campaign-emails', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${session.access_token}`,
-                },
-                body: JSON.stringify({
+              const response = await supabase.functions.invoke('send-campaign-emails', {
+                body: {
                   campaignId: id,
                   templateId: campaign.template_id,
                   targetListId: campaign.target_list_id,
-                }),
+                }
               });
 
-              if (!response.ok) {
-                throw new Error('Failed to send campaign emails');
+              if (response.error) {
+                throw new Error(response.error.message || 'Failed to send campaign emails');
               }
 
-              const result = await response.json();
+              const result = response.data;
               toast({
-                title: "Campaign started",
-                description: `${result.emails_sent} emails queued for delivery`,
+                title: "Campaign Started Successfully",
+                description: `${result.emails_sent} emails sent via Resend with tracking enabled. ${result.emails_failed} failed.`,
               });
             }
           } catch (emailError: any) {
             console.error('Email sending error:', emailError);
             toast({
-              title: "Campaign started with issues",
-              description: "Campaign status updated but email sending encountered issues",
+              title: "Campaign Started with Issues",
+              description: "Campaign status updated but email sending encountered issues. Check email configuration.",
               variant: "destructive",
             });
           }

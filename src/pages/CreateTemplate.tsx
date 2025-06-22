@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -23,6 +22,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { ArrowLeft, Save, Eye, Sparkles } from "lucide-react";
 import { useTemplates } from "@/hooks/useTemplates";
+import { supabase } from "@/lib/supabase";
 
 const formSchema = z.object({
   name: z.string().min(1, { message: "Template name is required" }),
@@ -128,66 +128,36 @@ const CreateTemplate = () => {
 
     setIsGenerating(true);
     try {
-      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=AIzaSyDc2WVnTL4_qP-PzCGYGpgBwZvZmOe9y0E', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{
-              text: `Generate a professional phishing email template for cybersecurity awareness training. Category: ${category}. 
-              
-              Please respond with a JSON object containing:
-              - name: A descriptive name for the template
-              - subject: An engaging email subject line
-              - html_content: Professional HTML email content (full HTML structure)
-              - description: Brief description of the template's purpose
-              
-              The content should be realistic but clearly for educational/training purposes. Focus on ${category.toLowerCase()} scenarios.`
-            }]
-          }],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 2048,
-          }
-        })
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Authentication required');
+      }
+
+      const response = await supabase.functions.invoke('generate-template-ai', {
+        body: { category }
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to generate template');
       }
 
-      const data = await response.json();
-      const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      
-      if (!generatedText) {
-        throw new Error('No content generated');
-      }
-
-      // Extract JSON from the response
-      const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error('Invalid response format');
-      }
-
-      const templateData = JSON.parse(jsonMatch[0]);
+      const { template } = response.data;
       
       // Update form with generated content
-      form.setValue("name", templateData.name || "AI Generated Template");
-      form.setValue("subject", templateData.subject || "Important Security Update");
-      form.setValue("html_content", templateData.html_content || "<p>Generated content</p>");
-      form.setValue("description", templateData.description || "AI generated template");
+      form.setValue("name", template.name);
+      form.setValue("subject", template.subject);
+      form.setValue("html_content", template.html_content);
+      form.setValue("description", template.description);
 
       toast({
-        title: "Content Generated",
-        description: "AI has generated template content successfully"
+        title: "Content Generated Successfully",
+        description: "AI has generated professional template content using Gemini 1.5 Flash"
       });
     } catch (error: any) {
       console.error('AI Generation Error:', error);
       toast({
         title: "Generation Failed",
-        description: "Failed to generate content with AI. Please try again.",
+        description: error.message || "Failed to generate content with AI. Please check the configuration and try again.",
         variant: "destructive"
       });
     } finally {

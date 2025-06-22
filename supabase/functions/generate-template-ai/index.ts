@@ -1,89 +1,14 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface GenerateRequest {
-  prompt: string;
-  category?: string;
-}
-
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-);
-
-async function generateWithGemini(prompt: string): Promise<{
-  name: string;
-  subject: string;
-  html_content: string;
-  text_content: string;
+interface GenerateTemplateRequest {
   category: string;
-}> {
-  const apiKey = Deno.env.get('GEMINI_API_KEY');
-  if (!apiKey) {
-    throw new Error('Gemini API key not configured');
-  }
-
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      contents: [{
-        parts: [{
-          text: `Generate a professional phishing email template for security awareness training. Based on this prompt: "${prompt}".
-
-Please provide a JSON response with the following structure:
-{
-  "name": "Template name (descriptive)",
-  "subject": "Email subject line",
-  "category": "One of: phishing, spear-phishing, credential-harvest, attachment, business-email, social-engineering, general",
-  "html_content": "Complete HTML email content with realistic styling and call-to-action",
-  "text_content": "Plain text version of the email"
-}
-
-Make it realistic but clearly for educational/training purposes. Include proper HTML structure with inline CSS for email compatibility. The content should be convincing but appropriate for security awareness training.`
-        }]
-      }],
-      generationConfig: {
-        temperature: 0.7,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 2048,
-      },
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Gemini API error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  
-  if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-    throw new Error('Invalid response from Gemini API');
-  }
-
-  const content = data.candidates[0].content.parts[0].text;
-  
-  // Extract JSON from the response
-  const jsonMatch = content.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    throw new Error('No valid JSON found in Gemini response');
-  }
-
-  try {
-    const templateData = JSON.parse(jsonMatch[0]);
-    return templateData;
-  } catch (error) {
-    throw new Error('Failed to parse Gemini response as JSON');
-  }
+  prompt?: string;
 }
 
 serve(async (req) => {
@@ -92,62 +17,148 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, category }: GenerateRequest = await req.json();
-    
-    if (!prompt) {
+    const { category, prompt }: GenerateTemplateRequest = await req.json();
+
+    if (!category) {
       return new Response(
-        JSON.stringify({ error: 'Prompt is required' }),
+        JSON.stringify({ error: 'Category is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Get user from auth token
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
+    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+    if (!GEMINI_API_KEY) {
       return new Response(
-        JSON.stringify({ error: 'Authorization required' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Gemini API key not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
-    if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid authorization' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    const defaultPrompt = `Generate a professional phishing email template for cybersecurity awareness training. Category: ${category}. 
 
-    // Generate template with Gemini
-    const templateData = await generateWithGemini(prompt);
-    
-    // Save to database
-    const { data: template, error: dbError } = await supabase
-      .from('email_templates')
-      .insert({
-        name: templateData.name,
-        subject: templateData.subject,
-        html_content: templateData.html_content,
-        text_content: templateData.text_content,
-        category: category || templateData.category,
-        description: `AI-generated template based on: ${prompt}`,
-        version: 1,
-        user_id: user.id
+Please respond with a JSON object containing:
+- name: A descriptive name for the template
+- subject: An engaging email subject line  
+- html_content: Professional HTML email content with inline CSS styling
+- description: Brief description of the template's purpose
+
+The content should be realistic but clearly for educational/training purposes. Focus on ${category.toLowerCase()} scenarios. Make the HTML content professional and email-client compatible.`;
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: prompt || defaultPrompt
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 4096,
+          topP: 0.8,
+          topK: 40
+        },
+        safetySettings: [
+          {
+            category: "HARM_CATEGORY_HARASSMENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_HATE_SPEECH", 
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          }
+        ]
       })
-      .select()
-      .single();
+    });
 
-    if (dbError) {
-      throw new Error(`Database error: ${dbError.message}`);
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Gemini API Error:', errorData);
+      
+      return new Response(
+        JSON.stringify({ 
+          error: `Gemini API Error (${response.status}): ${errorData.error?.message || 'Unknown error'}`,
+          details: errorData
+        }),
+        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const data = await response.json();
+    console.log('Gemini API Response received successfully');
+    
+    const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    
+    if (!generatedText) {
+      return new Response(
+        JSON.stringify({ error: 'No content generated from Gemini API' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Extract JSON from the response
+    let jsonMatch = generatedText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      const codeBlockMatch = generatedText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+      if (codeBlockMatch) {
+        jsonMatch = [codeBlockMatch[1]];
+      }
+    }
+    
+    if (!jsonMatch) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Could not extract JSON from Gemini response',
+          rawResponse: generatedText
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    let templateData;
+    try {
+      templateData = JSON.parse(jsonMatch[0]);
+    } catch (parseError) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Failed to parse JSON from Gemini response',
+          rawJson: jsonMatch[0]
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // Validate the response structure
+    if (!templateData.name || !templateData.subject || !templateData.html_content) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid template data structure from Gemini API',
+          receivedData: templateData
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        data: template,
-        message: 'Template generated successfully'
+        template: {
+          name: templateData.name,
+          subject: templateData.subject,
+          html_content: templateData.html_content,
+          description: templateData.description || "AI generated phishing awareness template"
+        }
       }),
       { 
         status: 200, 
@@ -156,11 +167,10 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Generate template AI error:', error);
+    console.error('Template generation error:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message || 'Internal server error',
-        success: false 
+        error: error.message || 'Internal server error during template generation'
       }),
       { 
         status: 500, 
