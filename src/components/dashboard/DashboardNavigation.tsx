@@ -9,7 +9,8 @@ import {
   Globe, 
   BarChart3,
   LogOut,
-  Shield
+  Shield,
+  Mail
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -24,6 +25,11 @@ const navigationItems = [
     name: 'Campaigns',
     href: '/campaigns',
     icon: Target,
+  },
+  {
+    name: 'Templates',
+    href: '/templates',
+    icon: Mail,
   },
   {
     name: 'Target Lists',

@@ -28,6 +28,10 @@ function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/campaigns" element={<Campaigns />} />
               <Route path="/campaigns/new" element={<CreateCampaign />} />
+              <Route path="/templates" element={<Templates />} />
+              <Route path="/templates/new" element={<CreateTemplate />} />
+              <Route path="/templates/:id/edit" element={<CreateTemplate />} />
+              <Route path="/templates/:id/preview" element={<CreateTemplate />} />
               <Route path="/target-lists" element={<TargetLists />} />
               <Route path="/target-lists/new" element={<CreateTargetList />} />
               <Route path="/phishing-pages" element={<PhishingPages />} />
