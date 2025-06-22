@@ -7,12 +7,11 @@ import { useToast } from '@/hooks/use-toast';
 export interface PhishingPage {
   id: string;
   name: string;
-  category?: string;
+  description?: string;
   html_content: string;
   css_content?: string;
   js_content?: string;
-  is_custom: boolean;
-  source_url?: string;
+  category?: string;
   created_at: string;
   updated_at: string;
 }
@@ -77,30 +76,26 @@ export const usePhishingPages = () => {
     }
   };
 
-  const updatePage = async (id: string, updates: Partial<Omit<PhishingPage, 'id' | 'created_at' | 'updated_at'>>) => {
+  const deletePage = async (id: string) => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('phishing_pages')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
+        .delete()
+        .eq('id', id);
 
       if (error) throw error;
       
-      setPages(prev => prev.map(page => page.id === id ? data : page));
+      setPages(prev => prev.filter(page => page.id !== id));
       toast({
         title: "Success",
-        description: "Phishing page updated successfully",
+        description: "Phishing page deleted successfully",
       });
-      
-      return data;
     } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to update phishing page",
+        description: "Failed to delete phishing page",
         variant: "destructive",
       });
       throw error;
@@ -115,7 +110,7 @@ export const usePhishingPages = () => {
     pages,
     loading,
     createPage,
-    updatePage,
+    deletePage,
     refetchPages: fetchPages,
   };
 };

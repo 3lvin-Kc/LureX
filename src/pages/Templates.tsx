@@ -110,13 +110,16 @@ Make it realistic but clearly for educational/training purposes. Include proper 
       });
 
       if (!response.ok) {
-        throw new Error(`Gemini API error: ${response.status}`);
+        const errorText = await response.text();
+        console.error('Gemini API Response:', errorText);
+        throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
+      console.log('Gemini API Response:', data);
       
       if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-        throw new Error('Invalid response from Gemini API');
+        throw new Error('Invalid response from Gemini API - no content found');
       }
 
       const content = data.candidates[0].content.parts[0].text;
@@ -127,14 +130,20 @@ Make it realistic but clearly for educational/training purposes. Include proper 
         throw new Error('No valid JSON found in Gemini response');
       }
 
-      const templateData = JSON.parse(jsonMatch[0]);
+      let templateData;
+      try {
+        templateData = JSON.parse(jsonMatch[0]);
+      } catch (parseError) {
+        console.error('JSON Parse Error:', parseError);
+        throw new Error('Failed to parse AI response as JSON');
+      }
       
       await createTemplate({
-        name: templateData.name,
-        subject: templateData.subject,
-        html_content: templateData.html_content,
-        text_content: templateData.text_content,
-        category: aiCategory || templateData.category,
+        name: templateData.name || "AI Generated Template",
+        subject: templateData.subject || "AI Generated Subject",
+        html_content: templateData.html_content || "<p>AI Generated Content</p>",
+        text_content: templateData.text_content || "AI Generated Content",
+        category: aiCategory || templateData.category || "general",
         description: `AI-generated template based on: ${aiPrompt}`,
         version: 1,
       });
@@ -148,9 +157,10 @@ Make it realistic but clearly for educational/training purposes. Include proper 
         description: "AI-generated template has been created successfully"
       });
     } catch (error: any) {
+      console.error('AI Generation Error:', error);
       toast({
         title: "AI generation failed",
-        description: error.message || "Failed to generate template with AI",
+        description: error.message || "Failed to generate template with AI. Please check your API key and try again.",
         variant: "destructive"
       });
     } finally {

@@ -25,7 +25,7 @@ export const useTemplates = () => {
 
   const fetchTemplates = async () => {
     if (!user) return;
-    
+
     try {
       const { data, error } = await supabase
         .from('email_templates')
@@ -37,7 +37,7 @@ export const useTemplates = () => {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to load templates",
+        description: "Failed to load email templates",
         variant: "destructive",
       });
     } finally {
@@ -63,14 +63,14 @@ export const useTemplates = () => {
       setTemplates(prev => [data, ...prev]);
       toast({
         title: "Success",
-        description: "Template created successfully",
+        description: "Email template created successfully",
       });
       
       return data;
     } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to create template",
+        description: "Failed to create email template",
         variant: "destructive",
       });
       throw error;
@@ -78,6 +78,8 @@ export const useTemplates = () => {
   };
 
   const updateTemplate = async (id: string, updates: Partial<EmailTemplate>) => {
+    if (!user) return;
+
     try {
       const { data, error } = await supabase
         .from('email_templates')
@@ -87,23 +89,21 @@ export const useTemplates = () => {
         .single();
 
       if (error) throw error;
-
-      setTemplates(prev => 
-        prev.map(template => 
-          template.id === id ? { ...template, ...data } : template
-        )
-      );
-
+      
+      setTemplates(prev => prev.map(template => 
+        template.id === id ? data : template
+      ));
+      
       toast({
         title: "Success",
-        description: "Template updated successfully",
+        description: "Email template updated successfully",
       });
-
+      
       return data;
     } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to update template",
+        description: "Failed to update email template",
         variant: "destructive",
       });
       throw error;
@@ -111,6 +111,8 @@ export const useTemplates = () => {
   };
 
   const deleteTemplate = async (id: string) => {
+    if (!user) return;
+
     try {
       const { error } = await supabase
         .from('email_templates')
@@ -118,16 +120,16 @@ export const useTemplates = () => {
         .eq('id', id);
 
       if (error) throw error;
-
+      
       setTemplates(prev => prev.filter(template => template.id !== id));
       toast({
         title: "Success",
-        description: "Template deleted successfully",
+        description: "Email template deleted successfully",
       });
     } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to delete template",
+        description: "Failed to delete email template",
         variant: "destructive",
       });
       throw error;

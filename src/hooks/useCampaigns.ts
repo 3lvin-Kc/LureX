@@ -42,7 +42,6 @@ export const useCampaigns = () => {
 
       if (error) throw error;
       
-      // Type cast the data to match our Campaign interface
       const typedData = (data || []).map(item => ({
         ...item,
         status: item.status as Campaign['status']
@@ -75,7 +74,7 @@ export const useCampaigns = () => {
 
       if (error) throw error;
       
-      await fetchCampaigns(); // Refresh to get related data
+      await fetchCampaigns();
       toast({
         title: "Success",
         description: "Campaign created successfully",
@@ -107,10 +106,51 @@ export const useCampaigns = () => {
         )
       );
 
-      toast({
-        title: "Success",
-        description: `Campaign ${status}`,
-      });
+      // If starting campaign, trigger email sending
+      if (status === 'in_progress') {
+        const campaign = campaigns.find(c => c.id === id);
+        if (campaign && campaign.template_id && campaign.target_list_id) {
+          try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+              const response = await fetch('/functions/v1/send-campaign-emails', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({
+                  campaignId: id,
+                  templateId: campaign.template_id,
+                  targetListId: campaign.target_list_id,
+                }),
+              });
+
+              if (!response.ok) {
+                throw new Error('Failed to send campaign emails');
+              }
+
+              const result = await response.json();
+              toast({
+                title: "Campaign started",
+                description: `${result.emails_sent} emails queued for delivery`,
+              });
+            }
+          } catch (emailError: any) {
+            console.error('Email sending error:', emailError);
+            toast({
+              title: "Campaign started with issues",
+              description: "Campaign status updated but email sending encountered issues",
+              variant: "destructive",
+            });
+          }
+        }
+      } else {
+        toast({
+          title: "Success",
+          description: `Campaign ${status}`,
+        });
+      }
     } catch (error: any) {
       toast({
         title: "Error",
