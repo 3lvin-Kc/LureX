@@ -4,14 +4,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/components/auth/AuthProvider";
-import PrivateRoute from "@/components/auth/PrivateRoute";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
 import Campaigns from "./pages/Campaigns";
 import CreateCampaign from "./pages/CreateCampaign";
-import EmailTemplates from "./pages/EmailTemplates";
 import TargetLists from "./pages/TargetLists";
 import PhishingPages from "./pages/PhishingPages";
 import CreatePhishingPage from "./pages/CreatePhishingPage";
@@ -29,62 +25,14 @@ function App() {
           <AuthProvider>
             <Routes>
               <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              
-              <Route path="/dashboard" element={
-                <PrivateRoute>
-                  <Dashboard />
-                </PrivateRoute>
-              } />
-              
-              <Route path="/campaigns" element={
-                <PrivateRoute>
-                  <Campaigns />
-                </PrivateRoute>
-              } />
-              
-              <Route path="/campaigns/new" element={
-                <PrivateRoute>
-                  <CreateCampaign />
-                </PrivateRoute>
-              } />
-              
-              <Route path="/email-templates" element={
-                <PrivateRoute>
-                  <EmailTemplates />
-                </PrivateRoute>
-              } />
-              
-              <Route path="/target-lists" element={
-                <PrivateRoute>
-                  <TargetLists />
-                </PrivateRoute>
-              } />
-              
-              <Route path="/phishing-pages" element={
-                <PrivateRoute>
-                  <PhishingPages />
-                </PrivateRoute>
-              } />
-              
-              <Route path="/phishing-pages/new" element={
-                <PrivateRoute>
-                  <CreatePhishingPage />
-                </PrivateRoute>
-              } />
-              
-              <Route path="/reports" element={
-                <PrivateRoute>
-                  <Reports />
-                </PrivateRoute>
-              } />
-              
-              <Route path="/settings" element={
-                <PrivateRoute>
-                  <Settings />
-                </PrivateRoute>
-              } />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/campaigns" element={<Campaigns />} />
+              <Route path="/campaigns/new" element={<CreateCampaign />} />
+              <Route path="/target-lists" element={<TargetLists />} />
+              <Route path="/phishing-pages" element={<PhishingPages />} />
+              <Route path="/phishing-pages/new" element={<CreatePhishingPage />} />
+              <Route path="/reports" element={<Reports />} />
+              <Route path="/settings" element={<Settings />} />
             </Routes>
           </AuthProvider>
         </Router>

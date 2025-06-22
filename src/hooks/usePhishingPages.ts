@@ -77,6 +77,36 @@ export const usePhishingPages = () => {
     }
   };
 
+  const updatePage = async (id: string, updates: Partial<Omit<PhishingPage, 'id' | 'created_at' | 'updated_at'>>) => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('phishing_pages')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      setPages(prev => prev.map(page => page.id === id ? data : page));
+      toast({
+        title: "Success",
+        description: "Phishing page updated successfully",
+      });
+      
+      return data;
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to update phishing page",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   useEffect(() => {
     fetchPages();
   }, [user]);
@@ -85,6 +115,7 @@ export const usePhishingPages = () => {
     pages,
     loading,
     createPage,
+    updatePage,
     refetchPages: fetchPages,
   };
 };
