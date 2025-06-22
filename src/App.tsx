@@ -8,6 +8,8 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import Campaigns from "./pages/Campaigns";
 import CreateCampaign from "./pages/CreateCampaign";
+import Templates from "./pages/Templates";
+import CreateTemplate from "./pages/CreateTemplate";
 import TargetLists from "./pages/TargetLists";
 import CreateTargetList from "./pages/CreateTargetList";
 import PhishingPages from "./pages/PhishingPages";
