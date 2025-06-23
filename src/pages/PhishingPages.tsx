@@ -138,10 +138,7 @@ const PhishingPages = () => {
                 <TableBody>
                   {pages?.map((page) => (
                     <TableRow key={page.id}>
-                      <TableCell className="font-medium">{page.name}</Table
-
-
-
+                      <TableCell className="font-medium">{page.name}</TableCell>
                       <TableCell>
                         {page.category ? (
                           <Badge variant="outline" className="capitalize">
