@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { PlusCircle, Globe, Edit, Trash2, Copy, Eye, Library, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { format } from "date-fns";
-import CloneWebsiteWarning from "@/components/phishing/CloneWebsiteWarning";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PhishingTemplateLibrary from "@/components/phishing/PhishingTemplateLibrary";
 import { PhishingTemplate } from "@/utils/phishingTemplateLibrary";
@@ -34,7 +34,6 @@ const PhishingPages = () => {
   const navigate = useNavigate();
   const [phishingPages, setPhishingPages] = useState(mockPhishingPages);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
-  const [showCloneWarning, setShowCloneWarning] = useState(false);
   const [activeTab, setActiveTab] = useState("my-pages");
 
   const handleDeletePage = (id: string) => {
@@ -324,19 +323,12 @@ const PhishingPages = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <PhishingTemplateLibrary key={activeTab} onSelect={handleTemplateSelect} />
+                <PhishingTemplateLibrary onSelect={handleTemplateSelect} />
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
-      
-      <CloneWebsiteWarning 
-        open={showCloneWarning}
-        onOpenChange={setShowCloneWarning}
-        onProceed={handleCloneProceed}
-        onCancel={handleCloneCancel}
-      />
     </DashboardLayout>
   );
 };
