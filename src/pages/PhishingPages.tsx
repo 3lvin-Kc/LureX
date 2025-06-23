@@ -10,15 +10,15 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { format } from "date-fns";
-import CloneWebsiteWarning from "@/components/phishing/CloneWebsiteWarning";
+import CloneWebsiteModal from "@/components/phishing/CloneWebsiteModal";
 import { usePhishingPages } from "@/hooks/usePhishingPages";
 
 const PhishingPages = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { pages, loading, deletePage } = usePhishingPages();
+  const { pages, loading, deletePage, refetchPages } = usePhishingPages();
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
-  const [showCloneWarning, setShowCloneWarning] = useState(false);
+  const [showCloneModal, setShowCloneModal] = useState(false);
 
   const handleDeletePage = async (id: string) => {
     setIsDeleting(id);
@@ -31,16 +31,8 @@ const PhishingPages = () => {
     }
   };
 
-  const handleCloneWebsiteClick = () => {
-    setShowCloneWarning(true);
-  };
-
-  const handleCloneProceed = () => {
-    navigate("/phishing-pages/create-from-url");
-  };
-
-  const handleCloneCancel = () => {
-    navigate("/phishing-pages/new");
+  const handleCloneSuccess = () => {
+    refetchPages();
   };
 
   const handleDuplicatePage = async (pageId: string) => {
@@ -86,7 +78,7 @@ const PhishingPages = () => {
           <div className="flex gap-2">
             <Button 
               variant="outline"
-              onClick={handleCloneWebsiteClick}
+              onClick={() => setShowCloneModal(true)}
               className="flex items-center gap-2"
             >
               <Globe size={16} />
@@ -116,7 +108,7 @@ const PhishingPages = () => {
                 <div className="mt-6 flex flex-col gap-4 md:flex-row md:justify-center">
                   <Button 
                     variant="outline" 
-                    onClick={handleCloneWebsiteClick}
+                    onClick={() => setShowCloneModal(true)}
                     className="flex items-center gap-2"
                   >
                     <Globe size={16} />
@@ -146,7 +138,10 @@ const PhishingPages = () => {
                 <TableBody>
                   {pages?.map((page) => (
                     <TableRow key={page.id}>
-                      <TableCell className="font-medium">{page.name}</TableCell>
+                      <TableCell className="font-medium">{page.name}</Table
+
+
+
                       <TableCell>
                         {page.category ? (
                           <Badge variant="outline" className="capitalize">
@@ -230,11 +225,10 @@ const PhishingPages = () => {
           </CardContent>
         </Card>
 
-        <CloneWebsiteWarning 
-          open={showCloneWarning}
-          onOpenChange={setShowCloneWarning}
-          onProceed={handleCloneProceed}
-          onCancel={handleCloneCancel}
+        <CloneWebsiteModal 
+          open={showCloneModal}
+          onOpenChange={setShowCloneModal}
+          onSuccess={handleCloneSuccess}
         />
       </div>
     </DashboardLayout>

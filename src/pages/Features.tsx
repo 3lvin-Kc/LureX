@@ -1,180 +1,196 @@
 
-import React from 'react';
-import { Link } from 'react-router-dom';
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
-import { Button } from '@/components/ui/button';
-import GlassPanel from '@/components/ui/GlassPanel';
-import AnimatedCard from '@/components/ui/AnimatedCard';
-import { Shield, Bell, PieChart, Users, Calendar, Settings } from 'lucide-react';
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useNavigate } from "react-router-dom";
+import { 
+  Mail, 
+  Users, 
+  BarChart3, 
+  Shield, 
+  Target, 
+  Globe, 
+  Bot, 
+  Eye,
+  MousePointer,
+  FileText,
+  Clock,
+  CheckCircle
+} from "lucide-react";
 
 const Features = () => {
+  const navigate = useNavigate();
+
+  const features = [
+    {
+      icon: <Mail className="h-8 w-8" />,
+      title: "Email Template Designer",
+      description: "Create realistic phishing emails with our intuitive template editor and AI-powered generation.",
+      highlights: ["AI Content Generation", "HTML/Text Support", "Template Library", "Version Control"]
+    },
+    {
+      icon: <Users className="h-8 w-8" />,
+      title: "Target Management",
+      description: "Organize and manage your test recipients with advanced targeting capabilities.",
+      highlights: ["CSV Import/Export", "Department Filtering", "Custom Fields", "Bulk Operations"]
+    },
+    {
+      icon: <Globe className="h-8 w-8" />,
+      title: "Phishing Page Builder",
+      description: "Create convincing fake login pages or clone existing websites for realistic simulations.",
+      highlights: ["Website Cloning", "Custom Pages", "Mobile Responsive", "Form Capture"]
+    },
+    {
+      icon: <BarChart3 className="h-8 w-8" />,
+      title: "Advanced Analytics",
+      description: "Track campaign performance with detailed reporting and real-time analytics.",
+      highlights: ["Real-time Tracking", "Department Reports", "Export Options", "Trend Analysis"]
+    },
+    {
+      icon: <Eye className="h-8 w-8" />,
+      title: "Email Tracking",
+      description: "Monitor email opens, clicks, and user interactions with invisible tracking pixels.",
+      highlights: ["Open Tracking", "Click Tracking", "Device Detection", "Geographic Data"]
+    },
+    {
+      icon: <Shield className="h-8 w-8" />,
+      title: "Security & Compliance",
+      description: "Enterprise-grade security with compliance reporting for regulatory requirements.",
+      highlights: ["Data Encryption", "GDPR Compliant", "Audit Trails", "Role-based Access"]
+    }
+  ];
+
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      
-      <main className="flex-grow pt-24">
-        {/* Hero Section */}
-        <section className="py-16 md:py-24">
-          <div className="max-w-7xl mx-auto px-6 md:px-10">
-            <div className="text-center max-w-3xl mx-auto">
-              <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-6">
-                Comprehensive <span className="text-gradient">Security Features</span>
-              </h1>
-              <p className="text-lg text-gray-600 dark:text-gray-300 mb-10">
-                Our platform offers a wide range of features designed to help you protect your organization against phishing attacks.
-              </p>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Button variant="ghost" onClick={() => navigate("/")}>
+                <span className="text-xl font-bold text-primary">Phishing</span>
+                <span className="text-xl font-bold ml-1">Guardian</span>
+              </Button>
+            </div>
+            <Button onClick={() => navigate("/dashboard")}>
+              Get Started
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Hero Section */}
+      <div className="py-16 px-4">
+        <div className="container mx-auto text-center">
+          <Badge variant="outline" className="mb-4">
+            Enterprise Security Platform
+          </Badge>
+          <h1 className="text-4xl md:text-6xl font-bold mb-6">
+            Comprehensive Phishing
+            <span className="text-primary block">Simulation Features</span>
+          </h1>
+          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+            Everything you need to test, educate, and strengthen your organization's security posture against phishing attacks.
+          </p>
+          <Button size="lg" onClick={() => navigate("/dashboard")}>
+            Start Free Trial
+          </Button>
+        </div>
+      </div>
+
+      {/* Features Grid */}
+      <div className="py-16 px-4 bg-white">
+        <div className="container mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">Powerful Features</h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Our platform provides all the tools needed for effective phishing simulations and security awareness training.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {features.map((feature, index) => (
+              <Card key={index} className="h-full">
+                <CardHeader>
+                  <div className="text-primary mb-4">{feature.icon}</div>
+                  <CardTitle className="text-xl">{feature.title}</CardTitle>
+                  <CardDescription>{feature.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2">
+                    {feature.highlights.map((highlight, i) => (
+                      <li key={i} className="flex items-center text-sm">
+                        <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                        {highlight}
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Workflow Section */}
+      <div className="py-16 px-4 bg-gray-50">
+        <div className="container mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">Simple 4-Step Process</h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Launch comprehensive phishing simulations in minutes, not hours.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Users className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">1. Import Targets</h3>
+              <p className="text-gray-600">Upload your target list via CSV or add recipients manually.</p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Bot className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">2. Generate Content</h3>
+              <p className="text-gray-600">Create email templates and phishing pages with AI assistance.</p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Target className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">3. Launch Campaign</h3>
+              <p className="text-gray-600">Schedule and deploy your phishing simulation campaign.</p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <BarChart3 className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">4. Analyze Results</h3>
+              <p className="text-gray-600">Review detailed analytics and generate compliance reports.</p>
             </div>
           </div>
-        </section>
-        
-        {/* Main Features */}
-        <section className="py-16 bg-gray-50 dark:bg-gray-900/50">
-          <div className="max-w-7xl mx-auto px-6 md:px-10">
-            <h2 className="text-3xl font-bold tracking-tight mb-12 text-center">
-              Core Platform Features
-            </h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {[
-                {
-                  icon: Shield,
-                  title: "Customizable Campaigns",
-                  description: "Create and deploy tailored phishing simulations across multiple channels with varying levels of sophistication."
-                },
-                {
-                  icon: Bell,
-                  title: "Real-time Alerts",
-                  description: "Get instant notifications when employees interact with simulated phishing attempts."
-                },
-                {
-                  icon: PieChart,
-                  title: "Comprehensive Analytics",
-                  description: "Track performance metrics and generate detailed reports on susceptibility rates and behavioral patterns."
-                },
-                {
-                  icon: Users,
-                  title: "Role-based Assessment",
-                  description: "Identify high-risk employees or departments and provide targeted training based on risk levels."
-                },
-                {
-                  icon: Calendar,
-                  title: "Scheduled Campaigns",
-                  description: "Automate campaign delivery with advanced scheduling options to test employees at different times."
-                },
-                {
-                  icon: Settings,
-                  title: "Compliance Controls",
-                  description: "Ensure all simulations adhere to legal and ethical standards including GDPR and ISO 27001."
-                }
-              ].map((feature, index) => (
-                <AnimatedCard key={index} className="h-full">
-                  <div className="p-6 flex flex-col h-full">
-                    <div className="rounded-full bg-primary/10 p-3 w-fit mb-4">
-                      <feature.icon className="h-6 w-6 text-primary" />
-                    </div>
-                    <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
-                    <p className="text-gray-600 dark:text-gray-400 mb-4 flex-grow">
-                      {feature.description}
-                    </p>
-                    <Button variant="ghost" size="sm" className="w-fit">Learn more</Button>
-                  </div>
-                </AnimatedCard>
-              ))}
-            </div>
-          </div>
-        </section>
-        
-        {/* Advanced Features */}
-        <section className="py-16">
-          <div className="max-w-7xl mx-auto px-6 md:px-10">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-              <div>
-                <h2 className="text-3xl font-bold tracking-tight mb-6">
-                  Advanced <span className="text-gradient">Protection</span>
-                </h2>
-                <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
-                  Our platform goes beyond basic phishing simulations to provide comprehensive security awareness training.
-                </p>
-                
-                <div className="space-y-6">
-                  {[
-                    {
-                      title: "Multi-Channel Testing",
-                      description: "Test employee awareness across email, SMS, voice calls, and social media platforms."
-                    },
-                    {
-                      title: "Targeted Simulations",
-                      description: "Create phishing campaigns tailored to specific departments, roles, or individuals."
-                    },
-                    {
-                      title: "Automated Remediation",
-                      description: "Automatically assign training to employees who fail phishing tests, improving their awareness."
-                    },
-                    {
-                      title: "Continuous Assessment",
-                      description: "Regularly test employees to ensure lasting awareness and measure improvement over time."
-                    }
-                  ].map((item, index) => (
-                    <div key={index} className="flex">
-                      <div className="mr-4 mt-1">
-                        <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-600 dark:text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold mb-1">{item.title}</h3>
-                        <p className="text-gray-600 dark:text-gray-400">{item.description}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              <div>
-                <GlassPanel className="p-6 rounded-xl overflow-hidden">
-                  <div className="aspect-video overflow-hidden flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg">
-                    <div className="text-center p-8">
-                      <h3 className="text-xl font-semibold mb-3">Feature Overview</h3>
-                      <p className="text-gray-600 dark:text-gray-400 mb-4">
-                        Interactive demonstration of our platform's advanced security features.
-                      </p>
-                      <Button>Watch Demo</Button>
-                    </div>
-                  </div>
-                </GlassPanel>
-              </div>
-            </div>
-          </div>
-        </section>
-        
-        {/* CTA Section */}
-        <section className="py-16 bg-gray-50 dark:bg-gray-900/50">
-          <div className="max-w-7xl mx-auto px-6 md:px-10">
-            <GlassPanel className="p-8 md:p-12 rounded-2xl text-center max-w-4xl mx-auto" intensity="medium">
-              <h2 className="text-3xl font-bold tracking-tight mb-6">
-                Ready to <span className="text-gradient">Strengthen</span> Your Security?
-              </h2>
-              <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
-                Start building resilience against phishing attacks with our comprehensive simulation platform.
-              </p>
-              
-              <div className="flex flex-col sm:flex-row justify-center gap-4">
-                <Button asChild size="lg" className="rounded-full px-8">
-                  <Link to="/dashboard">Get Started</Link>
-                </Button>
-                <Button asChild size="lg" variant="outline" className="rounded-full px-8">
-                  <Link to="/help">Learn More</Link>
-                </Button>
-              </div>
-            </GlassPanel>
-          </div>
-        </section>
-      </main>
-      
-      <Footer />
+        </div>
+      </div>
+
+      {/* CTA Section */}
+      <div className="py-16 px-4 bg-primary text-white">
+        <div className="container mx-auto text-center">
+          <h2 className="text-3xl font-bold mb-4">Ready to Strengthen Your Security?</h2>
+          <p className="text-xl mb-8 opacity-90">
+            Join thousands of organizations using PhishGuard to improve their security awareness.
+          </p>
+          <Button size="lg" variant="secondary" onClick={() => navigate("/dashboard")}>
+            Start Your Free Trial
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };

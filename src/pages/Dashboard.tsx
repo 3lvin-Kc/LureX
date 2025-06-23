@@ -1,516 +1,237 @@
 
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import GlassPanel from '@/components/ui/GlassPanel';
-import AnimatedCard from '@/components/ui/AnimatedCard';
-import { 
-  PlusCircle, 
-  Calendar, 
-  Users, 
-  BarChart, 
-  Mail, 
-  MessageSquare, 
-  Play, 
-  Pause, 
-  Trash2,
-  Clock,
-  AlertCircle
-} from 'lucide-react';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import React from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { TrendingUp, Users, Mail, MousePointer, Shield, AlertTriangle, CheckCircle, Clock } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
   const navigate = useNavigate();
 
+  // Mock data for charts
+  const campaignData = [
+    { name: 'Jan', campaigns: 4, success: 65 },
+    { name: 'Feb', campaigns: 6, success: 70 },
+    { name: 'Mar', campaigns: 8, success: 58 },
+    { name: 'Apr', campaigns: 5, success: 72 },
+    { name: 'May', campaigns: 7, success: 68 },
+    { name: 'Jun', campaigns: 9, success: 75 },
+  ];
+
+  const departmentData = [
+    { name: 'IT', value: 15, color: '#8884d8' },
+    { name: 'Finance', value: 25, color: '#82ca9d' },
+    { name: 'HR', value: 20, color: '#ffc658' },
+    { name: 'Sales', value: 30, color: '#ff7300' },
+    { name: 'Marketing', value: 10, color: '#00ff00' },
+  ];
+
+  const recentCampaigns = [
+    { name: "Q4 Security Training", status: "completed", success: 78, date: "2024-01-15" },
+    { name: "Finance Department Test", status: "in_progress", success: 65, date: "2024-01-10" },
+    { name: "Executive Phishing Test", status: "scheduled", success: 0, date: "2024-01-20" },
+  ];
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "completed":
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case "in_progress":
+        return <Clock className="h-4 w-4 text-yellow-500" />;
+      case "scheduled":
+        return <AlertTriangle className="h-4 w-4 text-blue-500" />;
+      default:
+        return null;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "completed":
+        return "bg-green-100 text-green-800";
+      case "in_progress":
+        return "bg-yellow-100 text-yellow-800";
+      case "scheduled":
+        return "bg-blue-100 text-blue-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
   return (
     <DashboardLayout>
-      <main className="flex-grow pt-6">
-        {/* Dashboard Header */}
-        <section className="py-8">
-          <div className="max-w-7xl mx-auto px-6 md:px-10">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div>
-                <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
-                  Campaign Dashboard
-                </h1>
-                <p className="text-gray-600 dark:text-gray-300 mt-2">
-                  Manage and monitor your phishing simulation campaigns
-                </p>
-              </div>
-              <Button 
-                className="flex items-center gap-2"
-                onClick={() => navigate('/campaign/new')}
-              >
-                <PlusCircle className="h-4 w-4" />
-                Create Campaign
-              </Button>
-            </div>
+      <div className="container mx-auto p-4 max-w-7xl">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <p className="text-muted-foreground">Monitor your phishing simulation campaigns and security metrics</p>
           </div>
-        </section>
-        
-        {/* Campaign Stats Overview */}
-        <section className="py-6">
-          <div className="max-w-7xl mx-auto px-6 md:px-10">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[
-                {
-                  title: "Active Campaigns",
-                  value: "4",
-                  icon: Play,
-                  trend: "+1 this week",
-                  color: "text-green-500"
-                },
-                {
-                  title: "Total Recipients",
-                  value: "1,248",
-                  icon: Users,
-                  trend: "+86 this month",
-                  color: "text-blue-500"
-                },
-                {
-                  title: "Click Rate",
-                  value: "24.8%",
-                  icon: BarChart,
-                  trend: "-2.1% vs last month",
-                  color: "text-yellow-500"
-                },
-                {
-                  title: "Scheduled Campaigns",
-                  value: "6",
-                  icon: Calendar,
-                  trend: "Next on June 15",
-                  color: "text-purple-500"
-                }
-              ].map((stat, index) => (
-                <AnimatedCard key={index} className="h-full">
-                  <div className="p-6 flex items-start gap-4">
-                    <div className={`rounded-full p-3 ${stat.color} bg-opacity-10 dark:bg-opacity-20`}>
-                      <stat.icon className={`h-5 w-5 ${stat.color}`} />
-                    </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active Campaigns</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">12</div>
+              <p className="text-xs text-muted-foreground">+2 from last month</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Emails Sent</CardTitle>
+              <Mail className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">2,847</div>
+              <p className="text-xs text-muted-foreground">+15% from last week</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Click Rate</CardTitle>
+              <MousePointer className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">18.2%</div>
+              <p className="text-xs text-muted-foreground">-3% improvement</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Security Score</CardTitle>
+              <Shield className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">82</div>
+              <p className="text-xs text-muted-foreground">+5 points this month</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Campaign Performance Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Campaign Performance</CardTitle>
+              <CardDescription>Monthly campaign success rates</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={campaignData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="campaigns" fill="#8884d8" name="Campaigns" />
+                  <Bar dataKey="success" fill="#82ca9d" name="Success Rate %" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Department Vulnerability */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Department Risk Analysis</CardTitle>
+              <CardDescription>Phishing susceptibility by department</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={departmentData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                    label
+                  >
+                    {departmentData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Recent Campaigns */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Campaigns</CardTitle>
+            <CardDescription>Latest phishing simulation activities</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {recentCampaigns.map((campaign, index) => (
+                <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center space-x-4">
+                    {getStatusIcon(campaign.status)}
                     <div>
-                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                        {stat.title}
-                      </h3>
-                      <p className="text-2xl font-bold mt-1">{stat.value}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        {stat.trend}
-                      </p>
+                      <h4 className="font-medium">{campaign.name}</h4>
+                      <p className="text-sm text-muted-foreground">{campaign.date}</p>
                     </div>
                   </div>
-                </AnimatedCard>
+                  <div className="flex items-center space-x-4">
+                    <Badge className={getStatusColor(campaign.status)}>
+                      {campaign.status.replace('_', ' ')}
+                    </Badge>
+                    {campaign.status === "completed" && (
+                      <div className="flex items-center space-x-2">
+                        <Progress value={campaign.success} className="w-20" />
+                        <span className="text-sm font-medium">{campaign.success}%</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
               ))}
             </div>
-          </div>
-        </section>
-        
-        {/* Active and Recent Campaigns */}
-        <section className="py-6">
-          <div className="max-w-7xl mx-auto px-6 md:px-10">
-            <Tabs defaultValue="active" className="w-full">
-              <TabsList className="mb-6">
-                <TabsTrigger value="active">Active Campaigns</TabsTrigger>
-                <TabsTrigger value="scheduled">Scheduled</TabsTrigger>
-                <TabsTrigger value="completed">Completed</TabsTrigger>
-                <TabsTrigger value="draft">Drafts</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="active" className="animate-fade-in">
-                <div className="grid grid-cols-1 gap-4">
-                  {[
-                    {
-                      name: "IT Security Alert",
-                      type: "Email",
-                      status: "Running",
-                      recipients: 325,
-                      opened: 178,
-                      clicked: 86,
-                      reported: 12,
-                      startDate: "June 2, 2023",
-                      endDate: "June 9, 2023"
-                    },
-                    {
-                      name: "Password Reset Request",
-                      type: "Email",
-                      status: "Running",
-                      recipients: 412,
-                      opened: 256,
-                      clicked: 132,
-                      reported: 28,
-                      startDate: "May 28, 2023",
-                      endDate: "June 11, 2023"
-                    },
-                    {
-                      name: "Urgent Message Alert",
-                      type: "SMS",
-                      status: "Running",
-                      recipients: 198,
-                      opened: 142,
-                      clicked: 67,
-                      reported: 5,
-                      startDate: "June 1, 2023",
-                      endDate: "June 8, 2023"
-                    },
-                    {
-                      name: "Executive Request",
-                      type: "Email",
-                      status: "Running",
-                      recipients: 45,
-                      opened: 38,
-                      clicked: 14,
-                      reported: 3,
-                      startDate: "June 5, 2023",
-                      endDate: "June 12, 2023"
-                    }
-                  ].map((campaign, index) => (
-                    <GlassPanel key={index} className="p-5 rounded-lg">
-                      <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                        <div className="flex-grow">
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-lg font-semibold">{campaign.name}</h3>
-                            <span className="text-xs px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-full">
-                              {campaign.status}
-                            </span>
-                          </div>
-                          
-                          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-gray-600 dark:text-gray-400 mt-1">
-                            <div className="flex items-center gap-1">
-                              {campaign.type === "Email" ? 
-                                <Mail className="h-4 w-4" /> : 
-                                <MessageSquare className="h-4 w-4" />
-                              }
-                              <span>{campaign.type}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Users className="h-4 w-4" />
-                              <span>{campaign.recipients} recipients</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-4 w-4" />
-                              <span>{campaign.startDate} - {campaign.endDate}</span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="flex flex-wrap gap-3 mt-2 lg:mt-0">
-                          <div className="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-md text-center min-w-[70px]">
-                            <p className="text-sm font-bold">{campaign.opened}</p>
-                            <p className="text-xs text-gray-600 dark:text-gray-400">Opened</p>
-                          </div>
-                          <div className="px-3 py-1.5 bg-red-100 dark:bg-red-900/20 rounded-md text-center min-w-[70px]">
-                            <p className="text-sm font-bold text-red-700 dark:text-red-400">{campaign.clicked}</p>
-                            <p className="text-xs text-gray-600 dark:text-gray-400">Clicked</p>
-                          </div>
-                          <div className="px-3 py-1.5 bg-green-100 dark:bg-green-900/20 rounded-md text-center min-w-[70px]">
-                            <p className="text-sm font-bold text-green-700 dark:text-green-400">{campaign.reported}</p>
-                            <p className="text-xs text-gray-600 dark:text-gray-400">Reported</p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => navigate(`/campaign/${index+1}`)}>View</Button>
-                          <Button variant="outline" size="icon" className="h-8 w-8">
-                            <Pause className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </GlassPanel>
-                  ))}
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="scheduled" className="animate-fade-in">
-                <div className="grid grid-cols-1 gap-4">
-                  {[
-                    {
-                      name: "Invoice Payment Request",
-                      type: "Email",
-                      status: "Scheduled",
-                      recipients: 278,
-                      startDate: "June 15, 2023",
-                      endDate: "June 22, 2023"
-                    },
-                    {
-                      name: "Account Verification",
-                      type: "SMS",
-                      status: "Scheduled",
-                      recipients: 156,
-                      startDate: "June 18, 2023",
-                      endDate: "June 25, 2023"
-                    }
-                  ].map((campaign, index) => (
-                    <GlassPanel key={index} className="p-5 rounded-lg">
-                      <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                        <div className="flex-grow">
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-lg font-semibold">{campaign.name}</h3>
-                            <span className="text-xs px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 rounded-full">
-                              {campaign.status}
-                            </span>
-                          </div>
-                          
-                          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-gray-600 dark:text-gray-400 mt-1">
-                            <div className="flex items-center gap-1">
-                              {campaign.type === "Email" ? 
-                                <Mail className="h-4 w-4" /> : 
-                                <MessageSquare className="h-4 w-4" />
-                              }
-                              <span>{campaign.type}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Users className="h-4 w-4" />
-                              <span>{campaign.recipients} recipients</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-4 w-4" />
-                              <span>{campaign.startDate} - {campaign.endDate}</span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => navigate(`/campaign/edit/${index+5}`)}>Edit</Button>
-                          <Button variant="outline" size="icon" className="h-8 w-8 text-red-500">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </GlassPanel>
-                  ))}
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="completed" className="animate-fade-in">
-                <div className="grid grid-cols-1 gap-4">
-                  {[
-                    {
-                      name: "Document Share Request",
-                      type: "Email",
-                      status: "Completed",
-                      recipients: 387,
-                      opened: 342,
-                      clicked: 156,
-                      reported: 42,
-                      startDate: "May 10, 2023",
-                      endDate: "May 17, 2023"
-                    },
-                    {
-                      name: "HR Policy Update",
-                      type: "Email",
-                      status: "Completed",
-                      recipients: 412,
-                      opened: 389,
-                      clicked: 218,
-                      reported: 31,
-                      startDate: "May 5, 2023",
-                      endDate: "May 12, 2023"
-                    }
-                  ].map((campaign, index) => (
-                    <GlassPanel key={index} className="p-5 rounded-lg">
-                      <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                        <div className="flex-grow">
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-lg font-semibold">{campaign.name}</h3>
-                            <span className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 rounded-full">
-                              {campaign.status}
-                            </span>
-                          </div>
-                          
-                          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-gray-600 dark:text-gray-400 mt-1">
-                            <div className="flex items-center gap-1">
-                              <Mail className="h-4 w-4" />
-                              <span>{campaign.type}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Users className="h-4 w-4" />
-                              <span>{campaign.recipients} recipients</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-4 w-4" />
-                              <span>{campaign.startDate} - {campaign.endDate}</span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="flex flex-wrap gap-3 mt-2 lg:mt-0">
-                          <div className="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-md text-center min-w-[70px]">
-                            <p className="text-sm font-bold">{campaign.opened}</p>
-                            <p className="text-xs text-gray-600 dark:text-gray-400">Opened</p>
-                          </div>
-                          <div className="px-3 py-1.5 bg-red-100 dark:bg-red-900/20 rounded-md text-center min-w-[70px]">
-                            <p className="text-sm font-bold text-red-700 dark:text-red-400">{campaign.clicked}</p>
-                            <p className="text-xs text-gray-600 dark:text-gray-400">Clicked</p>
-                          </div>
-                          <div className="px-3 py-1.5 bg-green-100 dark:bg-green-900/20 rounded-md text-center min-w-[70px]">
-                            <p className="text-sm font-bold text-green-700 dark:text-green-400">{campaign.reported}</p>
-                            <p className="text-xs text-gray-600 dark:text-gray-400">Reported</p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => navigate(`/reports/${index+7}`)}>Report</Button>
-                          <Button variant="outline" size="sm" onClick={() => navigate(`/campaign/clone/${index+7}`)}>Clone</Button>
-                        </div>
-                      </div>
-                    </GlassPanel>
-                  ))}
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="draft" className="animate-fade-in">
-                <div className="grid grid-cols-1 gap-4">
-                  {[
-                    {
-                      name: "Social Media Alert",
-                      type: "Email",
-                      status: "Draft",
-                      lastEdited: "June 1, 2023"
-                    },
-                    {
-                      name: "Package Delivery",
-                      type: "SMS",
-                      status: "Draft",
-                      lastEdited: "May 28, 2023"
-                    }
-                  ].map((campaign, index) => (
-                    <GlassPanel key={index} className="p-5 rounded-lg">
-                      <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                        <div className="flex-grow">
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-lg font-semibold">{campaign.name}</h3>
-                            <span className="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded-full">
-                              {campaign.status}
-                            </span>
-                          </div>
-                          
-                          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-gray-600 dark:text-gray-400 mt-1">
-                            <div className="flex items-center gap-1">
-                              {campaign.type === "Email" ? 
-                                <Mail className="h-4 w-4" /> : 
-                                <MessageSquare className="h-4 w-4" />
-                              }
-                              <span>{campaign.type}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-4 w-4" />
-                              <span>Last edited on {campaign.lastEdited}</span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => navigate(`/campaign/edit/${index+9}`)}>Edit</Button>
-                          <Button size="sm" onClick={() => navigate(`/campaign/finalize/${index+9}`)}>Finalize</Button>
-                        </div>
-                      </div>
-                    </GlassPanel>
-                  ))}
-                </div>
-              </TabsContent>
-            </Tabs>
-          </div>
-        </section>
-        
-        {/* Recent Activity & Alerts */}
-        <section className="py-6">
-          <div className="max-w-7xl mx-auto px-6 md:px-10">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
-                <AnimatedCard className="p-5">
-                  <div className="space-y-4">
-                    {[
-                      {
-                        action: "Campaign Started",
-                        description: "Executive Request campaign started",
-                        time: "2 hours ago"
-                      },
-                      {
-                        action: "High Click Rate",
-                        description: "Password Reset Request reached 25% click rate",
-                        time: "Yesterday"
-                      },
-                      {
-                        action: "Campaign Completed",
-                        description: "HR Policy Update campaign completed",
-                        time: "3 days ago"
-                      },
-                      {
-                        action: "New Template Added",
-                        description: "Added 'Account Security Alert' template to library",
-                        time: "4 days ago"
-                      },
-                      {
-                        action: "Campaign Scheduled",
-                        description: "Invoice Payment Request scheduled for June 15",
-                        time: "5 days ago"
-                      }
-                    ].map((activity, index) => (
-                      <div key={index} className="flex items-start gap-3 pb-3 border-b last:border-0 last:pb-0">
-                        <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
-                          <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                        </div>
-                        <div className="flex-grow">
-                          <p className="font-medium">{activity.action}</p>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">{activity.description}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">{activity.time}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </AnimatedCard>
-              </div>
-              
-              <div>
-                <h2 className="text-xl font-semibold mb-4">Alerts</h2>
-                <AnimatedCard className="p-5">
-                  <div className="space-y-4">
-                    {[
-                      {
-                        title: "High Risk Detection",
-                        description: "Finance department shows 48% click rate on recent campaigns",
-                        severity: "High",
-                        color: "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
-                      },
-                      {
-                        title: "Campaign Ending Soon",
-                        description: "Password Reset Request campaign ends in 2 days",
-                        severity: "Medium",
-                        color: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400"
-                      },
-                      {
-                        title: "Scheduled Maintenance",
-                        description: "System maintenance scheduled for June 12, 11:00 PM",
-                        severity: "Low",
-                        color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                      }
-                    ].map((alert, index) => (
-                      <div key={index} className="flex items-start gap-3 pb-3 border-b last:border-0 last:pb-0">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${alert.color}`}>
-                          <AlertCircle className="h-4 w-4" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium">{alert.title}</p>
-                            <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                              alert.severity === "High" ? "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300" :
-                              alert.severity === "Medium" ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300" :
-                              "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300"
-                            }`}>
-                              {alert.severity}
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{alert.description}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </AnimatedCard>
-              </div>
-            </div>
-          </div>
-        </section>
-      </main>
+          </CardContent>
+        </Card>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/templates")}>
+            <CardContent className="p-6 text-center">
+              <Mail className="h-8 w-8 mx-auto mb-2 text-primary" />
+              <h3 className="font-medium">Email Templates</h3>
+              <p className="text-sm text-muted-foreground">Create and manage templates</p>
+            </CardContent>
+          </Card>
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/target-lists")}>
+            <CardContent className="p-6 text-center">
+              <Users className="h-8 w-8 mx-auto mb-2 text-primary" />
+              <h3 className="font-medium">Target Lists</h3>
+              <p className="text-sm text-muted-foreground">Manage recipient lists</p>
+            </CardContent>
+          </Card>
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/phishing-pages")}>
+            <CardContent className="p-6 text-center">
+              <Shield className="h-8 w-8 mx-auto mb-2 text-primary" />
+              <h3 className="font-medium">Phishing Pages</h3>
+              <p className="text-sm text-muted-foreground">Create fake login pages</p>
+            </CardContent>
+          </Card>
+          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate("/reports")}>
+            <CardContent className="p-6 text-center">
+              <BarChart className="h-8 w-8 mx-auto mb-2 text-primary" />
+              <h3 className="font-medium">Reports</h3>
+              <p className="text-sm text-muted-foreground">View analytics and reports</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </DashboardLayout>
   );
 };

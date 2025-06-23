@@ -1,93 +1,109 @@
 
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
-import DashboardLayout from '@/components/dashboard/DashboardLayout';
-import { ArrowLeft, Save, Upload } from 'lucide-react';
+import React, { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import { ArrowLeft, Upload, Plus, Trash2 } from "lucide-react";
 
 const formSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
+  name: z.string().min(1, { message: "List name is required" }),
   description: z.string().optional(),
 });
 
 const CreateTargetList = () => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [targets, setTargets] = useState<Array<{email: string, first_name?: string, last_name?: string, department?: string, position?: string}>>([]);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [targets, setTargets] = useState([{ email: "", firstName: "", lastName: "", department: "", position: "" }]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: '',
-      description: '',
+      name: "",
+      description: "",
     },
   });
 
-  const handleCSVUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const addTarget = () => {
+    setTargets([...targets, { email: "", firstName: "", lastName: "", department: "", position: "" }]);
+  };
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = e.target?.result as string;
-      const lines = text.split('\n').filter(line => line.trim());
-      const headers = lines[0].split(',').map(h => h.trim());
-      
-      const parsedTargets = lines.slice(1).map(line => {
-        const values = line.split(',').map(v => v.trim());
-        const target: any = {};
-        headers.forEach((header, index) => {
-          if (values[index]) {
-            target[header.toLowerCase().replace(' ', '_')] = values[index];
-          }
-        });
-        return target;
-      }).filter(target => target.email);
+  const removeTarget = (index: number) => {
+    setTargets(targets.filter((_, i) => i !== index));
+  };
 
-      setTargets(parsedTargets);
-      toast({
-        title: 'CSV uploaded',
-        description: `${parsedTargets.length} targets loaded from CSV`,
-      });
-    };
-    reader.readAsText(file);
+  const updateTarget = (index: number, field: string, value: string) => {
+    const updatedTargets = targets.map((target, i) => 
+      i === index ? { ...target, [field]: value } : target
+    );
+    setTargets(updatedTargets);
   };
 
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (targets.length === 0) {
-      toast({
-        title: 'No targets',
-        description: 'Please upload a CSV file with targets',
-        variant: 'destructive',
-      });
-      return;
-    }
-
     setIsSubmitting(true);
     try {
-      // Create target list and targets
+      // Mock submission
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       toast({
-        title: 'Success',
-        description: `Target list "${values.name}" created with ${targets.length} targets`,
+        title: "Success",
+        description: "Target list created successfully",
       });
-      navigate('/target-lists');
+      navigate("/target-lists");
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Failed to create target list',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to create target list",
+        variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleCSVUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const csv = e.target?.result as string;
+        const lines = csv.split('\n');
+        const headers = lines[0].split(',').map(h => h.trim());
+        
+        const parsedTargets = lines.slice(1).map(line => {
+          const values = line.split(',').map(v => v.trim());
+          return {
+            email: values[headers.indexOf('email')] || '',
+            firstName: values[headers.indexOf('first_name')] || '',
+            lastName: values[headers.indexOf('last_name')] || '',
+            department: values[headers.indexOf('department')] || '',
+            position: values[headers.indexOf('position')] || '',
+          };
+        }).filter(target => target.email);
+
+        setTargets(parsedTargets);
+        toast({
+          title: "CSV Imported",
+          description: `${parsedTargets.length} targets imported successfully`,
+        });
+      };
+      reader.readAsText(file);
     }
   };
 
@@ -95,16 +111,13 @@ const CreateTargetList = () => {
     <DashboardLayout>
       <div className="container mx-auto p-4 max-w-4xl">
         <div className="flex items-center gap-4 mb-6">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => navigate('/target-lists')}
-          >
-            <ArrowLeft size={16} />
+          <Button variant="outline" onClick={() => navigate("/target-lists")}>
+            <ArrowLeft size={16} className="mr-2" />
+            Back to Target Lists
           </Button>
           <div>
             <h1 className="text-3xl font-bold">Create Target List</h1>
-            <p className="text-muted-foreground">Create a new target list for your campaigns</p>
+            <p className="text-muted-foreground">Create a new target list for your phishing campaigns</p>
           </div>
         </div>
 
@@ -138,26 +151,16 @@ const CreateTargetList = () => {
                       <FormItem>
                         <FormLabel>Description (Optional)</FormLabel>
                         <FormControl>
-                          <Textarea placeholder="Enter list description" {...field} />
+                          <Textarea 
+                            placeholder="Brief description of this target list..."
+                            className="h-20"
+                            {...field} 
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-
-                  <div className="flex justify-end gap-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => navigate('/target-lists')}
-                    >
-                      Cancel
-                    </Button>
-                    <Button type="submit" disabled={isSubmitting}>
-                      {isSubmitting && <Save className="mr-2 h-4 w-4 animate-spin" />}
-                      Create List
-                    </Button>
-                  </div>
                 </form>
               </Form>
             </CardContent>
@@ -165,11 +168,8 @@ const CreateTargetList = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Upload Targets</CardTitle>
-              <CardDescription>
-                Upload a CSV file with target information. Required columns: email. 
-                Optional: first_name, last_name, department, position
-              </CardDescription>
+              <CardTitle>Import Targets</CardTitle>
+              <CardDescription>Upload a CSV file or manually add targets</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -189,28 +189,75 @@ const CreateTargetList = () => {
                       </span>
                     </Button>
                   </label>
+                  <Button variant="outline" onClick={addTarget}>
+                    <Plus size={16} className="mr-2" />
+                    Add Target
+                  </Button>
                 </div>
-                
-                {targets.length > 0 && (
-                  <div className="border rounded-lg p-4 bg-muted/50">
-                    <p className="text-sm font-medium mb-2">Loaded {targets.length} targets:</p>
-                    <div className="max-h-40 overflow-y-auto">
-                      {targets.slice(0, 5).map((target, index) => (
-                        <div key={index} className="text-sm text-muted-foreground">
-                          {target.email} {target.first_name && `- ${target.first_name} ${target.last_name}`}
-                        </div>
-                      ))}
-                      {targets.length > 5 && (
-                        <div className="text-sm text-muted-foreground">
-                          ... and {targets.length - 5} more
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
+
+                <div className="text-sm text-muted-foreground">
+                  CSV format: email, first_name, last_name, department, position
+                </div>
               </div>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Targets ({targets.length})</CardTitle>
+              <CardDescription>Manage individual targets in your list</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {targets.map((target, index) => (
+                  <div key={index} className="grid grid-cols-1 md:grid-cols-6 gap-4 p-4 border rounded-lg">
+                    <Input
+                      placeholder="Email"
+                      value={target.email}
+                      onChange={(e) => updateTarget(index, 'email', e.target.value)}
+                    />
+                    <Input
+                      placeholder="First Name"
+                      value={target.firstName}
+                      onChange={(e) => updateTarget(index, 'firstName', e.target.value)}
+                    />
+                    <Input
+                      placeholder="Last Name"
+                      value={target.lastName}
+                      onChange={(e) => updateTarget(index, 'lastName', e.target.value)}
+                    />
+                    <Input
+                      placeholder="Department"
+                      value={target.department}
+                      onChange={(e) => updateTarget(index, 'department', e.target.value)}
+                    />
+                    <Input
+                      placeholder="Position"
+                      value={target.position}
+                      onChange={(e) => updateTarget(index, 'position', e.target.value)}
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => removeTarget(index)}
+                      disabled={targets.length === 1}
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex justify-end gap-4">
+            <Button variant="outline" onClick={() => navigate("/target-lists")}>
+              Cancel
+            </Button>
+            <Button onClick={form.handleSubmit(handleSubmit)} disabled={isSubmitting}>
+              {isSubmitting ? "Creating..." : "Create Target List"}
+            </Button>
+          </div>
         </div>
       </div>
     </DashboardLayout>

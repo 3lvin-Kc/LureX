@@ -15,6 +15,8 @@ import CreateTargetList from "./pages/CreateTargetList";
 import PhishingPages from "./pages/PhishingPages";
 import CreatePhishingPage from "./pages/CreatePhishingPage";
 import Reports from "./pages/Reports";
+import Features from "./pages/Features";
+import Help from "./pages/Help";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +29,8 @@ function App() {
           <AuthProvider>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/features" element={<Features />} />
+              <Route path="/help" element={<Help />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/campaigns" element={<Campaigns />} />
               <Route path="/campaigns/new" element={<CreateCampaign />} />

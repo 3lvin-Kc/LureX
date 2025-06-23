@@ -2,212 +2,117 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import Hero from "@/components/landing/Hero";
-import Features from "@/components/landing/Features";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
-import { Shield, Users, BarChart3, Zap, CheckCircle, Star } from "lucide-react";
-import { Link } from "react-router-dom";
-import { useAuth } from "@/components/auth/AuthProvider";
+import { ArrowRight, Shield, Users, BarChart3, Mail, Target, CheckCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
-  const { user } = useAuth();
+  const navigate = useNavigate();
 
-  const stats = [
-    { number: "10,000+", label: "Organizations Protected" },
-    { number: "98%", label: "Phishing Detection Rate" },
-    { number: "5M+", label: "Simulations Completed" },
-    { number: "24/7", label: "Security Monitoring" },
+  const features = [
+    {
+      icon: <Mail className="h-6 w-6" />,
+      title: "Email Templates",
+      description: "Create realistic phishing emails with AI-powered content generation"
+    },
+    {
+      icon: <Users className="h-6 w-6" />,
+      title: "Target Management",
+      description: "Organize and manage your test recipients with advanced targeting"
+    },
+    {
+      icon: <Shield className="h-6 w-6" />,
+      title: "Phishing Pages",
+      description: "Build convincing fake login pages or clone existing websites"
+    },
+    {
+      icon: <BarChart3 className="h-6 w-6" />,
+      title: "Analytics & Reports",
+      description: "Track campaign performance with detailed analytics and reporting"
+    }
   ];
 
-  const testimonials = [
-    {
-      name: "Sarah Johnson",
-      role: "CISO, TechCorp",
-      content: "PhishGuard transformed our security awareness. Our click rates dropped by 80% in just 3 months.",
-      rating: 5,
-    },
-    {
-      name: "Michael Chen",
-      role: "IT Manager, FinanceFirst",
-      content: "The detailed analytics and reporting help us track our progress and identify vulnerable users.",
-      rating: 5,
-    },
-    {
-      name: "Emma Rodriguez",
-      role: "Security Analyst, HealthSystem",
-      content: "Easy to use, comprehensive templates, and excellent customer support. Highly recommend!",
-      rating: 5,
-    },
+  const benefits = [
+    "Reduce successful phishing attacks by up to 90%",
+    "Improve security awareness across your organization",
+    "Generate compliance reports for regulatory requirements",
+    "Identify vulnerable users and departments",
+    "Track improvement over time with detailed analytics"
   ];
 
   return (
-    <div className="min-h-screen bg-white">
-      <Header />
-      
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-white to-purple-50">
-        <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
-        <div className="relative container mx-auto px-4 py-20">
-          <div className="text-center max-w-4xl mx-auto">
-            <Badge variant="secondary" className="mb-4 px-3 py-1">
-              🚀 Trusted by 10,000+ Organizations
-            </Badge>
-            <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 bg-clip-text text-transparent mb-6">
-              Stop Phishing Attacks Before They Start
-            </h1>
-            <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-              Protect your organization with realistic phishing simulations, comprehensive training, and actionable security insights.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              {user ? (
-                <Link to="/dashboard">
-                  <Button size="lg" className="px-8 py-6 text-lg">
-                    Go to Dashboard
-                  </Button>
-                </Link>
-              ) : (
-                <>
-                  <Link to="/auth">
-                    <Button size="lg" className="px-8 py-6 text-lg">
-                      Get Started Free
-                    </Button>
-                  </Link>
-                  <Link to="/features">
-                    <Button variant="outline" size="lg" className="px-8 py-6 text-lg">
-                      Learn More
-                    </Button>
-                  </Link>
-                </>
-              )}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* Navigation */}
+      <nav className="bg-white/80 backdrop-blur-md border-b border-white/20 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center space-x-2">
+              <Shield className="h-8 w-8 text-blue-600" />
+              <span className="text-2xl font-bold text-gray-900">PhishGuard</span>
+            </div>
+            <div className="hidden md:flex items-center space-x-8">
+              <Button variant="ghost" onClick={() => navigate("/features")}>
+                Features
+              </Button>
+              <Button variant="ghost" onClick={() => navigate("/help")}>
+                Help
+              </Button>
+              <Button onClick={() => navigate("/dashboard")}>
+                Get Started
+              </Button>
             </div>
           </div>
         </div>
-      </section>
+      </nav>
 
-      {/* Stats Section */}
-      <section className="py-16 bg-white border-y">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="text-3xl md:text-4xl font-bold text-blue-600 mb-2">
-                  {stat.number}
-                </div>
-                <div className="text-gray-600">{stat.label}</div>
-              </div>
-            ))}
+      {/* Hero Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto text-center">
+          <Badge variant="outline" className="mb-4 bg-white/50">
+            🚀 Advanced Phishing Simulation Platform
+          </Badge>
+          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+            Strengthen Your Organization's
+            <span className="text-blue-600 block">Security Posture</span>
+          </h1>
+          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+            Train your employees to recognize and respond to phishing attacks with realistic simulations, 
+            comprehensive reporting, and AI-powered content generation.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button size="lg" onClick={() => navigate("/dashboard")} className="text-lg px-8">
+              Start Free Trial
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+            <Button size="lg" variant="outline" onClick={() => navigate("/features")} className="text-lg px-8">
+              View Features
+            </Button>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="container mx-auto px-4">
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
+        <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Complete Phishing Security Solution
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Everything You Need for Effective Phishing Simulations
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Everything you need to build a security-aware workforce and protect against phishing attacks.
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Our comprehensive platform provides all the tools necessary to create, deploy, and analyze phishing simulations.
             </p>
           </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-              <CardHeader className="text-center pb-4">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                  <Shield className="h-6 w-6 text-blue-600" />
-                </div>
-                <CardTitle className="text-xl">Realistic Simulations</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 text-center">
-                  Create authentic phishing campaigns with customizable templates and landing pages.
-                </p>
-              </CardContent>
-            </Card>
 
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-              <CardHeader className="text-center pb-4">
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                  <Users className="h-6 w-6 text-green-600" />
-                </div>
-                <CardTitle className="text-xl">Target Management</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 text-center">
-                  Organize and segment your users for targeted phishing awareness campaigns.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-              <CardHeader className="text-center pb-4">
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                  <BarChart3 className="h-6 w-6 text-purple-600" />
-                </div>
-                <CardTitle className="text-xl">Advanced Analytics</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 text-center">
-                  Track performance, identify vulnerabilities, and measure security awareness progress.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow">
-              <CardHeader className="text-center pb-4">
-                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                  <Zap className="h-6 w-6 text-orange-600" />
-                </div>
-                <CardTitle className="text-xl">Automated Campaigns</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 text-center">
-                  Schedule and automate phishing simulations for continuous security training.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section className="py-20 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Trusted by Security Leaders
-            </h2>
-            <p className="text-xl text-gray-600">
-              See what our customers say about their security transformation
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <Card key={index} className="border-0 shadow-lg">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {features.map((feature, index) => (
+              <Card key={index} className="text-center hover:shadow-lg transition-shadow">
                 <CardHeader>
-                  <div className="flex items-center gap-1 mb-2">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    ))}
+                  <div className="mx-auto w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 mb-4">
+                    {feature.icon}
                   </div>
-                  <CardDescription className="text-base italic">
-                    "{testimonial.content}"
-                  </CardDescription>
+                  <CardTitle className="text-xl">{feature.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <Users className="h-5 w-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <div className="font-semibold">{testimonial.name}</div>
-                      <div className="text-sm text-gray-600">{testimonial.role}</div>
-                    </div>
-                  </div>
+                  <CardDescription className="text-base">{feature.description}</CardDescription>
                 </CardContent>
               </Card>
             ))}
@@ -215,33 +120,62 @@ const Index = () => {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-4xl font-bold text-white mb-4">
-            Ready to Secure Your Organization?
-          </h2>
-          <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-            Join thousands of organizations that trust PhishGuard to protect their workforce from phishing attacks.
-          </p>
-          {!user && (
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/auth">
-                <Button size="lg" variant="secondary" className="px-8 py-6 text-lg">
-                  Start Free Trial
-                </Button>
-              </Link>
-              <Link to="/contact">
-                <Button size="lg" variant="outline" className="px-8 py-6 text-lg border-white text-white hover:bg-white hover:text-blue-600">
-                  Contact Sales
-                </Button>
-              </Link>
+      {/* Benefits Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+                Measurable Security Improvements
+              </h2>
+              <p className="text-lg text-gray-600 mb-8">
+                Organizations using PhishGuard see significant improvements in their security posture 
+                and employee awareness within the first month of deployment.
+              </p>
+              <ul className="space-y-4">
+                {benefits.map((benefit, index) => (
+                  <li key={index} className="flex items-start">
+                    <CheckCircle className="h-6 w-6 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-700">{benefit}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-          )}
+            <div className="bg-white p-8 rounded-2xl shadow-xl">
+              <div className="text-center">
+                <div className="text-4xl font-bold text-blue-600 mb-2">90%</div>
+                <div className="text-gray-600 mb-6">Reduction in successful phishing attacks</div>
+                <div className="grid grid-cols-2 gap-4 text-center">
+                  <div>
+                    <div className="text-2xl font-bold text-gray-900">15K+</div>
+                    <div className="text-sm text-gray-600">Employees Trained</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-gray-900">500+</div>
+                    <div className="text-sm text-gray-600">Organizations</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      <Footer />
+      {/* CTA Section */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-blue-600">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+            Ready to Strengthen Your Security?
+          </h2>
+          <p className="text-xl text-blue-100 mb-8">
+            Join thousands of organizations that trust PhishGuard to improve their security awareness and reduce phishing risks.
+          </p>
+          <Button size="lg" variant="secondary" onClick={() => navigate("/dashboard")} className="text-lg px-8">
+            Start Your Free Trial Today
+            <ArrowRight className="ml-2 h-5 w-5" />
+          </Button>
+        </div>
+      </section>
     </div>
   );
 };
