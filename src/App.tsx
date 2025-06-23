@@ -43,6 +43,9 @@ function App() {
               <Route path="/target-lists/new" element={<CreateTargetList />} />
               <Route path="/phishing-pages" element={<PhishingPages />} />
               <Route path="/phishing-pages/new" element={<CreatePhishingPage />} />
+              <Route path="/phishing-pages/create-from-url" element={<CloneWebsitePage />} />
+              <Route path="/phishing-pages/:id/preview" element={<PhishingPagePreview />} />
+              <Route path="/phishing-pages/:id/edit" element={<EditPhishingPage />} />
               <Route path="/reports" element={<Reports />} />
             </Routes>
           </AuthProvider>
