@@ -22,7 +22,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { ArrowLeft, Save, Eye, Sparkles } from "lucide-react";
 import { useTemplates } from "@/hooks/useTemplates";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 
 const formSchema = z.object({
   name: z.string().min(1, { message: "Template name is required" }),
