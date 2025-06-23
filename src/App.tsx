@@ -34,6 +34,7 @@ function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/campaigns" element={<Campaigns />} />
               <Route path="/campaigns/new" element={<CreateCampaign />} />
+              <Route path="/campaign/new" element={<CreateCampaign />} />
               <Route path="/templates" element={<Templates />} />
               <Route path="/templates/new" element={<CreateTemplate />} />
               <Route path="/templates/:id/edit" element={<CreateTemplate />} />
