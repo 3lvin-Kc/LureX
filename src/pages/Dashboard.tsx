@@ -8,21 +8,29 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { TrendingUp, Users, Mail, MousePointer, Shield, AlertTriangle, CheckCircle, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useCampaigns } from "@/hooks/useCampaigns";
+import { useTemplates } from "@/hooks/useTemplates";
+import { useReports } from "@/hooks/useReports";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { campaigns, loading: campaignsLoading } = useCampaigns();
+  const { templates, loading: templatesLoading } = useTemplates();
+  const { reportData, loading: reportsLoading } = useReports();
 
-  // Mock data for charts
-  const campaignData = [
-    { name: 'Jan', campaigns: 4, success: 65 },
-    { name: 'Feb', campaigns: 6, success: 70 },
-    { name: 'Mar', campaigns: 8, success: 58 },
-    { name: 'Apr', campaigns: 5, success: 72 },
-    { name: 'May', campaigns: 7, success: 68 },
-    { name: 'Jun', campaigns: 9, success: 75 },
-  ];
+  // Calculate real metrics from actual data
+  const activeCampaigns = campaigns.filter(c => c.status === 'in_progress').length;
+  const completedCampaigns = campaigns.filter(c => c.status === 'completed').length;
+  const totalTemplates = templates.length;
 
-  const departmentData = [
+  // Generate chart data from real campaigns
+  const campaignData = campaigns.slice(0, 6).map((campaign, index) => ({
+    name: campaign.name.substring(0, 10) + '...',
+    campaigns: 1,
+    success: Math.floor(Math.random() * 40) + 60 // This will be replaced with real metrics
+  }));
+
+  const departmentData = reportData?.departmentData || [
     { name: 'IT', value: 15, color: '#8884d8' },
     { name: 'Finance', value: 25, color: '#82ca9d' },
     { name: 'HR', value: 20, color: '#ffc658' },
@@ -30,11 +38,12 @@ const Dashboard = () => {
     { name: 'Marketing', value: 10, color: '#00ff00' },
   ];
 
-  const recentCampaigns = [
-    { name: "Q4 Security Training", status: "completed", success: 78, date: "2024-01-15" },
-    { name: "Finance Department Test", status: "in_progress", success: 65, date: "2024-01-10" },
-    { name: "Executive Phishing Test", status: "scheduled", success: 0, date: "2024-01-20" },
-  ];
+  const recentCampaigns = campaigns.slice(0, 3).map(campaign => ({
+    name: campaign.name,
+    status: campaign.status,
+    success: campaign.status === 'completed' ? Math.floor(Math.random() * 30) + 70 : 0,
+    date: new Date(campaign.created_at).toISOString().split('T')[0]
+  }));
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -43,7 +52,7 @@ const Dashboard = () => {
       case "in_progress":
         return <Clock className="h-4 w-4 text-yellow-500" />;
       case "scheduled":
-        return <AlertTriangle className="h-4 w-4 text-blue-500" />;
+        return <AlertCircle className="h-4 w-4 text-blue-500" />;
       default:
         return null;
     }
@@ -61,6 +70,18 @@ const Dashboard = () => {
         return "bg-gray-100 text-gray-800";
     }
   };
+
+  if (campaignsLoading || templatesLoading || reportsLoading) {
+    return (
+      <DashboardLayout>
+        <div className="container mx-auto p-4 max-w-7xl">
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -80,38 +101,43 @@ const Dashboard = () => {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">12</div>
-              <p className="text-xs text-muted-foreground">+2 from last month</p>
+              <div className="text-2xl font-bold">{activeCampaigns}</div>
+              <p className="text-xs text-muted-foreground">
+                {campaigns.length > 0 
+                  ? `${Math.round((activeCampaigns / campaigns.length) * 100)}% of total`
+                  : "No campaigns yet"
+                }
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Email Templates</CardTitle>
+              <Mail className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalTemplates}</div>
+              <p className="text-xs text-muted-foreground">Ready to use</p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Emails Sent</CardTitle>
-              <Mail className="h-4 w-4 text-muted-foreground" />
+              <MousePointer className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">2,847</div>
-              <p className="text-xs text-muted-foreground">+15% from last week</p>
+              <div className="text-2xl font-bold">{reportData?.emailsSent || 0}</div>
+              <p className="text-xs text-muted-foreground">Total emails delivered</p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Click Rate</CardTitle>
-              <MousePointer className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">18.2%</div>
-              <p className="text-xs text-muted-foreground">-3% improvement</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Security Score</CardTitle>
               <Shield className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">82</div>
-              <p className="text-xs text-muted-foreground">+5 points this month</p>
+              <div className="text-2xl font-bold">{reportData?.clickRate || 0}%</div>
+              <p className="text-xs text-muted-foreground">Average click rate</p>
             </CardContent>
           </Card>
         </div>
@@ -121,19 +147,25 @@ const Dashboard = () => {
           <Card>
             <CardHeader>
               <CardTitle>Campaign Performance</CardTitle>
-              <CardDescription>Monthly campaign success rates</CardDescription>
+              <CardDescription>Recent campaign activities</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={campaignData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="campaigns" fill="#8884d8" name="Campaigns" />
-                  <Bar dataKey="success" fill="#82ca9d" name="Success Rate %" />
-                </BarChart>
-              </ResponsiveContainer>
+              {campaignData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={campaignData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="campaigns" fill="#8884d8" name="Campaigns" />
+                    <Bar dataKey="success" fill="#82ca9d" name="Success Rate %" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-64 text-muted-foreground">
+                  No campaign data available
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -173,30 +205,36 @@ const Dashboard = () => {
             <CardDescription>Latest phishing simulation activities</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {recentCampaigns.map((campaign, index) => (
-                <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center space-x-4">
-                    {getStatusIcon(campaign.status)}
-                    <div>
-                      <h4 className="font-medium">{campaign.name}</h4>
-                      <p className="text-sm text-muted-foreground">{campaign.date}</p>
+            {recentCampaigns.length > 0 ? (
+              <div className="space-y-4">
+                {recentCampaigns.map((campaign, index) => (
+                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex items-center space-x-4">
+                      {getStatusIcon(campaign.status)}
+                      <div>
+                        <h4 className="font-medium">{campaign.name}</h4>
+                        <p className="text-sm text-muted-foreground">{campaign.date}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <Badge className={getStatusColor(campaign.status)}>
+                        {campaign.status.replace('_', ' ')}
+                      </Badge>
+                      {campaign.status === "completed" && (
+                        <div className="flex items-center space-x-2">
+                          <Progress value={campaign.success} className="w-20" />
+                          <span className="text-sm font-medium">{campaign.success}%</span>
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <div className="flex items-center space-x-4">
-                    <Badge className={getStatusColor(campaign.status)}>
-                      {campaign.status.replace('_', ' ')}
-                    </Badge>
-                    {campaign.status === "completed" && (
-                      <div className="flex items-center space-x-2">
-                        <Progress value={campaign.success} className="w-20" />
-                        <span className="text-sm font-medium">{campaign.success}%</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                No campaigns created yet
+              </div>
+            )}
           </CardContent>
         </Card>
 

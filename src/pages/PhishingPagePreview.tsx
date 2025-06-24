@@ -6,43 +6,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { ArrowLeft, Edit, LoaderCircle } from "lucide-react";
-
-// Mock data - same as in PhishingPages
-const mockPhishingPages = [
-  {
-    id: "1",
-    name: "Login Page Clone",
-    category: "Banking",
-    html_content: "<form><input type='email' placeholder='Email'><input type='password' placeholder='Password'><button>Login</button></form>",
-    css_content: "body { font-family: Arial; }",
-    js_content: "console.log('Mock phishing page');",
-    is_custom: false,
-    source_url: "https://example.com",
-    created_at: "2024-01-01T00:00:00Z"
-  },
-  {
-    id: "2",
-    name: "Office 365 Login",
-    category: "Corporate",
-    html_content: "<div style='font-family: Segoe UI;'><h2>Sign in</h2><form><input type='email' placeholder='Email'><input type='password' placeholder='Password'><button>Sign in</button></form></div>",
-    css_content: "body { background: #f5f5f5; }",
-    js_content: "",
-    is_custom: true,
-    source_url: "",
-    created_at: "2024-01-02T00:00:00Z"
-  }
-];
+import { usePhishingPages } from "@/hooks/usePhishingPages";
 
 const PhishingPagePreview = () => {
   const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { phishingPages, loading } = usePhishingPages();
   const [page, setPage] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (id) {
-      const foundPage = mockPhishingPages.find(p => p.id === id);
+    if (id && phishingPages.length > 0) {
+      const foundPage = phishingPages.find(p => p.id === id);
       if (foundPage) {
         setPage(foundPage);
       } else {
@@ -54,8 +29,7 @@ const PhishingPagePreview = () => {
         navigate("/phishing-pages");
       }
     }
-    setLoading(false);
-  }, [id, navigate, toast]);
+  }, [id, phishingPages, navigate, toast]);
 
   if (loading) {
     return (

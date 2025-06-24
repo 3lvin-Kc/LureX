@@ -1,64 +1,29 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { PlusCircle, Globe, Edit, Trash2, Copy, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { format } from "date-fns";
 import CloneWebsiteWarning from "@/components/phishing/CloneWebsiteWarning";
-
-// Mock data for phishing pages
-const mockPhishingPages = [
-  {
-    id: "1",
-    name: "Login Page Clone",
-    category: "Banking",
-    html_content: "<form><input type='email' placeholder='Email'><input type='password' placeholder='Password'><button>Login</button></form>",
-    css_content: "body { font-family: Arial; }",
-    js_content: "console.log('Mock phishing page');",
-    is_custom: false,
-    source_url: "https://example.com",
-    created_at: "2024-01-01T00:00:00Z"
-  },
-  {
-    id: "2",
-    name: "Office 365 Login",
-    category: "Corporate",
-    html_content: "<div style='font-family: Segoe UI;'><h2>Sign in</h2><form><input type='email' placeholder='Email'><input type='password' placeholder='Password'><button>Sign in</button></form></div>",
-    css_content: "body { background: #f5f5f5; }",
-    js_content: "",
-    is_custom: true,
-    source_url: "",
-    created_at: "2024-01-02T00:00:00Z"
-  }
-];
+import { usePhishingPages } from "@/hooks/usePhishingPages";
 
 const PhishingPages = () => {
-  const { toast } = useToast();
   const navigate = useNavigate();
-  const [phishingPages, setPhishingPages] = useState(mockPhishingPages);
+  const { phishingPages, loading, deletePhishingPage, duplicatePhishingPage } = usePhishingPages();
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [showCloneWarning, setShowCloneWarning] = useState(false);
 
-  const handleDeletePage = (id: string) => {
+  const handleDeletePage = async (id: string) => {
     setIsDeleting(id);
     try {
-      setPhishingPages(prev => prev.filter(page => page.id !== id));
-      toast({
-        title: "Page deleted",
-        description: "Phishing page has been deleted successfully"
-      });
+      await deletePhishingPage(id);
     } catch (error) {
-      toast({
-        title: "Error deleting page",
-        description: error instanceof Error ? error.message : "An error occurred",
-        variant: "destructive"
-      });
+      // Error handling is already done in the hook
     } finally {
       setIsDeleting(null);
     }
@@ -79,36 +44,9 @@ const PhishingPages = () => {
 
   const handleDuplicatePage = async (pageId: string) => {
     try {
-      const pageData = phishingPages.find(p => p.id === pageId);
-      if (!pageData) return;
-      
-      const { name, category, source_url, html_content, css_content, js_content, is_custom } = pageData;
-      const newName = `${name} (Copy)`;
-      
-      const newPage = {
-        id: Date.now().toString(),
-        name: newName,
-        category,
-        source_url,
-        html_content,
-        css_content,
-        js_content,
-        is_custom,
-        created_at: new Date().toISOString()
-      };
-      
-      setPhishingPages(prev => [...prev, newPage]);
-      toast({
-        title: "Page duplicated",
-        description: `"${name}" has been duplicated successfully`
-      });
-      
+      await duplicatePhishingPage(pageId);
     } catch (error) {
-      toast({
-        title: "Error duplicating page",
-        description: error instanceof Error ? error.message : "An error occurred",
-        variant: "destructive"
-      });
+      // Error handling is already done in the hook
     }
   };
 
@@ -119,6 +57,18 @@ const PhishingPages = () => {
   const handleEdit = (pageId: string) => {
     navigate(`/phishing-pages/${pageId}/edit`);
   };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="container mx-auto p-4 max-w-7xl">
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>

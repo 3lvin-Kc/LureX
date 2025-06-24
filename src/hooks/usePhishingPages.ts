@@ -7,23 +7,23 @@ import { useToast } from '@/hooks/use-toast';
 export interface PhishingPage {
   id: string;
   name: string;
-  description?: string;
+  category?: string;
   html_content: string;
   css_content?: string;
   js_content?: string;
-  category?: string;
-  is_custom?: boolean;
+  is_custom: boolean;
+  source_url?: string;
   created_at: string;
   updated_at: string;
 }
 
 export const usePhishingPages = () => {
-  const [pages, setPages] = useState<PhishingPage[]>([]);
+  const [phishingPages, setPhishingPages] = useState<PhishingPage[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const fetchPages = async () => {
+  const fetchPhishingPages = async () => {
     if (!user) return;
 
     try {
@@ -33,7 +33,7 @@ export const usePhishingPages = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setPages(data || []);
+      setPhishingPages(data || []);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -45,7 +45,7 @@ export const usePhishingPages = () => {
     }
   };
 
-  const createPage = async (page: Omit<PhishingPage, 'id' | 'created_at' | 'updated_at'>) => {
+  const createPhishingPage = async (page: Omit<PhishingPage, 'id' | 'created_at' | 'updated_at'>) => {
     if (!user) return;
 
     try {
@@ -60,7 +60,7 @@ export const usePhishingPages = () => {
 
       if (error) throw error;
       
-      setPages(prev => [data, ...prev]);
+      setPhishingPages(prev => [data, ...prev]);
       toast({
         title: "Success",
         description: "Phishing page created successfully",
@@ -77,7 +77,7 @@ export const usePhishingPages = () => {
     }
   };
 
-  const updatePage = async (id: string, updates: Partial<PhishingPage>) => {
+  const updatePhishingPage = async (id: string, updates: Partial<PhishingPage>) => {
     if (!user) return;
 
     try {
@@ -90,7 +90,7 @@ export const usePhishingPages = () => {
 
       if (error) throw error;
       
-      setPages(prev => prev.map(page => 
+      setPhishingPages(prev => prev.map(page => 
         page.id === id ? data : page
       ));
       
@@ -110,7 +110,7 @@ export const usePhishingPages = () => {
     }
   };
 
-  const deletePage = async (id: string) => {
+  const deletePhishingPage = async (id: string) => {
     if (!user) return;
 
     try {
@@ -121,7 +121,7 @@ export const usePhishingPages = () => {
 
       if (error) throw error;
       
-      setPages(prev => prev.filter(page => page.id !== id));
+      setPhishingPages(prev => prev.filter(page => page.id !== id));
       toast({
         title: "Success",
         description: "Phishing page deleted successfully",
@@ -136,16 +136,45 @@ export const usePhishingPages = () => {
     }
   };
 
+  const duplicatePhishingPage = async (pageId: string) => {
+    if (!user) return;
+
+    try {
+      const originalPage = phishingPages.find(p => p.id === pageId);
+      if (!originalPage) return;
+
+      const duplicatedPage = {
+        name: `${originalPage.name} (Copy)`,
+        category: originalPage.category,
+        html_content: originalPage.html_content,
+        css_content: originalPage.css_content,
+        js_content: originalPage.js_content,
+        is_custom: originalPage.is_custom,
+        source_url: originalPage.source_url,
+      };
+
+      await createPhishingPage(duplicatedPage);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to duplicate phishing page",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   useEffect(() => {
-    fetchPages();
+    fetchPhishingPages();
   }, [user]);
 
   return {
-    pages,
+    phishingPages,
     loading,
-    createPage,
-    updatePage,
-    deletePage,
-    refetchPages: fetchPages,
+    createPhishingPage,
+    updatePhishingPage,
+    deletePhishingPage,
+    duplicatePhishingPage,
+    refetchPhishingPages: fetchPhishingPages,
   };
 };

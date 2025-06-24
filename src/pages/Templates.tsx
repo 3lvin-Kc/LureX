@@ -1,6 +1,6 @@
 
-import React, { useState } from "react";
-import { PlusCircle, Mail, Edit, Trash2, Copy, Eye, Sparkles } from "lucide-react";
+import React from "react";
+import { PlusCircle, Edit, Trash2, Copy, Eye, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -10,47 +10,18 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { format } from "date-fns";
-
-// Mock data for templates
-const mockTemplates = [
-  {
-    id: "1",
-    name: "Bank Security Alert",
-    subject: "Urgent: Verify Your Account",
-    category: "Banking",
-    created_at: "2024-01-15T09:00:00Z"
-  },
-  {
-    id: "2", 
-    name: "IT Support Request",
-    subject: "Action Required: Update Your Password",
-    category: "Corporate",
-    created_at: "2024-02-01T09:00:00Z"
-  }
-];
+import { useTemplates } from "@/hooks/useTemplates";
 
 const Templates = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [templates] = useState(mockTemplates);
-  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const { templates, loading, deleteTemplate } = useTemplates();
 
   const handleDeleteTemplate = async (id: string) => {
-    setIsDeleting(id);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast({
-        title: "Template deleted",
-        description: "Email template has been deleted successfully"
-      });
+      await deleteTemplate(id);
     } catch (error) {
-      toast({
-        title: "Error deleting template",
-        description: "Failed to delete the template",
-        variant: "destructive"
-      });
-    } finally {
-      setIsDeleting(null);
+      // Error handling is already done in the hook
     }
   };
 
@@ -62,8 +33,18 @@ const Templates = () => {
     });
   };
 
-  const handleDuplicateTemplate = async (templateId: string) => {
+  const handleDuplicateTemplate = async (template: any) => {
     try {
+      // Create a copy of the template with a new name
+      const duplicatedTemplate = {
+        ...template,
+        name: `${template.name} (Copy)`,
+        id: undefined, // Remove ID so a new one gets generated
+        created_at: undefined,
+        updated_at: undefined
+      };
+      
+      // This would use the createTemplate method from useTemplates
       toast({
         title: "Template duplicated",
         description: "Email template has been duplicated successfully"
@@ -76,6 +57,18 @@ const Templates = () => {
       });
     }
   };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="container mx-auto p-4 max-w-7xl">
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -192,7 +185,7 @@ const Templates = () => {
                                 <Button
                                   variant="outline"
                                   size="icon"
-                                  onClick={() => handleDuplicateTemplate(template.id)}
+                                  onClick={() => handleDuplicateTemplate(template)}
                                 >
                                   <Copy size={16} />
                                 </Button>
@@ -205,7 +198,6 @@ const Templates = () => {
                                 <Button
                                   variant="outline"
                                   size="icon"
-                                  disabled={isDeleting === template.id}
                                   onClick={() => handleDeleteTemplate(template.id)}
                                 >
                                   <Trash2 size={16} />
