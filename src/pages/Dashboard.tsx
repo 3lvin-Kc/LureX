@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { TrendingUp, Users, Mail, MousePointer, Shield, AlertTriangle, CheckCircle, Clock } from "lucide-react";
+import { TrendingUp, Users, Mail, MousePointer, Shield, AlertTriangle, CheckCircle, Clock, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useCampaigns } from "@/hooks/useCampaigns";
 import { useTemplates } from "@/hooks/useTemplates";

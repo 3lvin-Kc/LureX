@@ -36,7 +36,7 @@ const EditPhishingPage = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const { pages, updatePage, loading } = usePhishingPages();
+  const { phishingPages, updatePhishingPage, loading } = usePhishingPages();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -50,8 +50,8 @@ const EditPhishingPage = () => {
   });
 
   useEffect(() => {
-    if (!loading && pages.length > 0 && id) {
-      const page = pages.find(p => p.id === id);
+    if (!loading && phishingPages.length > 0 && id) {
+      const page = phishingPages.find(p => p.id === id);
       if (page) {
         form.reset({
           name: page.name,
@@ -72,14 +72,14 @@ const EditPhishingPage = () => {
     } else if (!loading) {
       setIsLoading(false);
     }
-  }, [id, pages, loading, form, toast, navigate]);
+  }, [id, phishingPages, loading, form, toast, navigate]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!id) return;
     
     setIsSaving(true);
     try {
-      await updatePage(id, {
+      await updatePhishingPage(id, {
         name: values.name,
         category: values.category,
         html_content: values.html_content,

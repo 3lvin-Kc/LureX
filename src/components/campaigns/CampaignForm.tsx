@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -41,7 +40,7 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ onSubmit }) => {
   
   const { templates, loading: templatesLoading } = useTemplates();
   const { targetLists, loading: targetListsLoading } = useTargetLists();
-  const { pages, loading: pagesLoading } = usePhishingPages();
+  const { phishingPages, loading: pagesLoading } = usePhishingPages();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -247,10 +246,10 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ onSubmit }) => {
                       <SelectContent>
                         {pagesLoading ? (
                           <SelectItem value="loading" disabled>Loading pages...</SelectItem>
-                        ) : pages.length === 0 ? (
+                        ) : phishingPages.length === 0 ? (
                           <SelectItem value="no-pages" disabled>No phishing pages available</SelectItem>
                         ) : (
-                          pages.map((page) => (
+                          phishingPages.map((page) => (
                             <SelectItem key={page.id} value={page.id}>
                               {page.name} {page.category && `(${page.category})`}
                             </SelectItem>

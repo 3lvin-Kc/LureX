@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -27,7 +26,7 @@ const CreatePhishingPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { createPage } = usePhishingPages();
+  const { createPhishingPage } = usePhishingPages();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -43,12 +42,13 @@ const CreatePhishingPage = () => {
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
     try {
-      await createPage({
+      await createPhishingPage({
         name: values.name,
         category: values.category,
         html_content: values.html_content,
         css_content: values.css_content,
         js_content: values.js_content,
+        is_custom: true,
       });
       navigate('/phishing-pages');
     } catch (error) {
