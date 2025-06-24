@@ -20,7 +20,7 @@ import EditPhishingPage from "./pages/EditPhishingPage";
 import Reports from "./pages/Reports";
 import Features from "./pages/Features";
 import Help from "./pages/Help";
-import DomainManagement from "./pages/DomainManagement";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -50,7 +50,7 @@ function App() {
               <Route path="/phishing-pages/create-from-url" element={<CloneWebsitePage />} />
               <Route path="/phishing-pages/:id/preview" element={<PhishingPagePreview />} />
               <Route path="/phishing-pages/:id/edit" element={<EditPhishingPage />} />
-              <Route path="/domain-management" element={<DomainManagement />} />
+              <Route path="/settings" element={<Settings />} />
               <Route path="/reports" element={<Reports />} />
             </Routes>
           </AuthProvider>
