@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { securityLogger, SecurityEventType } from "@/utils/securityLogger";
 
@@ -24,8 +23,8 @@ export interface AnalyticsMetrics {
   peakActivityHours: number[];
   
   // Geographic data
-  topCountries: Array<{ country: string; count: number; percentage: number }>;
-  topRegions: Array<{ region: string; count: number; percentage: number }>;
+  topCountries: Array<{ country?: string; region?: string; count: number; percentage: number }>;
+  topRegions: Array<{ region?: string; count: number; percentage: number }>;
   
   // Device/Browser analysis
   topUserAgents: Array<{ userAgent: string; count: number; percentage: number }>;
@@ -178,7 +177,7 @@ export class AdvancedAnalyticsService {
     return sortedHours;
   }
   
-  private analyzeGeographicData(metrics: any[], field: 'country' | 'region'): Array<{ [key: string]: string | number }> {
+  private analyzeGeographicData(metrics: any[], field: 'country' | 'region'): Array<{ country?: string; region?: string; count: number; percentage: number }> {
     const counts: Record<string, number> = {};
     const total = metrics.length;
     
@@ -192,11 +191,14 @@ export class AdvancedAnalyticsService {
     return Object.entries(counts)
       .sort(([,a], [,b]) => b - a)
       .slice(0, 5)
-      .map(([location, count]) => ({
-        [field]: location,
-        count,
-        percentage: Math.round((count / total) * 10000) / 100
-      }));
+      .map(([location, count]) => {
+        const result: any = {
+          count,
+          percentage: Math.round((count / total) * 10000) / 100
+        };
+        result[field] = location;
+        return result;
+      });
   }
   
   private analyzeUserAgents(metrics: any[]): Array<{ userAgent: string; count: number; percentage: number }> {

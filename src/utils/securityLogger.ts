@@ -7,7 +7,8 @@ export enum SecurityEventType {
   SYSTEM_ERROR = 'system_error',
   API_ACCESS = 'api_access',
   RATE_LIMIT = 'rate_limit',
-  PHISHING_PAGE_ACCESS = 'phishing_page_access'
+  PHISHING_PAGE_ACCESS = 'phishing_page_access',
+  CONFIGURATION_CHANGE = 'configuration_change'
 }
 
 interface SecurityEvent {
