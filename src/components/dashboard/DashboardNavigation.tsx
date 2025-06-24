@@ -10,7 +10,8 @@ import {
   BarChart3,
   LogOut,
   Shield,
-  Mail
+  Mail,
+  Settings
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -40,6 +41,11 @@ const navigationItems = [
     name: 'Phishing Pages',
     href: '/phishing-pages',
     icon: Globe,
+  },
+  {
+    name: 'Domain Management',
+    href: '/domain-management',
+    icon: Settings,
   },
   {
     name: 'Reports',
