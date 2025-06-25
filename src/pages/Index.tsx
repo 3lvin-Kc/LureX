@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Shield, Users, BarChart3, Mail, Target, CheckCircle } from "lucide-react";
+import { ArrowRight, Users, BarChart3, Mail, Target, CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Index = () => {
@@ -20,7 +20,7 @@ const Index = () => {
       description: "Organize and manage your test recipients with advanced targeting"
     },
     {
-      icon: <Shield className="h-6 w-6" />,
+      icon: <Target className="h-6 w-6" />,
       title: "Phishing Pages",
       description: "Build convincing fake login pages or clone existing websites"
     },
@@ -46,8 +46,7 @@ const Index = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-2">
-              <Shield className="h-8 w-8 text-blue-600" />
-              <span className="text-2xl font-bold text-gray-900">PhishGuard</span>
+              <span className="text-2xl font-bold text-gray-900">WhyPhish</span>
             </div>
             <div className="hidden md:flex items-center space-x-8">
               <Button variant="ghost" onClick={() => navigate("/features")}>
@@ -129,7 +128,7 @@ const Index = () => {
                 Measurable Security Improvements
               </h2>
               <p className="text-lg text-gray-600 mb-8">
-                Organizations using PhishGuard see significant improvements in their security posture 
+                Organizations using WhyPhish see significant improvements in their security posture 
                 and employee awareness within the first month of deployment.
               </p>
               <ul className="space-y-4">
@@ -168,7 +167,7 @@ const Index = () => {
             Ready to Strengthen Your Security?
           </h2>
           <p className="text-xl text-blue-100 mb-8">
-            Join thousands of organizations that trust PhishGuard to improve their security awareness and reduce phishing risks.
+            Join thousands of organizations that trust WhyPhish to improve their security awareness and reduce phishing risks.
           </p>
           <Button size="lg" variant="secondary" onClick={() => navigate("/dashboard")} className="text-lg px-8">
             Start Your Free Trial Today
