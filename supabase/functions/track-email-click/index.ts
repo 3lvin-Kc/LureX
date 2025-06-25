@@ -10,11 +10,17 @@ const supabase = createClient(
 serve(async (req) => {
   try {
     const url = new URL(req.url);
-    const trackingId = url.searchParams.get('id');
+    const trackingId = url.searchParams.get('t');
     const targetUrl = url.searchParams.get('url');
 
-    if (!trackingId || !targetUrl) {
+    if (!trackingId) {
       return new Response('Invalid tracking parameters', { status: 400 });
+    }
+
+    // Parse tracking ID
+    const trackingData = parseTrackingId(trackingId);
+    if (!trackingData) {
+      return new Response('Invalid tracking ID', { status: 400 });
     }
 
     // Log email click event
@@ -30,18 +36,22 @@ serve(async (req) => {
           clicked_at: new Date().toISOString()
         }
       })
-      .eq('additional_data->tracking_id', trackingId);
+      .eq('campaign_id', trackingData.campaignId)
+      .eq('target_email', trackingData.targetEmail);
 
     if (error) {
       console.error('Error logging email click:', error);
     } else {
-      console.log(`Email clicked - Tracking ID: ${trackingId}, URL: ${targetUrl}`);
+      console.log(`Email clicked - Campaign: ${trackingData.campaignId}, Target: ${trackingData.targetEmail}`);
     }
 
-    // Redirect to the original URL
+    // Redirect to phishing page or target URL
+    const redirectUrl = targetUrl ? decodeURIComponent(targetUrl) : 
+      `${Deno.env.get('SUPABASE_URL')}/functions/v1/serve-phishing-page?t=${trackingId}`;
+
     return new Response(null, {
       status: 302,
-      headers: { 'Location': decodeURIComponent(targetUrl) }
+      headers: { 'Location': redirectUrl }
     });
 
   } catch (error) {
@@ -49,3 +59,23 @@ serve(async (req) => {
     return new Response('Tracking error', { status: 500 });
   }
 });
+
+function parseTrackingId(trackingId: string) {
+  try {
+    const decoded = atob(trackingId);
+    const parts = decoded.split('|');
+    
+    if (parts.length !== 3) {
+      return null;
+    }
+
+    return {
+      campaignId: parts[0],
+      targetEmail: parts[1],
+      trackingId: parts[2]
+    };
+  } catch (error) {
+    console.error('Error parsing tracking ID:', error);
+    return null;
+  }
+}

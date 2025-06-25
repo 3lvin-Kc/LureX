@@ -1,25 +1,16 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import { Resend } from 'npm:resend@2.0.0';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-interface SendEmailRequest {
-  campaignId: string;
-  templateId: string;
-  targetListId: string;
-}
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 );
 
-const resend = new Resend(Deno.env.get('RESEND_API_KEY') ?? '');
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -27,25 +18,19 @@ serve(async (req) => {
   }
 
   try {
-    const { campaignId, templateId, targetListId }: SendEmailRequest = await req.json();
-    
-    // Get user from auth token
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Authorization required' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    const { campaignId, templateId, targetListId } = await req.json();
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
-    if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid authorization' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    console.log('Starting campaign email send:', { campaignId, templateId, targetListId });
+
+    // Get campaign details
+    const { data: campaign, error: campaignError } = await supabase
+      .from('campaigns')
+      .select('*')
+      .eq('id', campaignId)
+      .single();
+
+    if (campaignError || !campaign) {
+      throw new Error('Campaign not found');
     }
 
     // Get email template
@@ -56,147 +41,122 @@ serve(async (req) => {
       .single();
 
     if (templateError || !template) {
-      return new Response(
-        JSON.stringify({ error: 'Template not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      throw new Error('Email template not found');
     }
 
-    // Get target list
+    // Get targets
     const { data: targets, error: targetsError } = await supabase
       .from('targets')
       .select('*')
       .eq('list_id', targetListId);
 
-    if (targetsError) {
-      return new Response(
-        JSON.stringify({ error: 'Failed to fetch targets' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (targetsError || !targets || targets.length === 0) {
+      throw new Error('No targets found');
     }
 
-    // Real email sending with Resend
-    const emailResults = [];
-    const trackingDomain = Deno.env.get('SUPABASE_URL') ?? '';
-    
-    for (const target of targets || []) {
+    let emailsSent = 0;
+    let emailsFailed = 0;
+
+    // Process each target
+    for (const target of targets) {
       try {
-        // Generate unique tracking ID
-        const trackingId = crypto.randomUUID();
+        // Generate tracking ID
+        const trackingId = generateTrackingId(campaignId, target.email);
         
-        // Add tracking pixel and click tracking to HTML content
-        const trackingPixel = `<img src="${trackingDomain}/functions/v1/track-email-open?id=${trackingId}" width="1" height="1" style="display:none;" />`;
-        const htmlContentWithTracking = template.html_content + trackingPixel;
+        // Create phishing link
+        const phishingLink = `${Deno.env.get('SUPABASE_URL')}/functions/v1/serve-phishing-page?t=${trackingId}`;
         
-        // Replace links with tracking URLs
-        const trackedHtmlContent = htmlContentWithTracking.replace(
-          /<a\s+href="([^"]+)"/g, 
-          `<a href="${trackingDomain}/functions/v1/track-email-click?id=${trackingId}&url=$1"`
-        );
+        // Personalize email content
+        let htmlContent = template.html_content
+          .replace(/\{\{first_name\}\}/g, target.first_name || '')
+          .replace(/\{\{last_name\}\}/g, target.last_name || '')
+          .replace(/\{\{email\}\}/g, target.email || '')
+          .replace(/\{\{department\}\}/g, target.department || '')
+          .replace(/\{\{position\}\}/g, target.position || '')
+          .replace(/\{\{phishing_link\}\}/g, phishingLink);
 
-        // Send email via Resend
-        const emailResponse = await resend.emails.send({
-          from: 'PhishGuard <noreply@phishguard.com>',
-          to: [target.email],
-          subject: template.subject,
-          html: trackedHtmlContent,
-          text: template.text_content || undefined,
+        let textContent = template.text_content || ''
+          .replace(/\{\{first_name\}\}/g, target.first_name || '')
+          .replace(/\{\{last_name\}\}/g, target.last_name || '')
+          .replace(/\{\{email\}\}/g, target.email || '')
+          .replace(/\{\{department\}\}/g, target.department || '')
+          .replace(/\{\{position\}\}/g, target.position || '')
+          .replace(/\{\{phishing_link\}\}/g, phishingLink);
+
+        // Add email tracking pixel
+        const trackingPixel = `<img src="${Deno.env.get('SUPABASE_URL')}/functions/v1/track-email-open?t=${trackingId}" width="1" height="1" style="display:none;" />`;
+        htmlContent += trackingPixel;
+
+        // Send email using Resend
+        const emailResponse = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
           headers: {
-            'X-Campaign-ID': campaignId,
-            'X-Target-ID': target.id,
-            'X-Tracking-ID': trackingId,
+            'Authorization': `Bearer ${Deno.env.get('RESEND_API_KEY')}`,
+            'Content-Type': 'application/json',
           },
+          body: JSON.stringify({
+            from: 'PhishGuard Security <security@phishguard.com>',
+            to: [target.email],
+            subject: template.subject,
+            html: htmlContent,
+            text: textContent,
+          }),
         });
 
-        if (emailResponse.error) {
-          throw new Error(emailResponse.error.message);
+        if (emailResponse.ok) {
+          // Record successful send
+          await supabase
+            .from('campaign_metrics')
+            .upsert({
+              campaign_id: campaignId,
+              target_email: target.email,
+              sent_at: new Date().toISOString(),
+              additional_data: {
+                tracking_id: trackingId,
+                template_id: templateId
+              }
+            }, {
+              onConflict: 'campaign_id,target_email'
+            });
+
+          emailsSent++;
+          console.log(`Email sent successfully to: ${target.email}`);
+        } else {
+          emailsFailed++;
+          console.error(`Failed to send email to ${target.email}:`, await emailResponse.text());
         }
 
-        // Log successful email sending with tracking ID
-        const { error: metricsError } = await supabase
-          .from('campaign_metrics')
-          .insert({
-            campaign_id: campaignId,
-            target_email: target.email,
-            sent_at: new Date().toISOString(),
-            additional_data: { 
-              tracking_id: trackingId,
-              email_id: emailResponse.data?.id,
-              resend_id: emailResponse.data?.id 
-            }
-          });
-
-        if (metricsError) {
-          console.error('Failed to log email metrics:', metricsError);
-        }
-
-        emailResults.push({
-          targetId: target.id,
-          email: target.email,
-          status: 'sent',
-          trackingId: trackingId,
-          emailId: emailResponse.data?.id,
-          timestamp: new Date().toISOString()
-        });
-
-        console.log(`Email sent successfully to: ${target.email}, Tracking ID: ${trackingId}`);
       } catch (error) {
-        // Log failed email
-        await supabase
-          .from('campaign_metrics')
-          .insert({
-            campaign_id: campaignId,
-            target_email: target.email,
-            additional_data: { 
-              error: error.message,
-              failed_at: new Date().toISOString()
-            }
-          });
-
-        emailResults.push({
-          targetId: target.id,
-          email: target.email,
-          status: 'failed',
-          error: error.message,
-          timestamp: new Date().toISOString()
-        });
-
-        console.error(`Failed to send email to ${target.email}:`, error);
+        emailsFailed++;
+        console.error(`Error sending email to ${target.email}:`, error);
       }
     }
 
-    // Update campaign status
-    await supabase
-      .from('campaigns')
-      .update({ status: 'in_progress' })
-      .eq('id', campaignId);
+    console.log(`Campaign ${campaignId} completed: ${emailsSent} sent, ${emailsFailed} failed`);
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        campaign_id: campaignId,
-        emails_sent: emailResults.filter(r => r.status === 'sent').length,
-        emails_failed: emailResults.filter(r => r.status === 'failed').length,
-        results: emailResults,
-        tracking_enabled: true
-      }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
+    return new Response(JSON.stringify({
+      success: true,
+      emails_sent: emailsSent,
+      emails_failed: emailsFailed,
+      total_targets: targets.length
+    }), {
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
 
   } catch (error) {
-    console.error('Send campaign emails error:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: error.message || 'Internal server error',
-        success: false 
-      }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
+    console.error('Campaign sending error:', error);
+    return new Response(JSON.stringify({
+      success: false,
+      error: error.message
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+    });
   }
 });
+
+function generateTrackingId(campaignId: string, targetEmail: string): string {
+  const timestamp = Date.now().toString();
+  const data = `${campaignId}|${targetEmail}|${timestamp}`;
+  return btoa(data);
+}
