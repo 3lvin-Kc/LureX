@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
+import { Resend } from "npm:resend@2.0.0";
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
@@ -88,22 +89,16 @@ serve(async (req) => {
         htmlContent += trackingPixel;
 
         // Send email using Resend
-        const emailResponse = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${Deno.env.get('RESEND_API_KEY')}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            from: 'PhishGuard Security <security@phishguard.com>',
-            to: [target.email],
-            subject: template.subject,
-            html: htmlContent,
-            text: textContent,
-          }),
+        const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
+        const emailResponse = await resend.emails.send({
+          from: 'WhyPhish Security <noreply@resend.dev>',
+          to: [target.email],
+          subject: template.subject,
+          html: htmlContent,
+          text: textContent,
         });
 
-        if (emailResponse.ok) {
+        if (emailResponse.data) {
           // Record successful send
           await supabase
             .from('campaign_metrics')
@@ -123,7 +118,7 @@ serve(async (req) => {
           console.log(`Email sent successfully to: ${target.email}`);
         } else {
           emailsFailed++;
-          console.error(`Failed to send email to ${target.email}:`, await emailResponse.text());
+          console.error(`Failed to send email to ${target.email}:`, emailResponse.error);
         }
 
       } catch (error) {

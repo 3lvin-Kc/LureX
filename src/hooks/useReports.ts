@@ -33,46 +33,71 @@ export const useReports = () => {
     if (!user) return;
 
     try {
-      // Fetch campaigns
+      // Get real metrics from edge function
+      const { data: metricsResponse, error: metricsError } = await supabase.functions.invoke('get-campaign-metrics', {
+        body: { timeframe: "30" }
+      });
+
+      if (metricsError) {
+        console.error('Metrics error:', metricsError);
+        // Fall back to basic campaign data
+        const { data: campaigns, error: campaignsError } = await supabase
+          .from('campaigns')
+          .select('*')
+          .eq('user_id', user.id);
+
+        if (campaignsError) throw campaignsError;
+
+        setReportData({
+          totalCampaigns: campaigns?.length || 0,
+          emailsSent: 0,
+          clickRate: 0,
+          participants: 0,
+          campaignData: [],
+          departmentData: [],
+        });
+        return;
+      }
+
+      const metrics = metricsResponse;
+      
+      // Fetch campaigns with names
       const { data: campaigns, error: campaignsError } = await supabase
         .from('campaigns')
-        .select('*')
+        .select('id, name')
         .eq('user_id', user.id);
 
       if (campaignsError) throw campaignsError;
 
-      // Fetch metrics
-      const { data: metrics, error: metricsError } = await supabase
-        .from('campaign_metrics')
-        .select('*');
+      // Process campaign data with real metrics
+      const campaignData = campaigns?.map(campaign => {
+        const campaignMetrics = metrics.rawMetrics.filter((m: any) => m.campaign_id === campaign.id);
+        const sent = campaignMetrics.length;
+        const opened = campaignMetrics.filter((m: any) => m.opened_at).length;
+        const clicked = campaignMetrics.filter((m: any) => m.clicked_at).length;
+        const submitted = campaignMetrics.filter((m: any) => m.data_submitted_at).length;
 
-      if (metricsError) throw metricsError;
+        return {
+          name: campaign.name,
+          sent,
+          opened,
+          clicked,
+          submitted,
+        };
+      }) || [];
 
-      // Mock department data for now
-      const departmentData = [
-        { name: "IT", value: 35, color: "#0088FE" },
-        { name: "HR", value: 25, color: "#00C49F" },
-        { name: "Finance", value: 20, color: "#FFBB28" },
-        { name: "Marketing", value: 15, color: "#FF8042" },
-        { name: "Operations", value: 5, color: "#8884D8" }
-      ];
-
-      const campaignData = campaigns?.map(campaign => ({
-        name: campaign.name,
-        sent: Math.floor(Math.random() * 500) + 100,
-        opened: Math.floor(Math.random() * 200) + 50,
-        clicked: Math.floor(Math.random() * 50) + 10,
-        submitted: Math.floor(Math.random() * 20) + 2,
-      })) || [];
-
-      const totalSent = campaignData.reduce((sum, c) => sum + c.sent, 0);
-      const totalClicked = campaignData.reduce((sum, c) => sum + c.clicked, 0);
+      // Process department data from metrics
+      const departmentData = metrics.departmentMetrics.map((dept: any, index: number) => ({
+        name: dept.department,
+        value: dept.sent,
+        color: [`#0088FE`, `#00C49F`, `#FFBB28`, `#FF8042`, `#8884D8`][index % 5]
+      }));
 
       setReportData({
         totalCampaigns: campaigns?.length || 0,
-        emailsSent: totalSent,
-        clickRate: totalSent > 0 ? Math.round((totalClicked / totalSent) * 100 * 10) / 10 : 0,
-        participants: Math.floor(totalSent * 0.8),
+        emailsSent: metrics.summary.totalSent,
+        clickRate: metrics.summary.clickRate,
+        participants: metrics.summary.totalOpened,
         campaignData,
         departmentData,
       });

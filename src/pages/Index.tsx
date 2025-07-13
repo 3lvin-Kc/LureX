@@ -55,6 +55,9 @@ const Index = () => {
               <Button variant="ghost" onClick={() => navigate("/help")}>
                 Help
               </Button>
+              <Button variant="ghost" onClick={() => navigate("/auth")}>
+                Sign In
+              </Button>
               <Button onClick={() => navigate("/dashboard")}>
                 Get Started
               </Button>
