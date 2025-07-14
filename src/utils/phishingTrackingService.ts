@@ -1,9 +1,10 @@
 
 /**
- * Mock phishing tracking service for frontend-only implementation
+ * Real phishing tracking service with Supabase integration
  */
 
 import { securityLogger, SecurityEventType } from "@/utils/securityLogger";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface TrackingEvent {
   id: string;
@@ -28,32 +29,69 @@ export class PhishingTrackingService {
   
   public async trackEvent(
     campaignId: string,
-    targetId: string,
+    targetEmail: string,
     eventType: TrackingEvent['eventType'],
     metadata?: Record<string, any>
   ): Promise<boolean> {
     try {
+      // Use appropriate edge function based on event type
+      let functionName = '';
+      switch (eventType) {
+        case 'opened':
+          functionName = 'track-email-open';
+          break;
+        case 'clicked':
+          functionName = 'track-email-click';
+          break;
+        default:
+          // For other events, we'll create metrics directly
+          break;
+      }
+
+      if (functionName) {
+        const { error } = await supabase.functions.invoke(functionName, {
+          body: {
+            campaignId,
+            targetEmail,
+            userAgent: metadata?.userAgent || '',
+            ipAddress: metadata?.ipAddress || ''
+          }
+        });
+
+        if (error) throw error;
+      } else {
+        // Handle form submissions and other events directly
+        const updateData: any = {
+          campaign_id: campaignId,
+          target_email: targetEmail,
+          additional_data: metadata
+        };
+
+        if (eventType === 'submitted') {
+          updateData.data_submitted_at = new Date().toISOString();
+        }
+
+        const { error } = await supabase
+          .from('campaign_metrics')
+          .upsert(updateData, {
+            onConflict: 'campaign_id,target_email'
+          });
+
+        if (error) throw error;
+      }
+
       securityLogger.info(
         SecurityEventType.DATA_ACCESS,
-        `Mock: Tracking ${eventType} event`,
-        { campaignId, targetId, eventType, metadata }
+        `Tracking ${eventType} event`,
+        { campaignId, targetEmail, eventType, metadata }
       );
-      
-      // Mock tracking - just log the event
-      console.log('Mock tracking event:', {
-        campaignId,
-        targetId,
-        eventType,
-        timestamp: new Date().toISOString(),
-        metadata
-      });
       
       return true;
     } catch (error) {
       securityLogger.error(
         SecurityEventType.DATA_ACCESS,
         "Failed to track event",
-        { error, campaignId, targetId, eventType }
+        { error, campaignId, targetEmail, eventType }
       );
       return false;
     }
@@ -61,22 +99,19 @@ export class PhishingTrackingService {
   
   public async getCampaignMetrics(campaignId: string): Promise<Record<string, number>> {
     try {
-      // Mock metrics
-      const metrics = {
-        sent: 100,
-        delivered: 95,
-        opened: 45,
-        clicked: 12,
-        submitted: 8
-      };
+      const { data, error } = await supabase.functions.invoke('get-campaign-metrics', {
+        body: { campaignId }
+      });
+
+      if (error) throw error;
       
       securityLogger.info(
         SecurityEventType.DATA_ACCESS,
-        "Mock: Retrieved campaign metrics",
-        { campaignId, metrics }
+        "Retrieved campaign metrics",
+        { campaignId, metrics: data }
       );
       
-      return metrics;
+      return data || {};
     } catch (error) {
       securityLogger.error(
         SecurityEventType.DATA_ACCESS,

@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { ArrowLeft, Upload, Plus, Trash2 } from "lucide-react";
+import { useTargetLists } from "@/hooks/useTargetLists";
 
 const formSchema = z.object({
   name: z.string().min(1, { message: "List name is required" }),
@@ -29,6 +30,7 @@ const formSchema = z.object({
 const CreateTargetList = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { createTargetList } = useTargetLists();
   const [targets, setTargets] = useState([{ email: "", firstName: "", lastName: "", department: "", position: "" }]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -58,8 +60,30 @@ const CreateTargetList = () => {
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
     try {
-      // Mock submission
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const validTargets = targets.filter(target => target.email.trim() !== '');
+      
+      if (validTargets.length === 0) {
+        toast({
+          title: "Error",
+          description: "Please add at least one target with a valid email address",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      await createTargetList(
+        {
+          name: values.name,
+          description: values.description || null,
+        },
+        validTargets.map(target => ({
+          email: target.email,
+          first_name: target.firstName || null,
+          last_name: target.lastName || null,
+          department: target.department || null,
+          position: target.position || null,
+        }))
+      );
       
       toast({
         title: "Success",

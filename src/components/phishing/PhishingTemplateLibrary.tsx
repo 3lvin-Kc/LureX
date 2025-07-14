@@ -1,18 +1,20 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Globe, Mail, CreditCard, Cloud } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export interface PhishingTemplate {
   id: string;
   name: string;
-  category: string;
-  description: string;
+  category: string | null;
+  description: string | null;
   htmlContent: string;
-  cssContent?: string;
-  jsContent?: string;
+  cssContent?: string | null;
+  jsContent?: string | null;
   previewImage?: string;
 }
 
@@ -64,7 +66,49 @@ const mockTemplates: PhishingTemplate[] = [
 ];
 
 const PhishingTemplateLibrary: React.FC<PhishingTemplateLibraryProps> = ({ onSelect }) => {
-  const getCategoryIcon = (category: string) => {
+  const [templates, setTemplates] = useState<PhishingTemplate[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    loadTemplates();
+  }, []);
+
+  const loadTemplates = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('phishing_pages')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const formattedTemplates: PhishingTemplate[] = data.map(page => ({
+        id: page.id,
+        name: page.name,
+        category: page.category,
+        description: page.category,
+        htmlContent: page.html_content,
+        cssContent: page.css_content,
+        jsContent: page.js_content
+      }));
+
+      // Add mock templates for initial functionality
+      setTemplates([...mockTemplates, ...formattedTemplates]);
+    } catch (error) {
+      console.error('Error loading templates:', error);
+      toast({
+        title: "Error loading templates",
+        description: "Using default templates only",
+        variant: "destructive",
+      });
+      setTemplates(mockTemplates);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getCategoryIcon = (category: string | null) => {
     switch (category) {
       case 'Banking': return <CreditCard size={16} />;
       case 'Corporate': return <Mail size={16} />;
@@ -73,9 +117,17 @@ const PhishingTemplateLibrary: React.FC<PhishingTemplateLibraryProps> = ({ onSel
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-32">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {mockTemplates.map((template) => (
+      {templates.map((template) => (
         <Card key={template.id} className="cursor-pointer hover:shadow-md transition-shadow">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -87,7 +139,7 @@ const PhishingTemplateLibrary: React.FC<PhishingTemplateLibraryProps> = ({ onSel
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">{template.description}</p>
+            <p className="text-sm text-muted-foreground mb-4">{template.description || 'No description available'}</p>
             <div className="border rounded-md p-2 mb-4 bg-gray-50 max-h-32 overflow-hidden">
               <div 
                 className="text-xs transform scale-75 origin-top-left"

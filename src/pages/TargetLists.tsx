@@ -10,43 +10,18 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { format } from "date-fns";
-
-// Mock data for frontend-only implementation
-const mockTargetLists = [
-  {
-    id: "1",
-    name: "All Employees",
-    description: "Complete employee directory",
-    target_count: 245,
-    created_at: "2024-01-15T09:00:00Z"
-  },
-  {
-    id: "2", 
-    name: "Finance Team",
-    description: "Finance department staff",
-    target_count: 28,
-    created_at: "2024-01-20T09:00:00Z"
-  },
-  {
-    id: "3",
-    name: "IT Department",
-    description: "Information Technology team",
-    target_count: 15,
-    created_at: "2024-02-01T09:00:00Z"
-  }
-];
+import { useTargetLists } from "@/hooks/useTargetLists";
 
 const TargetLists = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [targetLists] = useState(mockTargetLists);
+  const { targetLists, loading, deleteTargetList } = useTargetLists();
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   const handleDeleteList = async (id: string) => {
     setIsDeleting(id);
     try {
-      // Mock deletion
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await deleteTargetList(id);
       toast({
         title: "Target list deleted",
         description: "The target list has been successfully deleted",
@@ -87,7 +62,11 @@ const TargetLists = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {targetLists.length === 0 ? (
+            {loading ? (
+              <div className="flex items-center justify-center h-32">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+              </div>
+            ) : targetLists.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-muted-foreground mb-4">No target lists found</p>
                 <Button 

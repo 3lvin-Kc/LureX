@@ -1,9 +1,10 @@
 
 /**
- * Mock campaign link processing for frontend-only implementation
+ * Real campaign link processing with Supabase integration
  */
 
 import { securityLogger, SecurityEventType } from "@/utils/securityLogger";
+import { supabase } from "@/integrations/supabase/client";
 
 export async function processPhishingLinkClick(
   trackingId: string,
@@ -14,14 +15,24 @@ export async function processPhishingLinkClick(
   html?: string;
 }> {
   try {
-    // Mock implementation - would normally interact with backend
-    console.log('Mock: Processing phishing link click', { trackingId, userAgent, ipAddress });
+    // Use serve-phishing-page edge function
+    const { data, error } = await supabase.functions.invoke('serve-phishing-page', {
+      body: {
+        trackingId,
+        userAgent,
+        ipAddress
+      }
+    });
+
+    if (error) throw error;
+
+    securityLogger.info(
+      SecurityEventType.PHISHING_PAGE_ACCESS,
+      "Phishing link processed successfully",
+      { trackingId }
+    );
     
-    // Return mock training page
-    return { 
-      redirectUrl: '/training',
-      html: '<div>Training content would be generated here</div>'
-    };
+    return data || { redirectUrl: '/training' };
   } catch (error) {
     securityLogger.error(
       SecurityEventType.PHISHING_PAGE_ACCESS,
@@ -38,7 +49,21 @@ export async function processEmailOpen(
   userAgent: string,
   ipAddress: string
 ): Promise<void> {
-  console.log('Mock: Processing email open', { trackingId, userAgent, ipAddress });
+  try {
+    await supabase.functions.invoke('track-email-open', {
+      body: {
+        trackingId,
+        userAgent,
+        ipAddress
+      }
+    });
+  } catch (error) {
+    securityLogger.error(
+      SecurityEventType.DATA_ACCESS,
+      "Failed to process email open",
+      { error, trackingId }
+    );
+  }
 }
 
 export async function processFormSubmission(
@@ -46,5 +71,21 @@ export async function processFormSubmission(
   formData: Record<string, string>,
   pageId: string
 ): Promise<void> {
-  console.log('Mock: Processing form submission', { trackingId, formData, pageId });
+  try {
+    // Track form submission directly via tracking service
+    const { phishingTrackingService } = await import('./phishingTrackingService');
+    
+    await phishingTrackingService.trackEvent(
+      trackingId,
+      formData.email || 'unknown',
+      'submitted',
+      { formData, pageId }
+    );
+  } catch (error) {
+    securityLogger.error(
+      SecurityEventType.DATA_ACCESS,
+      "Failed to process form submission",
+      { error, trackingId, pageId }
+    );
+  }
 }
