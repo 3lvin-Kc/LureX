@@ -43,6 +43,11 @@ const navigationItems = [
     icon: Globe,
   },
   {
+    name: 'Domain Management',
+    href: '/domain-management',
+    icon: Shield,
+  },
+  {
     name: 'Reports',
     href: '/reports',
     icon: BarChart3,

@@ -71,6 +71,7 @@ export type Database = {
         Row: {
           created_at: string | null
           description: string | null
+          domain_id: string | null
           id: string
           name: string
           phishing_page_id: string | null
@@ -84,6 +85,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           description?: string | null
+          domain_id?: string | null
           id?: string
           name: string
           phishing_page_id?: string | null
@@ -97,6 +99,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           description?: string | null
+          domain_id?: string | null
           id?: string
           name?: string
           phishing_page_id?: string | null
@@ -108,6 +111,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "campaigns_domain_id_fkey"
+            columns: ["domain_id"]
+            isOneToOne: false
+            referencedRelation: "custom_domains"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "campaigns_phishing_page_id_fkey"
             columns: ["phishing_page_id"]
@@ -130,6 +140,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      custom_domains: {
+        Row: {
+          created_at: string
+          dns_records: Json
+          domain: string
+          id: string
+          ssl_enabled: boolean
+          updated_at: string
+          user_id: string
+          verification_token: string
+          verified: boolean
+          verified_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          dns_records?: Json
+          domain: string
+          id?: string
+          ssl_enabled?: boolean
+          updated_at?: string
+          user_id: string
+          verification_token: string
+          verified?: boolean
+          verified_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          dns_records?: Json
+          domain?: string
+          id?: string
+          ssl_enabled?: boolean
+          updated_at?: string
+          user_id?: string
+          verification_token?: string
+          verified?: boolean
+          verified_at?: string | null
+        }
+        Relationships: []
       }
       email_templates: {
         Row: {

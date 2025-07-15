@@ -20,6 +20,7 @@ import { LoaderCircle, Calendar, Mail, Users, Globe } from "lucide-react";
 import { useTemplates } from "@/hooks/useTemplates";
 import { useTargetLists } from "@/hooks/useTargetLists";
 import { usePhishingPages } from "@/hooks/usePhishingPages";
+import { useCustomDomains } from "@/hooks/useCustomDomains";
 
 const formSchema = z.object({
   name: z.string().min(1, { message: "Campaign name is required" }),
@@ -27,6 +28,7 @@ const formSchema = z.object({
   template_id: z.string().min(1, { message: "Email template is required" }),
   target_list_id: z.string().min(1, { message: "Target list is required" }),
   phishing_page_id: z.string().min(1, { message: "Phishing page is required" }),
+  domain_id: z.string().optional(),
   schedule_time: z.string().optional(),
 });
 
@@ -41,6 +43,9 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ onSubmit }) => {
   const { templates, loading: templatesLoading } = useTemplates();
   const { targetLists, loading: targetListsLoading } = useTargetLists();
   const { phishingPages, loading: pagesLoading } = usePhishingPages();
+  const { getVerifiedDomains } = useCustomDomains();
+  
+  const verifiedDomains = getVerifiedDomains();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -50,6 +55,7 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ onSubmit }) => {
       template_id: "",
       target_list_id: "",
       phishing_page_id: "",
+      domain_id: "",
       schedule_time: "",
     },
   });
@@ -265,6 +271,39 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ onSubmit }) => {
                 )}
               />
             </div>
+
+            {/* Domain Selection */}
+            <FormField
+              control={form.control}
+              name="domain_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2">
+                    <Globe className="w-4 h-4" />
+                    Custom Domain (Optional)
+                  </FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Use default domain" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="">Default Platform Domain</SelectItem>
+                      {verifiedDomains.map((domain) => (
+                        <SelectItem key={domain.id} value={domain.id}>
+                          {domain.domain} {domain.ssl_enabled && '🔒'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    Choose a custom domain for this campaign's phishing URLs
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
               <h4 className="font-medium text-blue-800 mb-2">Campaign Requirements</h4>

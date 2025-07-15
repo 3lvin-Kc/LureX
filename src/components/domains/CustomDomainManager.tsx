@@ -1,48 +1,38 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { customDomainService, DomainConfiguration } from '@/utils/customDomainService';
+import { useCustomDomains } from '@/hooks/useCustomDomains';
 import { useToast } from '@/hooks/use-toast';
-import { Globe, CheckCircle, XCircle, Copy, Trash2, Plus } from 'lucide-react';
+import { Globe, CheckCircle, XCircle, Copy, Trash2, Plus, RefreshCw } from 'lucide-react';
 
 const CustomDomainManager: React.FC = () => {
-  const [domains, setDomains] = useState<DomainConfiguration[]>([]);
   const [newDomain, setNewDomain] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [verifyingDomains, setVerifyingDomains] = useState<Set<string>>(new Set());
   const { toast } = useToast();
-
-  useEffect(() => {
-    loadDomains();
-  }, []);
-
-  const loadDomains = () => {
-    const domainConfigs = customDomainService.getDomainConfigurations();
-    setDomains(domainConfigs);
-  };
+  
+  const { 
+    domains, 
+    loading, 
+    addDomain, 
+    verifyDomain, 
+    removeDomain,
+    loadDomains
+  } = useCustomDomains();
 
   const handleAddDomain = async () => {
     if (!newDomain.trim()) return;
 
     setIsAdding(true);
     try {
-      await customDomainService.addCustomDomain(newDomain);
-      loadDomains();
-      setNewDomain('');
-      toast({
-        title: "Domain Added",
-        description: "Custom domain has been added. Please configure the DNS records to verify.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      const success = await addDomain(newDomain);
+      if (success) {
+        setNewDomain('');
+      }
     } finally {
       setIsAdding(false);
     }
@@ -52,27 +42,7 @@ const CustomDomainManager: React.FC = () => {
     setVerifyingDomains(prev => new Set(prev).add(domainId));
     
     try {
-      const verified = await customDomainService.verifyDomain(domainId);
-      
-      if (verified) {
-        toast({
-          title: "Domain Verified",
-          description: "Your domain has been successfully verified and is now active.",
-        });
-        loadDomains();
-      } else {
-        toast({
-          title: "Verification Failed",
-          description: "Please check your DNS configuration and try again.",
-          variant: "destructive",
-        });
-      }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      await verifyDomain(domainId);
     } finally {
       setVerifyingDomains(prev => {
         const next = new Set(prev);
@@ -83,20 +53,7 @@ const CustomDomainManager: React.FC = () => {
   };
 
   const handleRemoveDomain = async (domainId: string) => {
-    try {
-      await customDomainService.removeDomain(domainId);
-      loadDomains();
-      toast({
-        title: "Domain Removed",
-        description: "Custom domain has been removed.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
+    await removeDomain(domainId);
   };
 
   const copyToClipboard = (text: string) => {
@@ -126,8 +83,9 @@ const CustomDomainManager: React.FC = () => {
               value={newDomain}
               onChange={(e) => setNewDomain(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleAddDomain()}
+              disabled={isAdding}
             />
-            <Button onClick={handleAddDomain} disabled={isAdding}>
+            <Button onClick={handleAddDomain} disabled={isAdding || loading}>
               {isAdding ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
               ) : (
@@ -135,10 +93,23 @@ const CustomDomainManager: React.FC = () => {
               )}
               Add Domain
             </Button>
+            <Button 
+              variant="outline" 
+              onClick={loadDomains} 
+              disabled={loading}
+              className="shrink-0"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            </Button>
           </div>
 
           <div className="space-y-4">
-            {domains.length === 0 ? (
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                <p className="text-muted-foreground mt-2">Loading domains...</p>
+              </div>
+            ) : domains.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 No custom domains configured yet
               </div>
@@ -156,7 +127,7 @@ const CustomDomainManager: React.FC = () => {
                             <><XCircle className="h-3 w-3 mr-1" /> Pending</>
                           )}
                         </Badge>
-                        {domain.sslEnabled && (
+                        {domain.ssl_enabled && (
                           <Badge variant="outline">SSL Enabled</Badge>
                         )}
                       </div>
@@ -194,7 +165,7 @@ const CustomDomainManager: React.FC = () => {
                     )}
                     
                     <div className="space-y-3">
-                      {domain.dnsRecords.map((record, index) => (
+                      {domain.dns_records.map((record, index) => (
                         <div key={index} className="p-3 bg-gray-50 rounded-lg">
                           <div className="grid grid-cols-1 md:grid-cols-4 gap-2 text-sm">
                             <div>
@@ -229,7 +200,7 @@ const CustomDomainManager: React.FC = () => {
                           <strong>✅ Domain is active and ready for use</strong>
                         </div>
                         <div className="text-xs text-green-600 mt-1">
-                          Verified on {new Date(domain.verifiedAt!).toLocaleString()}
+                          Verified on {new Date(domain.verified_at!).toLocaleString()}
                         </div>
                       </div>
                     )}

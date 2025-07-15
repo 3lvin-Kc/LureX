@@ -22,6 +22,7 @@ import Reports from "./pages/Reports";
 import Features from "./pages/Features";
 import Help from "./pages/Help";
 import Settings from "./pages/Settings";
+import DomainManagement from "./pages/DomainManagement";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -53,6 +54,7 @@ function App() {
               <Route path="/phishing-pages/create-from-url" element={<ProtectedRoute><CloneWebsitePage /></ProtectedRoute>} />
               <Route path="/phishing-pages/:id/preview" element={<ProtectedRoute><PhishingPagePreview /></ProtectedRoute>} />
               <Route path="/phishing-pages/:id/edit" element={<ProtectedRoute><EditPhishingPage /></ProtectedRoute>} />
+              <Route path="/domain-management" element={<ProtectedRoute><DomainManagement /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
             </Routes>

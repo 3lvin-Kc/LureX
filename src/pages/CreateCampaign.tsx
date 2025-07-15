@@ -34,6 +34,7 @@ const CreateCampaign = () => {
         template_id: data.template_id,
         target_list_id: data.target_list_id,
         phishing_page_id: data.phishing_page_id,
+        domain_id: data.domain_id || null,
       });
       
       toast({

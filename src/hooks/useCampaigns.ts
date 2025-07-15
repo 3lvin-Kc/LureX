@@ -12,6 +12,7 @@ export interface Campaign {
   template_id?: string;
   target_list_id?: string;
   phishing_page_id?: string;
+  domain_id?: string;
   created_at: string;
   updated_at: string;
   template?: { name: string };
