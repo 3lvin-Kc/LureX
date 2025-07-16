@@ -7,18 +7,64 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { format } from "date-fns";
-import { useCampaigns } from "@/hooks/useCampaigns";
+
+// Mock data for frontend-only implementation
+const mockCampaigns = [
+  {
+    id: "1",
+    name: "Q1 Security Training",
+    status: "completed",
+    schedule_time: "2024-01-15T09:00:00Z",
+    template: { name: "Phishing Awareness Template" },
+    target_list: { name: "All Employees" },
+    created_at: "2024-01-10T09:00:00Z"
+  },
+  {
+    id: "2", 
+    name: "Finance Department Test",
+    status: "in_progress",
+    schedule_time: "2024-02-01T10:00:00Z",
+    template: { name: "Banking Simulation" },
+    target_list: { name: "Finance Team" },
+    created_at: "2024-01-25T09:00:00Z"
+  },
+  {
+    id: "3",
+    name: "Executive Spear Phishing",
+    status: "draft",
+    schedule_time: null,
+    template: { name: "CEO Impersonation" },
+    target_list: { name: "Leadership Team" },
+    created_at: "2024-02-05T09:00:00Z"
+  }
+];
 
 const Campaigns = () => {
+  const { toast } = useToast();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("all");
-  const { campaigns, loading, updateCampaignStatus } = useCampaigns();
+  const [campaigns] = useState(mockCampaigns);
+  const [isLoading] = useState(false);
 
   const handleStartCampaign = async (campaignId: string) => {
-    await updateCampaignStatus(campaignId, 'in_progress');
+    try {
+      // Mock implementation
+      console.log('Mock: Starting campaign', campaignId);
+      toast({
+        title: "Campaign Started",
+        description: "Campaign has been queued for execution",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to start campaign",
+        variant: "destructive",
+      });
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -32,7 +78,6 @@ const Campaigns = () => {
       case "completed":
         return "bg-green-100 text-green-800";
       case "canceled":
-      case "failed":
         return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
@@ -50,7 +95,6 @@ const Campaigns = () => {
       case "completed":
         return <CheckCircle size={14} />;
       case "canceled":
-      case "failed":
         return <AlertCircle size={14} />;
       default:
         return null;
@@ -59,7 +103,7 @@ const Campaigns = () => {
 
   const filteredCampaigns = activeTab === "all" 
     ? campaigns 
-    : campaigns.filter(campaign => campaign.status === activeTab);
+    : campaigns?.filter(campaign => campaign.status === activeTab);
 
   return (
     <DashboardLayout>
@@ -70,7 +114,7 @@ const Campaigns = () => {
             <p className="text-muted-foreground">Manage your phishing simulation campaigns</p>
           </div>
           <Button 
-            onClick={() => navigate("/campaign/new")}
+            onClick={() => navigate("/campaigns/new")}
             className="flex items-center gap-2"
           >
             <PlusCircle size={16} />
@@ -91,27 +135,23 @@ const Campaigns = () => {
               className="w-full"
               onValueChange={setActiveTab}
             >
-              <TabsList className="grid grid-cols-6 w-full">
+              <TabsList className="grid grid-cols-5 w-full">
                 <TabsTrigger value="all">All</TabsTrigger>
                 <TabsTrigger value="draft">Draft</TabsTrigger>
                 <TabsTrigger value="scheduled">Scheduled</TabsTrigger>
-                <TabsTrigger value="in_progress">Active</TabsTrigger>
+                <TabsTrigger value="in_progress">In Progress</TabsTrigger>
                 <TabsTrigger value="completed">Completed</TabsTrigger>
-                <TabsTrigger value="failed">Failed</TabsTrigger>
               </TabsList>
               <TabsContent value={activeTab} className="mt-4">
-                {loading ? (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-                    <p className="mt-2 text-gray-600">Loading campaigns...</p>
-                  </div>
-                ) : filteredCampaigns.length === 0 ? (
+                {isLoading ? (
+                  <div className="text-center py-8">Loading campaigns...</div>
+                ) : filteredCampaigns?.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-muted-foreground">No campaigns found</p>
                     <Button 
                       variant="outline" 
                       className="mt-4"
-                      onClick={() => navigate("/campaign/new")}
+                      onClick={() => navigate("/campaigns/new")}
                     >
                       Create Campaign
                     </Button>
@@ -129,13 +169,13 @@ const Campaigns = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredCampaigns.map((campaign) => (
+                      {filteredCampaigns?.map((campaign) => (
                         <TableRow key={campaign.id}>
                           <TableCell className="font-medium">{campaign.name}</TableCell>
                           <TableCell>{campaign.template?.name || "—"}</TableCell>
                           <TableCell>{campaign.target_list?.name || "—"}</TableCell>
                           <TableCell>
-                            <Badge className={`flex items-center gap-1 w-fit ${getStatusColor(campaign.status)}`}>
+                            <Badge className={`flex items-center gap-1 ${getStatusColor(campaign.status)}`}>
                               {getStatusIcon(campaign.status)}
                               {campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1).replace("_", " ")}
                             </Badge>
@@ -153,7 +193,7 @@ const Campaigns = () => {
                                     <Button
                                       variant="outline"
                                       size="icon"
-                                      onClick={() => navigate(`/campaign/${campaign.id}/edit`)}
+                                      onClick={() => navigate(`/campaigns/${campaign.id}/edit`)}
                                     >
                                       <Edit size={16} />
                                     </Button>
@@ -181,7 +221,7 @@ const Campaigns = () => {
                                     <Button
                                       variant="outline"
                                       size="icon"
-                                      onClick={() => navigate(`/reports?campaign=${campaign.id}`)}
+                                      onClick={() => navigate(`/campaigns/${campaign.id}/results`)}
                                     >
                                       <BarChart3 size={16} />
                                     </Button>

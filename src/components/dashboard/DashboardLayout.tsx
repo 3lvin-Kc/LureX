@@ -3,7 +3,7 @@ import React from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Shield, BarChart3, Users, Mail, Globe, FileText } from "lucide-react";
+import { Shield, BarChart3, Users, Mail, Globe, FileText, Settings } from "lucide-react";
 
 interface NavItem {
   title: string;
@@ -41,6 +41,11 @@ const navItems: NavItem[] = [
     title: "Reports",
     href: "/reports",
     icon: BarChart3,
+  },
+  {
+    title: "Settings",
+    href: "/settings",
+    icon: Settings,
   },
 ];
 

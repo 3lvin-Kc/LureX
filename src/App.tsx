@@ -42,7 +42,6 @@ function App() {
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
               <Route path="/campaigns/new" element={<ProtectedRoute><CreateCampaign /></ProtectedRoute>} />
-              <Route path="/campaign/new" element={<ProtectedRoute><CreateCampaign /></ProtectedRoute>} />
               <Route path="/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
               <Route path="/templates/new" element={<ProtectedRoute><CreateTemplate /></ProtectedRoute>} />
               <Route path="/templates/:id/edit" element={<ProtectedRoute><CreateTemplate /></ProtectedRoute>} />
