@@ -90,12 +90,23 @@ serve(async (req) => {
 
         // Send email using Resend
         const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
+        
+        // Custom domain setup for sender
+        const fromEmail = campaign.domain_id 
+          ? `security@${campaign.domain_id}` 
+          : 'WhyPhish Security <noreply@resend.dev>';
+        
         const emailResponse = await resend.emails.send({
-          from: 'WhyPhish Security <noreply@resend.dev>',
+          from: fromEmail,
           to: [target.email],
           subject: template.subject,
           html: htmlContent,
           text: textContent,
+          headers: {
+            'X-Campaign-ID': campaignId,
+            'X-Target-Email': target.email,
+            'X-Tracking-ID': trackingId,
+          },
         });
 
         if (emailResponse.data) {
@@ -108,7 +119,9 @@ serve(async (req) => {
               sent_at: new Date().toISOString(),
               additional_data: {
                 tracking_id: trackingId,
-                template_id: templateId
+                template_id: templateId,
+                resend_email_id: emailResponse.data?.id,
+                email_status: 'sent'
               }
             }, {
               onConflict: 'campaign_id,target_email'
