@@ -43,6 +43,9 @@ serve(async (req) => {
       case 'email.clicked':
         await handleEmailClicked(data);
         break;
+      case 'email.delivery_delayed':
+        await handleEmailDelayed(data);
+        break;
       default:
         console.log(`Unhandled webhook type: ${type}`);
     }
@@ -65,121 +68,214 @@ serve(async (req) => {
 });
 
 async function handleEmailSent(data: any) {
-  const { email_id, to, from } = data;
+  const { email_id, to, from, subject } = data;
   
-  const { error } = await supabase
-    .from('campaign_metrics')
-    .update({
-      sent_at: new Date().toISOString(),
-      additional_data: { 
-        resend_email_id: email_id,
-        delivery_status: 'sent'
-      }
-    })
-    .eq('target_email', to[0])
-    .eq('additional_data->email_id', email_id);
+  try {
+    // Find existing record or create new one
+    const { error } = await supabase
+      .from('campaign_metrics')
+      .update({
+        sent_at: new Date().toISOString(),
+        additional_data: { 
+          resend_email_id: email_id,
+          delivery_status: 'sent',
+          from_address: from,
+          subject: subject
+        }
+      })
+      .eq('target_email', to[0])
+      .eq('additional_data->resend_email_id', email_id);
 
-  if (error) {
-    console.error('Error updating sent status:', error);
+    if (error) {
+      console.error('Error updating sent status:', error);
+      
+      // Try to create new record if update failed
+      await supabase
+        .from('campaign_metrics')
+        .insert({
+          target_email: to[0],
+          sent_at: new Date().toISOString(),
+          additional_data: { 
+            resend_email_id: email_id,
+            delivery_status: 'sent',
+            from_address: from,
+            subject: subject
+          }
+        });
+    }
+    
+    console.log(`Email sent recorded for: ${to[0]}`);
+  } catch (error) {
+    console.error('Error in handleEmailSent:', error);
   }
 }
 
 async function handleEmailDelivered(data: any) {
   const { email_id, to } = data;
   
-  const { error } = await supabase
-    .from('campaign_metrics')
-    .update({
-      delivered_at: new Date().toISOString(),
-      additional_data: { 
-        resend_email_id: email_id,
-        delivery_status: 'delivered'
-      }
-    })
-    .eq('target_email', to[0])
-    .eq('additional_data->email_id', email_id);
+  try {
+    const { error } = await supabase
+      .from('campaign_metrics')
+      .update({
+        delivered_at: new Date().toISOString(),
+        additional_data: { 
+          resend_email_id: email_id,
+          delivery_status: 'delivered'
+        }
+      })
+      .eq('target_email', to[0])
+      .eq('additional_data->resend_email_id', email_id);
 
-  if (error) {
-    console.error('Error updating delivered status:', error);
+    if (error) {
+      console.error('Error updating delivered status:', error);
+    } else {
+      console.log(`Email delivery recorded for: ${to[0]}`);
+    }
+  } catch (error) {
+    console.error('Error in handleEmailDelivered:', error);
   }
 }
 
 async function handleEmailBounced(data: any) {
   const { email_id, to, bounce_type, bounce_reason } = data;
   
-  const { error } = await supabase
-    .from('campaign_metrics')
-    .update({
-      additional_data: { 
-        resend_email_id: email_id,
-        delivery_status: 'bounced',
-        bounce_type: bounce_type,
-        bounce_reason: bounce_reason,
-        bounced_at: new Date().toISOString()
-      }
-    })
-    .eq('target_email', to[0])
-    .eq('additional_data->email_id', email_id);
+  try {
+    const bounceData = {
+      resend_email_id: email_id,
+      delivery_status: 'bounced',
+      bounce_type: bounce_type,
+      bounce_reason: bounce_reason,
+      bounced_at: new Date().toISOString()
+    };
 
-  if (error) {
-    console.error('Error updating bounced status:', error);
+    const { error } = await supabase
+      .from('campaign_metrics')
+      .update({
+        additional_data: bounceData
+      })
+      .eq('target_email', to[0])
+      .eq('additional_data->resend_email_id', email_id);
+
+    if (error) {
+      console.error('Error updating bounced status:', error);
+    } else {
+      console.log(`Email bounce recorded for: ${to[0]} - ${bounce_type}: ${bounce_reason}`);
+    }
+  } catch (error) {
+    console.error('Error in handleEmailBounced:', error);
   }
 }
 
 async function handleEmailComplaint(data: any) {
-  const { email_id, to } = data;
+  const { email_id, to, complaint_feedback_type } = data;
   
-  const { error } = await supabase
-    .from('campaign_metrics')
-    .update({
-      reported_at: new Date().toISOString(),
-      additional_data: { 
-        resend_email_id: email_id,
-        delivery_status: 'complained',
-        complained_at: new Date().toISOString()
-      }
-    })
-    .eq('target_email', to[0])
-    .eq('additional_data->email_id', email_id);
+  try {
+    const { error } = await supabase
+      .from('campaign_metrics')
+      .update({
+        reported_at: new Date().toISOString(),
+        additional_data: { 
+          resend_email_id: email_id,
+          delivery_status: 'complained',
+          complained_at: new Date().toISOString(),
+          complaint_type: complaint_feedback_type
+        }
+      })
+      .eq('target_email', to[0])
+      .eq('additional_data->resend_email_id', email_id);
 
-  if (error) {
-    console.error('Error updating complaint status:', error);
+    if (error) {
+      console.error('Error updating complaint status:', error);
+    } else {
+      console.log(`Email complaint recorded for: ${to[0]}`);
+    }
+  } catch (error) {
+    console.error('Error in handleEmailComplaint:', error);
   }
 }
 
 async function handleEmailOpened(data: any) {
-  const { email_id, to } = data;
+  const { email_id, to, ip, user_agent } = data;
   
-  const { error } = await supabase
-    .from('campaign_metrics')
-    .update({
-      opened_at: new Date().toISOString()
-    })
-    .eq('target_email', to[0])
-    .eq('additional_data->email_id', email_id)
-    .is('opened_at', null);
+  try {
+    // Only update if not already opened to preserve first open timestamp
+    const { error } = await supabase
+      .from('campaign_metrics')
+      .update({
+        opened_at: new Date().toISOString(),
+        ip_address: ip,
+        user_agent: user_agent,
+        additional_data: { 
+          resend_email_id: email_id,
+          first_opened_at: new Date().toISOString()
+        }
+      })
+      .eq('target_email', to[0])
+      .eq('additional_data->resend_email_id', email_id)
+      .is('opened_at', null);
 
-  if (error) {
-    console.error('Error updating opened status:', error);
+    if (error) {
+      console.error('Error updating opened status:', error);
+    } else {
+      console.log(`Email open recorded for: ${to[0]}`);
+    }
+  } catch (error) {
+    console.error('Error in handleEmailOpened:', error);
   }
 }
 
 async function handleEmailClicked(data: any) {
-  const { email_id, to, link } = data;
+  const { email_id, to, link, ip, user_agent } = data;
   
-  const { error } = await supabase
-    .from('campaign_metrics')
-    .update({
-      clicked_at: new Date().toISOString(),
-      additional_data: { 
-        resend_email_id: email_id,
-        clicked_link: link
-      }
-    })
-    .eq('target_email', to[0])
-    .eq('additional_data->email_id', email_id);
+  try {
+    const { error } = await supabase
+      .from('campaign_metrics')
+      .update({
+        clicked_at: new Date().toISOString(),
+        ip_address: ip,
+        user_agent: user_agent,
+        additional_data: { 
+          resend_email_id: email_id,
+          clicked_link: link,
+          click_timestamp: new Date().toISOString()
+        }
+      })
+      .eq('target_email', to[0])
+      .eq('additional_data->resend_email_id', email_id);
 
-  if (error) {
-    console.error('Error updating clicked status:', error);
+    if (error) {
+      console.error('Error updating clicked status:', error);
+    } else {
+      console.log(`Email click recorded for: ${to[0]} - Link: ${link}`);
+    }
+  } catch (error) {
+    console.error('Error in handleEmailClicked:', error);
+  }
+}
+
+async function handleEmailDelayed(data: any) {
+  const { email_id, to, delay_reason } = data;
+  
+  try {
+    const { error } = await supabase
+      .from('campaign_metrics')
+      .update({
+        additional_data: { 
+          resend_email_id: email_id,
+          delivery_status: 'delayed',
+          delay_reason: delay_reason,
+          delayed_at: new Date().toISOString()
+        }
+      })
+      .eq('target_email', to[0])
+      .eq('additional_data->resend_email_id', email_id);
+
+    if (error) {
+      console.error('Error updating delayed status:', error);
+    } else {
+      console.log(`Email delay recorded for: ${to[0]} - Reason: ${delay_reason}`);
+    }
+  } catch (error) {
+    console.error('Error in handleEmailDelayed:', error);
   }
 }

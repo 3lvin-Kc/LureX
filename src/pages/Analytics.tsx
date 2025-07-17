@@ -1,7 +1,10 @@
+
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import RealTimeMetrics from '@/components/analytics/RealTimeMetrics';
+import LiveMetricsDashboard from '@/components/analytics/LiveMetricsDashboard';
+import SecurityMonitoringDashboard from '@/components/security/SecurityMonitoringDashboard';
 import { useReports } from '@/hooks/useReports';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
@@ -29,19 +32,29 @@ const Analytics = () => {
             Analytics Dashboard
           </h1>
           <p className="text-muted-foreground mt-2">
-            Real-time monitoring and analysis of your phishing campaigns
+            Comprehensive real-time monitoring and analysis of your phishing campaigns
           </p>
         </div>
         
         <Tabs defaultValue="realtime" className="w-full">
           <TabsList className="mb-6">
             <TabsTrigger value="realtime">Real-time</TabsTrigger>
+            <TabsTrigger value="live-metrics">Live Metrics</TabsTrigger>
+            <TabsTrigger value="security">Security Monitor</TabsTrigger>
             <TabsTrigger value="performance">Performance</TabsTrigger>
             <TabsTrigger value="trends">Trends</TabsTrigger>
           </TabsList>
           
           <TabsContent value="realtime">
             <RealTimeMetrics />
+          </TabsContent>
+
+          <TabsContent value="live-metrics">
+            <LiveMetricsDashboard maxEvents={100} />
+          </TabsContent>
+
+          <TabsContent value="security">
+            <SecurityMonitoringDashboard />
           </TabsContent>
           
           <TabsContent value="performance">
@@ -119,9 +132,34 @@ const Analytics = () => {
                 <CardDescription>Track organizational security awareness over time</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  Trend analysis will be available with more campaign data over time
-                </div>
+                {reportData?.timeSeriesData && reportData.timeSeriesData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={400}>
+                    <LineChart data={reportData.timeSeriesData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <Tooltip />
+                      <Line 
+                        type="monotone" 
+                        dataKey="campaigns" 
+                        stroke="hsl(var(--primary))" 
+                        strokeWidth={2}
+                        name="Campaigns"
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="awareness_improvement" 
+                        stroke="hsl(var(--secondary))" 
+                        strokeWidth={2}
+                        name="Awareness Score"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Trend analysis will be available with more campaign data over time
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
