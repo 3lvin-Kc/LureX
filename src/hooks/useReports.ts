@@ -1,81 +1,98 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/components/auth/AuthProvider';
-import { useToast } from '@/hooks/use-toast';
+import { securityLogger, SecurityEventType } from '@/utils/securityLogger';
 
 export interface ReportData {
-  totalCampaigns: number;
-  emailsSent: number;
-  clickRate: number;
-  participants: number;
   campaignData: Array<{
     name: string;
     sent: number;
     opened: number;
     clicked: number;
     submitted: number;
+    reported: number;
   }>;
   departmentData: Array<{
-    name: string;
-    value: number;
-    color: string;
+    department: string;
+    sent: number;
+    opened: number;
+    clicked: number;
+    submitted: number;
+    vulnerability_score: number;
+  }>;
+  overallMetrics: {
+    totalCampaigns: number;
+    totalEmailsSent: number;
+    averageOpenRate: number;
+    averageClickRate: number;
+    averageSubmitRate: number;
+    averageReportRate: number;
+    improvementTrend: number;
+  };
+  timeSeriesData: Array<{
+    date: string;
+    campaigns: number;
+    emails_sent: number;
+    click_rate: number;
+    submit_rate: number;
   }>;
 }
 
-export const useReports = () => {
+export const useReports = (timeframe: string = '30') => {
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
-  const { toast } = useToast();
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchReportData();
+  }, [timeframe]);
 
   const fetchReportData = async () => {
-    if (!user) return;
-
     try {
-      // Get real metrics from edge function
-      const { data: metricsResponse, error: metricsError } = await supabase.functions.invoke('get-campaign-metrics', {
-        body: { timeframe: "30" }
-      });
+      setLoading(true);
+      setError(null);
 
-      if (metricsError) {
-        console.error('Metrics error:', metricsError);
-        // Fall back to basic campaign data
-        const { data: campaigns, error: campaignsError } = await supabase
-          .from('campaigns')
-          .select('*')
-          .eq('user_id', user.id);
+      // Calculate date range
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - parseInt(timeframe));
 
-        if (campaignsError) throw campaignsError;
-
-        setReportData({
-          totalCampaigns: campaigns?.length || 0,
-          emailsSent: 0,
-          clickRate: 0,
-          participants: 0,
-          campaignData: [],
-          departmentData: [],
-        });
-        return;
-      }
-
-      const metrics = metricsResponse;
-      
-      // Fetch campaigns with names
+      // Fetch campaigns and their metrics
       const { data: campaigns, error: campaignsError } = await supabase
         .from('campaigns')
-        .select('id, name')
-        .eq('user_id', user.id);
+        .select(`
+          id,
+          name,
+          created_at,
+          status
+        `)
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString());
 
       if (campaignsError) throw campaignsError;
 
-      // Process campaign data with real metrics
+      // Fetch campaign metrics
+      const campaignIds = campaigns?.map(c => c.id) || [];
+      
+      let allMetrics: any[] = [];
+      if (campaignIds.length > 0) {
+        const { data: metrics, error: metricsError } = await supabase
+          .from('campaign_metrics')
+          .select('*')
+          .in('campaign_id', campaignIds);
+
+        if (metricsError) throw metricsError;
+        allMetrics = metrics || [];
+      }
+
+      // Process campaign data
       const campaignData = campaigns?.map(campaign => {
-        const campaignMetrics = metrics.rawMetrics.filter((m: any) => m.campaign_id === campaign.id);
+        const campaignMetrics = allMetrics.filter(m => m.campaign_id === campaign.id);
         const sent = campaignMetrics.length;
-        const opened = campaignMetrics.filter((m: any) => m.opened_at).length;
-        const clicked = campaignMetrics.filter((m: any) => m.clicked_at).length;
-        const submitted = campaignMetrics.filter((m: any) => m.data_submitted_at).length;
+        const opened = campaignMetrics.filter(m => m.opened_at).length;
+        const clicked = campaignMetrics.filter(m => m.clicked_at).length;
+        const submitted = campaignMetrics.filter(m => m.data_submitted_at).length;
+        const reported = campaignMetrics.filter(m => m.reported_at).length;
 
         return {
           name: campaign.name,
@@ -83,179 +100,188 @@ export const useReports = () => {
           opened,
           clicked,
           submitted,
+          reported
         };
       }) || [];
 
-      // Process department data from metrics
-      const departmentData = metrics.departmentMetrics.map((dept: any, index: number) => ({
-        name: dept.department,
-        value: dept.sent,
-        color: [`#0088FE`, `#00C49F`, `#FFBB28`, `#FF8042`, `#8884D8`][index % 5]
+      // Process department data
+      const departmentMap = new Map<string, {
+        sent: number;
+        opened: number;
+        clicked: number;
+        submitted: number;
+      }>();
+
+      // Get target data for department analysis
+      if (campaignIds.length > 0) {
+        for (const campaignId of campaignIds) {
+          // Get campaign's target list
+          const { data: campaign } = await supabase
+            .from('campaigns')
+            .select('target_list_id')
+            .eq('id', campaignId)
+            .single();
+
+          if (campaign?.target_list_id) {
+            // Get targets with departments
+            const { data: targets } = await supabase
+              .from('targets')
+              .select('email, department')
+              .eq('list_id', campaign.target_list_id);
+
+            targets?.forEach(target => {
+              const dept = target.department || 'Unknown';
+              const targetMetrics = allMetrics.filter(m => 
+                m.campaign_id === campaignId && m.target_email === target.email
+              );
+
+              if (!departmentMap.has(dept)) {
+                departmentMap.set(dept, { sent: 0, opened: 0, clicked: 0, submitted: 0 });
+              }
+
+              const deptData = departmentMap.get(dept)!;
+              targetMetrics.forEach(metric => {
+                deptData.sent++;
+                if (metric.opened_at) deptData.opened++;
+                if (metric.clicked_at) deptData.clicked++;
+                if (metric.data_submitted_at) deptData.submitted++;
+              });
+            });
+          }
+        }
+      }
+
+      const departmentData = Array.from(departmentMap.entries()).map(([department, data]) => ({
+        department,
+        ...data,
+        vulnerability_score: data.sent > 0 ? Math.round((data.submitted / data.sent) * 100) : 0
       }));
 
-      setReportData({
+      // Calculate overall metrics
+      const totalSent = allMetrics.length;
+      const totalOpened = allMetrics.filter(m => m.opened_at).length;
+      const totalClicked = allMetrics.filter(m => m.clicked_at).length;
+      const totalSubmitted = allMetrics.filter(m => m.data_submitted_at).length;
+      const totalReported = allMetrics.filter(m => m.reported_at).length;
+
+      const overallMetrics = {
         totalCampaigns: campaigns?.length || 0,
-        emailsSent: metrics.summary.totalSent,
-        clickRate: metrics.summary.clickRate,
-        participants: metrics.summary.totalOpened,
+        totalEmailsSent: totalSent,
+        averageOpenRate: totalSent > 0 ? Math.round((totalOpened / totalSent) * 100) : 0,
+        averageClickRate: totalSent > 0 ? Math.round((totalClicked / totalSent) * 100) : 0,
+        averageSubmitRate: totalSent > 0 ? Math.round((totalSubmitted / totalSent) * 100) : 0,
+        averageReportRate: totalSent > 0 ? Math.round((totalReported / totalSent) * 100) : 0,
+        improvementTrend: 0 // Would need historical data for comparison
+      };
+
+      // Generate time series data
+      const timeSeriesMap = new Map<string, {
+        campaigns: number;
+        emails_sent: number;
+        clicked: number;
+        submitted: number;
+      }>();
+
+      // Group by date
+      campaigns?.forEach(campaign => {
+        const date = new Date(campaign.created_at).toISOString().split('T')[0];
+        if (!timeSeriesMap.has(date)) {
+          timeSeriesMap.set(date, { campaigns: 0, emails_sent: 0, clicked: 0, submitted: 0 });
+        }
+        
+        const dayData = timeSeriesMap.get(date)!;
+        dayData.campaigns++;
+        
+        const campaignMetrics = allMetrics.filter(m => m.campaign_id === campaign.id);
+        dayData.emails_sent += campaignMetrics.length;
+        dayData.clicked += campaignMetrics.filter(m => m.clicked_at).length;
+        dayData.submitted += campaignMetrics.filter(m => m.data_submitted_at).length;
+      });
+
+      const timeSeriesData = Array.from(timeSeriesMap.entries()).map(([date, data]) => ({
+        date,
+        campaigns: data.campaigns,
+        emails_sent: data.emails_sent,
+        click_rate: data.emails_sent > 0 ? Math.round((data.clicked / data.emails_sent) * 100) : 0,
+        submit_rate: data.emails_sent > 0 ? Math.round((data.submitted / data.emails_sent) * 100) : 0
+      })).sort((a, b) => a.date.localeCompare(b.date));
+
+      const finalReportData: ReportData = {
         campaignData,
         departmentData,
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to load report data",
-        variant: "destructive",
-      });
+        overallMetrics,
+        timeSeriesData
+      };
+
+      setReportData(finalReportData);
+
+      securityLogger.info(
+        SecurityEventType.DATA_ACCESS,
+        "Generated comprehensive report data",
+        { timeframe, metricsCount: allMetrics.length }
+      );
+
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch report data';
+      setError(errorMessage);
+      
+      securityLogger.error(
+        SecurityEventType.DATA_ACCESS,
+        "Failed to generate report data",
+        { error: err, timeframe }
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const exportToPDF = async () => {
+  const exportReport = async (format: 'pdf' | 'csv') => {
     try {
-      if (!reportData) return;
+      // Call the export function based on format
+      const { data, error } = await supabase.functions.invoke('export-report', {
+        body: { 
+          reportData, 
+          format,
+          timeframe 
+        }
+      });
 
-      // Create a simple HTML content for PDF
-      const htmlContent = `
-        <html>
-          <head>
-            <title>Phishing Campaign Report</title>
-            <style>
-              body { font-family: Arial, sans-serif; margin: 20px; }
-              .header { text-align: center; margin-bottom: 30px; }
-              .metrics { display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 30px; }
-              .metric { border: 1px solid #ddd; padding: 15px; border-radius: 5px; flex: 1; min-width: 200px; }
-              .metric h3 { margin: 0 0 10px 0; color: #666; }
-              .metric .value { font-size: 24px; font-weight: bold; color: #333; }
-              table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-              th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-              th { background-color: #f2f2f2; }
-            </style>
-          </head>
-          <body>
-            <div class="header">
-              <h1>Phishing Campaign Report</h1>
-              <p>Generated on ${new Date().toLocaleDateString()}</p>
-            </div>
-            
-            <div class="metrics">
-              <div class="metric">
-                <h3>Total Campaigns</h3>
-                <div class="value">${reportData.totalCampaigns}</div>
-              </div>
-              <div class="metric">
-                <h3>Emails Sent</h3>
-                <div class="value">${reportData.emailsSent.toLocaleString()}</div>
-              </div>
-              <div class="metric">
-                <h3>Click Rate</h3>
-                <div class="value">${reportData.clickRate}%</div>
-              </div>
-              <div class="metric">
-                <h3>Participants</h3>
-                <div class="value">${reportData.participants.toLocaleString()}</div>
-              </div>
-            </div>
+      if (error) throw error;
 
-            <h2>Campaign Performance</h2>
-            <table>
-              <thead>
-                <tr>
-                  <th>Campaign</th>
-                  <th>Sent</th>
-                  <th>Opened</th>
-                  <th>Clicked</th>
-                  <th>Submitted</th>
-                  <th>Click Rate</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${reportData.campaignData.map(campaign => `
-                  <tr>
-                    <td>${campaign.name}</td>
-                    <td>${campaign.sent}</td>
-                    <td>${campaign.opened}</td>
-                    <td>${campaign.clicked}</td>
-                    <td>${campaign.submitted}</td>
-                    <td>${campaign.sent > 0 ? Math.round((campaign.clicked / campaign.sent) * 100 * 10) / 10 : 0}%</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </body>
-        </html>
-      `;
-
-      const blob = new Blob([htmlContent], { type: 'text/html' });
+      // Create download link
+      const blob = new Blob([data], { 
+        type: format === 'pdf' ? 'application/pdf' : 'text/csv' 
+      });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `phishing-report-${new Date().toISOString().split('T')[0]}.html`;
+      link.download = `phishing-report-${new Date().toISOString().split('T')[0]}.${format}`;
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      toast({
-        title: "Success",
-        description: "Report exported successfully (HTML format)",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to export PDF report",
-        variant: "destructive",
-      });
+      securityLogger.info(
+        SecurityEventType.DATA_ACCESS,
+        `Exported report in ${format} format`,
+        { timeframe }
+      );
+
+    } catch (err) {
+      securityLogger.error(
+        SecurityEventType.DATA_ACCESS,
+        `Failed to export report in ${format} format`,
+        { error: err, timeframe }
+      );
+      throw err;
     }
   };
-
-  const exportToCSV = async () => {
-    try {
-      if (!reportData) return;
-
-      const csvContent = [
-        'Campaign,Sent,Opened,Clicked,Submitted,Click Rate',
-        ...reportData.campaignData.map(campaign => 
-          [
-            campaign.name,
-            campaign.sent,
-            campaign.opened,
-            campaign.clicked,
-            campaign.submitted,
-            `${campaign.sent > 0 ? Math.round((campaign.clicked / campaign.sent) * 100 * 10) / 10 : 0}%`
-          ].join(',')
-        )
-      ].join('\n');
-
-      const blob = new Blob([csvContent], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `phishing-report-${new Date().toISOString().split('T')[0]}.csv`;
-      link.click();
-      window.URL.revokeObjectURL(url);
-
-      toast({
-        title: "Success",
-        description: "Report exported to CSV successfully",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to export CSV report",
-        variant: "destructive",
-      });
-    }
-  };
-
-  useEffect(() => {
-    fetchReportData();
-  }, [user]);
 
   return {
     reportData,
     loading,
-    exportToPDF,
-    exportToCSV,
-    refetchReportData: fetchReportData,
+    error,
+    refetch: fetchReportData,
+    exportReport
   };
 };
