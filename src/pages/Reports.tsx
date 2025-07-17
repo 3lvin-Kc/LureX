@@ -17,8 +17,24 @@ const Reports = () => {
   const navigate = useNavigate();
   const [selectedCampaign, setSelectedCampaign] = useState("all");
   const [dateRange, setDateRange] = useState("30");
-  const { reportData, loading, exportToPDF, exportToCSV } = useReports();
+  const { reportData, loading, exportReport } = useReports();
   const { campaigns } = useCampaigns();
+
+  const handleExportPDF = async () => {
+    try {
+      await exportReport('pdf');
+    } catch (error) {
+      console.error('Failed to export PDF:', error);
+    }
+  };
+
+  const handleExportCSV = async () => {
+    try {
+      await exportReport('csv');
+    } catch (error) {
+      console.error('Failed to export CSV:', error);
+    }
+  };
 
   if (loading) {
     return (
@@ -41,11 +57,11 @@ const Reports = () => {
             <p className="text-muted-foreground">Analyze your phishing campaign performance and security metrics</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" className="flex items-center gap-2" onClick={exportToPDF}>
+            <Button variant="outline" className="flex items-center gap-2" onClick={handleExportPDF}>
               <Download size={16} />
               Export PDF
             </Button>
-            <Button variant="outline" className="flex items-center gap-2" onClick={exportToCSV}>
+            <Button variant="outline" className="flex items-center gap-2" onClick={handleExportCSV}>
               <Download size={16} />
               Export CSV
             </Button>

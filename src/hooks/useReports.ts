@@ -14,11 +14,14 @@ export interface ReportData {
   }>;
   departmentData: Array<{
     department: string;
+    name: string; // Added for chart compatibility
     sent: number;
     opened: number;
     clicked: number;
     submitted: number;
     vulnerability_score: number;
+    value: number; // Added for chart compatibility
+    color: string; // Added for chart compatibility
   }>;
   overallMetrics: {
     totalCampaigns: number;
@@ -29,6 +32,11 @@ export interface ReportData {
     averageReportRate: number;
     improvementTrend: number;
   };
+  // Added these properties for Dashboard and Reports compatibility
+  totalCampaigns: number;
+  emailsSent: number;
+  clickRate: number;
+  participants: number;
   timeSeriesData: Array<{
     date: string;
     campaigns: number;
@@ -104,7 +112,7 @@ export const useReports = (timeframe: string = '30') => {
         };
       }) || [];
 
-      // Process department data
+      // Process department data with chart-compatible properties
       const departmentMap = new Map<string, {
         sent: number;
         opened: number;
@@ -151,10 +159,16 @@ export const useReports = (timeframe: string = '30') => {
         }
       }
 
-      const departmentData = Array.from(departmentMap.entries()).map(([department, data]) => ({
+      // Generate colors for departments
+      const colors = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#00ff00', '#ff00ff', '#00ffff'];
+      
+      const departmentData = Array.from(departmentMap.entries()).map(([department, data], index) => ({
         department,
+        name: department, // For chart compatibility
         ...data,
-        vulnerability_score: data.sent > 0 ? Math.round((data.submitted / data.sent) * 100) : 0
+        vulnerability_score: data.sent > 0 ? Math.round((data.submitted / data.sent) * 100) : 0,
+        value: data.sent > 0 ? Math.round((data.submitted / data.sent) * 100) : 0, // For chart compatibility
+        color: colors[index % colors.length] // For chart compatibility
       }));
 
       // Calculate overall metrics
@@ -210,7 +224,12 @@ export const useReports = (timeframe: string = '30') => {
         campaignData,
         departmentData,
         overallMetrics,
-        timeSeriesData
+        timeSeriesData,
+        // Add top-level properties for compatibility
+        totalCampaigns: campaigns?.length || 0,
+        emailsSent: totalSent,
+        clickRate: totalSent > 0 ? Math.round((totalClicked / totalSent) * 100) : 0,
+        participants: totalSent // Assuming participants = total emails sent
       };
 
       setReportData(finalReportData);
