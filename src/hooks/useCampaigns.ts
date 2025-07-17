@@ -160,10 +160,33 @@ export const useCampaigns = () => {
     fetchCampaigns();
   }, [user]);
 
+  const updateCampaign = async (id: string, updates: Partial<Omit<Campaign, 'id' | 'created_at' | 'updated_at' | 'template' | 'target_list' | 'phishing_page'>>) => {
+    try {
+      const { error } = await supabase
+        .from('campaigns')
+        .update(updates)
+        .eq('id', id);
+
+      if (error) throw error;
+
+      await fetchCampaigns();
+      return true;
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to update campaign",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   return {
     campaigns,
     loading,
+    isLoading: loading,
     createCampaign,
+    updateCampaign,
     updateCampaignStatus,
     refetchCampaigns: fetchCampaigns,
   };

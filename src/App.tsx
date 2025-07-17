@@ -23,6 +23,8 @@ import Features from "./pages/Features";
 import Help from "./pages/Help";
 import Settings from "./pages/Settings";
 import DomainManagement from "./pages/DomainManagement";
+import EditCampaign from "./pages/EditCampaign";
+import CampaignResults from "./pages/CampaignResults";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -42,6 +44,8 @@ function App() {
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
               <Route path="/campaigns/new" element={<ProtectedRoute><CreateCampaign /></ProtectedRoute>} />
+              <Route path="/campaigns/:id/edit" element={<ProtectedRoute><EditCampaign /></ProtectedRoute>} />
+              <Route path="/campaigns/:id/results" element={<ProtectedRoute><CampaignResults /></ProtectedRoute>} />
               <Route path="/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
               <Route path="/templates/new" element={<ProtectedRoute><CreateTemplate /></ProtectedRoute>} />
               <Route path="/templates/:id/edit" element={<ProtectedRoute><CreateTemplate /></ProtectedRoute>} />

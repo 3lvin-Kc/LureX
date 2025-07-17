@@ -34,9 +34,10 @@ const formSchema = z.object({
 
 interface CampaignFormProps {
   onSubmit: (data: any) => Promise<void>;
+  initialData?: any;
 }
 
-const CampaignForm: React.FC<CampaignFormProps> = ({ onSubmit }) => {
+const CampaignForm: React.FC<CampaignFormProps> = ({ onSubmit, initialData }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isScheduled, setIsScheduled] = useState(false);
   
@@ -50,13 +51,13 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ onSubmit }) => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
-      description: "",
-      template_id: "",
-      target_list_id: "",
-      phishing_page_id: "",
-      domain_id: "",
-      schedule_time: "",
+      name: initialData?.name || "",
+      description: initialData?.description || "",
+      template_id: initialData?.template_id || "",
+      target_list_id: initialData?.target_list_id || "",
+      phishing_page_id: initialData?.phishing_page_id || "",
+      domain_id: initialData?.domain_id || "",
+      schedule_time: initialData?.schedule_time ? new Date(initialData.schedule_time).toISOString().slice(0, 16) : "",
     },
   });
 
