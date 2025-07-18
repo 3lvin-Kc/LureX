@@ -1,181 +1,140 @@
+
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/components/auth/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 
-export interface Campaign {
+interface Campaign {
   id: string;
   name: string;
   description?: string;
-  status: 'draft' | 'scheduled' | 'in_progress' | 'completed' | 'canceled' | 'failed';
+  status: string;
   schedule_time?: string;
   template_id?: string;
   target_list_id?: string;
   phishing_page_id?: string;
   domain_id?: string;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
   template?: { name: string };
   target_list?: { name: string };
-  phishing_page?: { name: string };
 }
 
 export const useCampaigns = () => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth();
   const { toast } = useToast();
 
-  const fetchCampaigns = async () => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('campaigns')
-        .select(`
-          *,
-          template:email_templates(name),
-          target_list:target_lists(name),
-          phishing_page:phishing_pages(name)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      
-      const typedData = (data || []).map(item => ({
-        ...item,
-        status: item.status as Campaign['status']
-      }));
-      
-      setCampaigns(typedData);
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to load campaigns",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+  // Mock data for frontend-only implementation
+  const mockCampaigns: Campaign[] = [
+    {
+      id: "1",
+      name: "Q1 Security Training",
+      status: "completed",
+      schedule_time: "2024-01-15T09:00:00Z",
+      template: { name: "Phishing Awareness Template" },
+      target_list: { name: "All Employees" },
+      created_at: "2024-01-10T09:00:00Z"
+    },
+    {
+      id: "2", 
+      name: "Finance Department Test",
+      status: "in_progress",
+      schedule_time: "2024-02-01T10:00:00Z",
+      template: { name: "Banking Simulation" },
+      target_list: { name: "Finance Team" },
+      created_at: "2024-01-25T09:00:00Z"
+    },
+    {
+      id: "3",
+      name: "Executive Spear Phishing",
+      status: "draft",
+      schedule_time: null,
+      template: { name: "CEO Impersonation" },
+      target_list: { name: "Leadership Team" },
+      created_at: "2024-02-05T09:00:00Z"
     }
-  };
-
-  const createCampaign = async (campaign: Omit<Campaign, 'id' | 'created_at' | 'updated_at' | 'template' | 'target_list' | 'phishing_page'>) => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('campaigns')
-        .insert([{
-          ...campaign,
-          user_id: user.id,
-        }])
-        .select()
-        .single();
-
-      if (error) throw error;
-      
-      await fetchCampaigns();
-      toast({
-        title: "Success",
-        description: "Campaign created successfully",
-      });
-      
-      return data;
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to create campaign",
-        variant: "destructive",
-      });
-      throw error;
-    }
-  };
-
-  const updateCampaignStatus = async (id: string, status: Campaign['status']) => {
-    try {
-      const { error } = await supabase
-        .from('campaigns')
-        .update({ status })
-        .eq('id', id);
-
-      if (error) throw error;
-
-      setCampaigns(prev => 
-        prev.map(campaign => 
-          campaign.id === id ? { ...campaign, status } : campaign
-        )
-      );
-
-      // If starting campaign, trigger real email sending via Resend
-      if (status === 'in_progress') {
-        const campaign = campaigns.find(c => c.id === id);
-        if (campaign && campaign.template_id && campaign.target_list_id) {
-          try {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-              const response = await supabase.functions.invoke('send-campaign-emails', {
-                body: {
-                  campaignId: id,
-                  templateId: campaign.template_id,
-                  targetListId: campaign.target_list_id,
-                }
-              });
-
-              if (response.error) {
-                throw new Error(response.error.message || 'Failed to send campaign emails');
-              }
-
-              const result = response.data;
-              toast({
-                title: "Campaign Started Successfully",
-                description: `${result.emails_sent} emails sent via Resend with tracking enabled. ${result.emails_failed} failed.`,
-              });
-            }
-          } catch (emailError: any) {
-            console.error('Email sending error:', emailError);
-            toast({
-              title: "Campaign Started with Issues",
-              description: "Campaign status updated but email sending encountered issues. Check email configuration.",
-              variant: "destructive",
-            });
-          }
-        }
-      } else {
-        toast({
-          title: "Success",
-          description: `Campaign ${status}`,
-        });
-      }
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to update campaign",
-        variant: "destructive",
-      });
-      throw error;
-    }
-  };
+  ];
 
   useEffect(() => {
-    fetchCampaigns();
-  }, [user]);
+    const timer = setTimeout(() => {
+      setCampaigns(mockCampaigns);
+      setLoading(false);
+    }, 1000);
 
-  const updateCampaign = async (id: string, updates: Partial<Omit<Campaign, 'id' | 'created_at' | 'updated_at' | 'template' | 'target_list' | 'phishing_page'>>) => {
+    return () => clearTimeout(timer);
+  }, []);
+
+  const createCampaign = async (data: Partial<Campaign>) => {
     try {
-      const { error } = await supabase
-        .from('campaigns')
-        .update(updates)
-        .eq('id', id);
+      const newCampaign: Campaign = {
+        id: Date.now().toString(),
+        name: data.name || '',
+        description: data.description,
+        status: data.status || 'draft',
+        schedule_time: data.schedule_time,
+        template_id: data.template_id,
+        target_list_id: data.target_list_id,
+        phishing_page_id: data.phishing_page_id,
+        domain_id: data.domain_id,
+        created_at: new Date().toISOString(),
+        template: { name: "Selected Template" },
+        target_list: { name: "Selected Target List" }
+      };
 
-      if (error) throw error;
-
-      await fetchCampaigns();
-      return true;
+      setCampaigns(prev => [...prev, newCampaign]);
+      
+      toast({
+        title: "Campaign created",
+        description: "Your campaign has been created successfully"
+      });
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: "Failed to update campaign",
-        variant: "destructive",
+        title: "Error creating campaign",
+        description: error.message || "Failed to create campaign",
+        variant: "destructive"
+      });
+      throw error;
+    }
+  };
+
+  const updateCampaign = async (id: string, data: Partial<Campaign>) => {
+    try {
+      setCampaigns(prev => prev.map(campaign => 
+        campaign.id === id 
+          ? { ...campaign, ...data, updated_at: new Date().toISOString() }
+          : campaign
+      ));
+      
+      toast({
+        title: "Campaign updated",
+        description: "Your campaign has been updated successfully"
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error updating campaign",
+        description: error.message || "Failed to update campaign",
+        variant: "destructive"
+      });
+      throw error;
+    }
+  };
+
+  const updateCampaignStatus = async (id: string, status: string) => {
+    try {
+      setCampaigns(prev => prev.map(campaign => 
+        campaign.id === id 
+          ? { ...campaign, status, updated_at: new Date().toISOString() }
+          : campaign
+      ));
+      
+      toast({
+        title: "Campaign status updated",
+        description: `Campaign status changed to ${status}`
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error updating campaign status",
+        description: error.message || "Failed to update campaign status",
+        variant: "destructive"
       });
       throw error;
     }
@@ -184,10 +143,8 @@ export const useCampaigns = () => {
   return {
     campaigns,
     loading,
-    isLoading: loading,
     createCampaign,
     updateCampaign,
-    updateCampaignStatus,
-    refetchCampaigns: fetchCampaigns,
+    updateCampaignStatus
   };
 };
