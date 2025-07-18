@@ -56,6 +56,7 @@ export class RealTimeSubscriptionService {
         .subscribe((status) => {
           this.isConnected = status === 'SUBSCRIBED';
           if (this.isConnected) {
+            console.log('Real-time subscription established');
             securityLogger.info(
               SecurityEventType.DATA_ACCESS,
               "Real-time subscription established",
@@ -64,6 +65,7 @@ export class RealTimeSubscriptionService {
           }
         });
     } catch (error) {
+      console.error('Failed to initialize real-time connection:', error);
       securityLogger.error(
         SecurityEventType.DATA_ACCESS,
         "Failed to initialize real-time connection",

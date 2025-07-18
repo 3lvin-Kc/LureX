@@ -10,60 +10,20 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import { useCampaigns } from "@/hooks/useCampaigns";
 import { format } from "date-fns";
-
-// Mock data for frontend-only implementation
-const mockCampaigns = [
-  {
-    id: "1",
-    name: "Q1 Security Training",
-    status: "completed",
-    schedule_time: "2024-01-15T09:00:00Z",
-    template: { name: "Phishing Awareness Template" },
-    target_list: { name: "All Employees" },
-    created_at: "2024-01-10T09:00:00Z"
-  },
-  {
-    id: "2", 
-    name: "Finance Department Test",
-    status: "in_progress",
-    schedule_time: "2024-02-01T10:00:00Z",
-    template: { name: "Banking Simulation" },
-    target_list: { name: "Finance Team" },
-    created_at: "2024-01-25T09:00:00Z"
-  },
-  {
-    id: "3",
-    name: "Executive Spear Phishing",
-    status: "draft",
-    schedule_time: null,
-    template: { name: "CEO Impersonation" },
-    target_list: { name: "Leadership Team" },
-    created_at: "2024-02-05T09:00:00Z"
-  }
-];
 
 const Campaigns = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("all");
-  const [campaigns] = useState(mockCampaigns);
-  const [isLoading] = useState(false);
+  const { campaigns, loading, updateCampaignStatus } = useCampaigns();
 
   const handleStartCampaign = async (campaignId: string) => {
     try {
-      // Mock implementation
-      console.log('Mock: Starting campaign', campaignId);
-      toast({
-        title: "Campaign Started",
-        description: "Campaign has been queued for execution",
-      });
+      await updateCampaignStatus(campaignId, 'in_progress');
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: "Failed to start campaign",
-        variant: "destructive",
-      });
+      // Error handling is done in the hook
     }
   };
 
@@ -143,7 +103,7 @@ const Campaigns = () => {
                 <TabsTrigger value="completed">Completed</TabsTrigger>
               </TabsList>
               <TabsContent value={activeTab} className="mt-4">
-                {isLoading ? (
+                {loading ? (
                   <div className="text-center py-8">Loading campaigns...</div>
                 ) : filteredCampaigns?.length === 0 ? (
                   <div className="text-center py-8">
