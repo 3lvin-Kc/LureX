@@ -1,0 +1,239 @@
+
+import React, { useState } from "react";
+import { PlusCircle, Globe, Edit, Trash2, Copy, Eye } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useNavigate } from "react-router-dom";
+import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import { format } from "date-fns";
+import CloneWebsiteWarning from "@/components/phishing/CloneWebsiteWarning";
+import { usePhishingPages } from "@/hooks/usePhishingPages";
+
+const PhishingPages = () => {
+  const navigate = useNavigate();
+  const { phishingPages, loading, deletePhishingPage, duplicatePhishingPage } = usePhishingPages();
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [showCloneWarning, setShowCloneWarning] = useState(false);
+
+  const handleDeletePage = async (id: string) => {
+    setIsDeleting(id);
+    try {
+      await deletePhishingPage(id);
+    } catch (error) {
+      // Error handling is already done in the hook
+    } finally {
+      setIsDeleting(null);
+    }
+  };
+
+  const handleCloneWebsiteClick = () => {
+    setShowCloneWarning(true);
+  };
+
+  const handleCloneProceed = () => {
+    setShowCloneWarning(false);
+    navigate("/phishing-pages/create-from-url");
+  };
+
+  const handleCloneCancel = () => {
+    setShowCloneWarning(false);
+  };
+
+  const handleDuplicatePage = async (pageId: string) => {
+    try {
+      await duplicatePhishingPage(pageId);
+    } catch (error) {
+      // Error handling is already done in the hook
+    }
+  };
+
+  const handlePreview = (pageId: string) => {
+    navigate(`/phishing-pages/${pageId}/preview`);
+  };
+
+  const handleEdit = (pageId: string) => {
+    navigate(`/phishing-pages/${pageId}/edit`);
+  };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="container mx-auto p-4 max-w-7xl">
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <DashboardLayout>
+      <div className="container mx-auto p-4 max-w-7xl">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-3xl font-bold">Phishing Pages</h1>
+            <p className="text-muted-foreground">Manage fake login pages for your phishing campaigns</p>
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline"
+              onClick={handleCloneWebsiteClick}
+              className="flex items-center gap-2"
+            >
+              <Globe size={16} />
+              Clone Website
+            </Button>
+            <Button 
+              onClick={() => navigate("/phishing-pages/new")}
+              className="flex items-center gap-2"
+            >
+              <PlusCircle size={16} />
+              New Page
+            </Button>
+          </div>
+        </div>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle>My Phishing Pages</CardTitle>
+            <CardDescription>
+              Browse and manage your fake login pages for phishing campaigns
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {phishingPages?.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">No phishing pages found</p>
+                <div className="mt-6 flex flex-col gap-4 md:flex-row md:justify-center">
+                  <Button 
+                    variant="outline" 
+                    onClick={handleCloneWebsiteClick}
+                    className="flex items-center gap-2"
+                  >
+                    <Globe size={16} />
+                    Clone Website
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => navigate("/phishing-pages/new")}
+                    className="flex items-center gap-2"
+                  >
+                    <PlusCircle size={16} />
+                    Create Custom Page
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {phishingPages?.map((page) => (
+                    <TableRow key={page.id}>
+                      <TableCell className="font-medium">{page.name}</TableCell>
+                      <TableCell>
+                        {page.category ? (
+                          <Badge variant="outline" className="capitalize">
+                            {page.category}
+                          </Badge>
+                        ) : (
+                          "—"
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={page.is_custom ? "default" : "secondary"}>
+                          {page.is_custom ? "Custom" : "Cloned"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {format(new Date(page.created_at), "MMM d, yyyy")}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => handlePreview(page.id)}
+                                >
+                                  <Eye size={16} />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Preview</TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => handleEdit(page.id)}
+                                >
+                                  <Edit size={16} />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Edit</TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => handleDuplicatePage(page.id)}
+                                >
+                                  <Copy size={16} />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Duplicate</TooltipContent>
+                            </Tooltip>
+
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  disabled={isDeleting === page.id}
+                                  onClick={() => handleDeletePage(page.id)}
+                                >
+                                  <Trash2 size={16} />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Delete</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+      
+      <CloneWebsiteWarning 
+        open={showCloneWarning}
+        onOpenChange={setShowCloneWarning}
+        onProceed={handleCloneProceed}
+        onCancel={handleCloneCancel}
+      />
+    </DashboardLayout>
+  );
+};
+
+export default PhishingPages;

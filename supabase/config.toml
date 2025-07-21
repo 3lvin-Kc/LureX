@@ -1,0 +1,14 @@
+[functions.send-campaign-emails]
+verify_jwt = true
+
+[functions.serve-phishing-page]
+verify_jwt = false
+
+[functions.track-email-open]
+verify_jwt = false
+
+[functions.track-email-click]
+verify_jwt = false
+
+[functions.get-campaign-metrics]
+verify_jwt = true
