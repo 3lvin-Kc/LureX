@@ -181,18 +181,6 @@ const Campaigns = () => {
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
                               <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="outline"
-                                      size="icon"
-                                      onClick={() => navigate(`/campaigns/${campaign.id}/edit`)}
-                                    >
-                                      <Edit size={16} />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>Edit Campaign</TooltipContent>
-                                </Tooltip>
 
                                 {campaign.status === "draft" && (
                                   <Tooltip>
@@ -209,18 +197,7 @@ const Campaigns = () => {
                                   </Tooltip>
                                 )}
 
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="outline"
-                                      size="icon"
-                                      onClick={() => navigate(`/campaigns/${campaign.id}/results`)}
-                                    >
-                                      <BarChart3 size={16} />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>View Results</TooltipContent>
-                                </Tooltip>
+
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <Button

@@ -106,18 +106,6 @@ const TargetLists = () => {
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  onClick={() => navigate(`/target-lists/${list.id}/edit`)}
-                                >
-                                  <Edit size={16} />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Edit</TooltipContent>
-                            </Tooltip>
 
                             <Tooltip>
                               <TooltipTrigger asChild>

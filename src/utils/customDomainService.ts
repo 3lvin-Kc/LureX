@@ -114,8 +114,8 @@ export class CustomDomainService {
       },
       {
         type: 'TXT',
-        name: `_phishguard-verification.${domain}`,
-        value: `phishguard-verify=${crypto.randomUUID()}`,
+        name: `_LureX-verification.${domain}`,
+        value: `LureX-verify=${crypto.randomUUID()}`,
         ttl: 300
       }
     ];

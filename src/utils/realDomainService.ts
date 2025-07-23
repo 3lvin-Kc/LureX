@@ -61,8 +61,8 @@ export class RealDomainService {
       },
       {
         type: 'TXT',
-        name: `_phishguard-verification.${domain}`,
-        value: `phishguard-verify=${verificationToken}`,
+        name: `_LureX-verification.${domain}`,
+        value: `LureX-verify=${verificationToken}`,
         ttl: 300
       }
     ];

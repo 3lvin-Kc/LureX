@@ -106,18 +106,7 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ onSubmit, initialData }) =>
                 )}
               />
 
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="schedule"
-                  checked={isScheduled}
-                  onChange={(e) => setIsScheduled(e.target.checked)}
-                  className="rounded"
-                />
-                <label htmlFor="schedule" className="text-sm font-medium">
-                  Schedule campaign for later
-                </label>
-              </div>
+        
             </div>
 
             <FormField
@@ -138,31 +127,8 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ onSubmit, initialData }) =>
               )}
             />
 
-            {isScheduled && (
-              <FormField
-                control={form.control}
-                name="schedule_time"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      Schedule Time
-                    </FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="datetime-local"
-                        min={minDateTime}
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Choose when to automatically start this campaign
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
+           
+            
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <FormField

@@ -13,7 +13,7 @@ const Help = () => {
       <div className="container mx-auto p-4 max-w-6xl">
         <div className="mb-6">
           <h1 className="text-3xl font-bold">Help & Support</h1>
-          <p className="text-muted-foreground">Get help with PhishGuard platform features and functionality</p>
+          <p className="text-muted-foreground">Get help with LureX platform features and functionality</p>
         </div>
 
         <Tabs defaultValue="getting-started" className="space-y-6">
@@ -151,7 +151,7 @@ const Help = () => {
                   <AccordionItem value="item-2">
                     <AccordionTrigger>Can I use AI to generate email templates?</AccordionTrigger>
                     <AccordionContent>
-                      Yes! Use the "Generate with AI" button in the template editor. Select a category first, and AI will create professional phishing simulation content.
+                      Yes! Use the "Generate with AI" button in the template editor. Select a category first, and AI will create professional phishing simulation content (LureX AI is still in experimental version so it may not be working as expected)
                     </AccordionContent>
                   </AccordionItem>
                   <AccordionItem value="item-3">
@@ -196,7 +196,7 @@ const Help = () => {
                 </CardContent>
               </Card>
 
-              <Card>
+              {/*<Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Book className="h-5 w-5" />
@@ -217,7 +217,7 @@ const Help = () => {
                     Video Tutorials
                   </Button>
                 </CardContent>
-              </Card>
+              </Card>*/}
             </div>
           </TabsContent>
         </Tabs>

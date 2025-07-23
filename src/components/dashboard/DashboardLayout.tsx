@@ -63,8 +63,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-4">
             <Link to="/dashboard" className="flex items-center space-x-2">
-              <Shield className="h-8 w-8 text-blue-600" />
-              <span className="text-xl font-bold text-gray-900">PhishGuard</span>
+              
+              <span className="text-xl font-bold text-gray-900">LureX Security</span>
             </Link>
           </div>
           <div className="flex items-center space-x-4">

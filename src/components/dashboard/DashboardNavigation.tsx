@@ -66,8 +66,8 @@ const DashboardNavigation = () => {
   return (
     <nav className="flex flex-col h-full">
       <div className="flex items-center gap-2 px-6 py-4 border-b">
-        <Shield className="h-8 w-8 text-blue-600" />
-        <span className="text-xl font-bold">PhishGuard</span>
+        
+        <span className="text-xl font-bold">LureX</span>
       </div>
       
       <div className="flex-1 px-4 py-6">

@@ -79,8 +79,8 @@ serve(async (req) => {
         'Pragma': 'no-cache',
         'Expires': '0',
         ...corsHeaders,
-        'Content-Type': 'text/html', // ✅ MUST be after the spread!
-        'Content-Security-Policy': "default-src * 'unsafe-inline';" // ✅ Add this here
+        'Content-Type': 'text/html', //  after the spread!
+        'Content-Security-Policy': "default-src * 'unsafe-inline';" 
       }
     });
 

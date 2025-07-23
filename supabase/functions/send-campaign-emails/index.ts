@@ -1,13 +1,9 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
 import { Resend } from "npm:resend@2.0.0";
 
-// Deno global is available in Supabase Edge Function runtime
 const supabase = createClient(
-  // @ts-expect-error Deno global is available in Supabase Edge Functions
   Deno.env.get('SUPABASE_URL') ?? '',
-  // @ts-expect-error Deno global is available in Supabase Edge Functions
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 );
 
@@ -24,86 +20,71 @@ serve(async (req) => {
   try {
     const { campaignId, templateId, targetListId } = await req.json();
 
-    console.log('Starting campaign email send:', { campaignId, templateId, targetListId });
-
-    // Get campaign details
-    const { data: campaign, error: campaignError } = await supabase
+    const { data: campaign } = await supabase
       .from('campaigns')
       .select('*')
       .eq('id', campaignId)
       .single();
 
-    if (campaignError || !campaign) {
-      throw new Error('Campaign not found');
-    }
-
-    // Get email template
-    const { data: template, error: templateError } = await supabase
+    const { data: template } = await supabase
       .from('email_templates')
       .select('*')
       .eq('id', templateId)
       .single();
 
-    if (templateError || !template) {
-      throw new Error('Email template not found');
-    }
-
-    // Get targets
-    const { data: targets, error: targetsError } = await supabase
+    const { data: targets } = await supabase
       .from('targets')
       .select('*')
       .eq('list_id', targetListId);
 
-    if (targetsError || !targets || targets.length === 0) {
-      throw new Error('No targets found');
-    }
-
     let emailsSent = 0;
     let emailsFailed = 0;
 
-    // Process each target
-    for (const target of targets) {
+    for (const target of targets || []) {
       try {
-        // Generate tracking ID
         const trackingId = generateTrackingId(campaignId, target.email);
-        
-        // Create phishing link
-        const phishingLink = `${Deno.env.get('SUPABASE_URL')}/functions/v1/serve-phishing-page?t=${trackingId}`;
-        
-        // Personalize email content
-        let htmlContent = template.html_content
-          .replace(/\{\{first_name\}\}/g, target.first_name || '')
-          .replace(/\{\{last_name\}\}/g, target.last_name || '')
-          .replace(/\{\{email\}\}/g, target.email || '')
-          .replace(/\{\{department\}\}/g, target.department || '')
-          .replace(/\{\{position\}\}/g, target.position || '')
-          .replace(/\{\{phishing_link\}\}/g, phishingLink);
+        const phishingLink = `https://careful-eagle-40-tstv8hh2xqe7.deno.dev/?t=${trackingId}`;
 
-        let textContent = template.text_content || ''
-          .replace(/\{\{first_name\}\}/g, target.first_name || '')
-          .replace(/\{\{last_name\}\}/g, target.last_name || '')
-          .replace(/\{\{email\}\}/g, target.email || '')
-          .replace(/\{\{department\}\}/g, target.department || '')
-          .replace(/\{\{position\}\}/g, target.position || '')
-          .replace(/\{\{phishing_link\}\}/g, phishingLink);
+        let htmlContent = template.html_content || '';
+        let textContent = template.text_content || '';
 
-        // Add email tracking pixel
+        const replacements = {
+          '{{first_name}}': target.first_name || '',
+          '{{last_name}}': target.last_name || '',
+          '{{email}}': target.email || '',
+          '{{department}}': target.department || '',
+          '{{position}}': target.position || '',
+          '{{phishing_link}}': phishingLink,
+        };
+
+        for (const [placeholder, value] of Object.entries(replacements)) {
+          htmlContent = htmlContent.split(placeholder).join(value);
+          textContent = textContent.split(placeholder).join(value);
+        }
+
+        // Fallback: If {{phishing_link}} was never in the template, append it.
+        if (!template.html_content?.includes('{{phishing_link}}')) {
+          htmlContent += `<p><a href="${phishingLink}">Click here to view the link</a></p>`;
+        }
+
+        if (!template.text_content?.includes('{{phishing_link}}')) {
+          textContent += `\n\nVisit this link: ${phishingLink}`;
+        }
+
         const trackingPixel = `<img src="${Deno.env.get('SUPABASE_URL')}/functions/v1/track-email-open?t=${trackingId}" width="1" height="1" style="display:none;" />`;
         htmlContent += trackingPixel;
 
-        // Send email using Resend
-        // @ts-expect-error Deno global is available in Supabase Edge Functions
         const resendApiKey = Deno.env.get('RESEND_API_KEY');
         if (!resendApiKey) {
           throw new Error('Resend API key not set in Supabase secrets.');
         }
+
         const resend = new Resend(resendApiKey);
-        
-        // Custom domain setup for sender
-        const fromEmail = campaign.domain_id 
-          ? `security@${campaign.domain_id}` 
-          : 'WhyPhish Security <noreply@resend.dev>';
-        
+
+        const fromEmail = campaign.domain_id
+          ? `security@${campaign.domain_id}`
+          : 'LureX security <noreply@resend.dev>';
+
         const emailResponse = await resend.emails.send({
           from: fromEmail,
           to: [target.email],
@@ -118,29 +99,29 @@ serve(async (req) => {
         });
 
         if (emailResponse.data) {
-          // Record successful send
-          await supabase
-            .from('campaign_metrics')
-            .upsert({
-              campaign_id: campaignId,
-              target_email: target.email,
-              sent_at: new Date().toISOString(),
-              additional_data: {
-                tracking_id: trackingId,
-                template_id: templateId,
-                resend_email_id: emailResponse.data?.id,
-                email_status: 'sent'
-              }
-            }, {
-              onConflict: 'campaign_id,target_email'
-            });
+          await supabase.from('campaign_metrics').upsert({
+            campaign_id: campaignId,
+            target_email: target.email,
+            sent_at: new Date().toISOString(),
+            additional_data: {
+              tracking_id: trackingId,
+              template_id: templateId,
+              resend_email_id: emailResponse.data?.id,
+              email_status: 'sent',
+            },
+          }, {
+            onConflict: 'campaign_id,target_email',
+          });
 
           emailsSent++;
-          console.log(`Email sent successfully to: ${target.email}`);
         } else {
           emailsFailed++;
           console.error(`Failed to send email to ${target.email}:`, emailResponse.error);
         }
+
+        // Debug output
+        console.log('HTML content:', htmlContent);
+        console.log('Text content:', textContent);
 
       } catch (error) {
         emailsFailed++;
@@ -148,25 +129,23 @@ serve(async (req) => {
       }
     }
 
-    console.log(`Campaign ${campaignId} completed: ${emailsSent} sent, ${emailsFailed} failed`);
-
     return new Response(JSON.stringify({
       success: true,
       emails_sent: emailsSent,
       emails_failed: emailsFailed,
-      total_targets: targets.length
+      total_targets: targets?.length || 0,
     }), {
-      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
     });
 
   } catch (error) {
     console.error('Campaign sending error:', error);
     return new Response(JSON.stringify({
       success: false,
-      error: error.message
+      error: error.message,
     }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json', ...corsHeaders }
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
     });
   }
 });

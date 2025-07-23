@@ -9,7 +9,6 @@ import Dashboard from "./pages/Dashboard";
 import Campaigns from "./pages/Campaigns";
 import CreateCampaign from "./pages/CreateCampaign";
 import EditCampaign from "./pages/EditCampaign";
-import CampaignResults from "./pages/CampaignResults";
 import Templates from "./pages/Templates";
 import CreateTemplate from "./pages/CreateTemplate";
 import TargetLists from "./pages/TargetLists";
@@ -46,7 +45,6 @@ function App() {
             <Route path="/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
             <Route path="/campaigns/new" element={<ProtectedRoute><CreateCampaign /></ProtectedRoute>} />
             <Route path="/campaigns/:id/edit" element={<ProtectedRoute><EditCampaign /></ProtectedRoute>} />
-            <Route path="/campaigns/:id/results" element={<ProtectedRoute><CampaignResults /></ProtectedRoute>} />
             <Route path="/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
             <Route path="/templates/new" element={<ProtectedRoute><CreateTemplate /></ProtectedRoute>} />
             <Route path="/templates/:id/edit" element={<ProtectedRoute><CreateTemplate /></ProtectedRoute>} />
