@@ -80,21 +80,6 @@ CREATE TABLE public.campaigns (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create campaign metrics table
-CREATE TABLE public.campaign_metrics (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  campaign_id UUID REFERENCES public.campaigns ON DELETE CASCADE NOT NULL,
-  target_email TEXT NOT NULL,
-  sent_at TIMESTAMP WITH TIME ZONE,
-  delivered_at TIMESTAMP WITH TIME ZONE,
-  opened_at TIMESTAMP WITH TIME ZONE,
-  clicked_at TIMESTAMP WITH TIME ZONE,
-  data_submitted_at TIMESTAMP WITH TIME ZONE,
-  reported_at TIMESTAMP WITH TIME ZONE,
-  user_agent TEXT,
-  ip_address TEXT,
-  additional_data JSONB DEFAULT '{}'
-);
 
 -- Enable Row Level Security
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;

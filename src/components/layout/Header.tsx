@@ -42,8 +42,8 @@ const Header = () => {
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <Link to="/" className="flex items-center space-x-2">
-          <span className="text-xl font-bold text-primary">Phishing</span>
-          <span className="text-xl font-bold">Guardian</span>
+          <span className="text-xl font-bold text-primary">LureX</span>
+         
         </Link>
 
         {/* Desktop Navigation - Only Home and Features */}

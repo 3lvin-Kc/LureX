@@ -51,7 +51,7 @@ const Features = () => {
       icon: <Eye className="h-8 w-8" />,
       title: "Email Tracking",
       description: "Monitor email opens, clicks, and user interactions with invisible tracking pixels.",
-      highlights: ["Open Tracking", "Click Tracking", "Device Detection", "Geographic Data"]
+      highlights: ["Open Tracking", "Click Tracking"]
     },
     {
       icon: <Shield className="h-8 w-8" />,
@@ -69,8 +69,8 @@ const Features = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Button variant="ghost" onClick={() => navigate("/")}>
-                <span className="text-xl font-bold text-primary">Phishing</span>
-                <span className="text-xl font-bold ml-1">Guardian</span>
+                <span className="text-xl font-bold text-primary">LureX</span>
+              
               </Button>
             </div>
             <Button onClick={() => navigate("/dashboard")}>
@@ -83,9 +83,7 @@ const Features = () => {
       {/* Hero Section */}
       <div className="py-16 px-4">
         <div className="container mx-auto text-center">
-          <Badge variant="outline" className="mb-4">
-            Enterprise Security Platform
-          </Badge>
+          
           <h1 className="text-4xl md:text-6xl font-bold mb-6">
             Comprehensive Phishing
             <span className="text-primary block">Simulation Features</span>
@@ -94,7 +92,7 @@ const Features = () => {
             Everything you need to test, educate, and strengthen your organization's security posture against phishing attacks.
           </p>
           <Button size="lg" onClick={() => navigate("/dashboard")}>
-            Start Free Trial
+            Start Free 
           </Button>
         </div>
       </div>
@@ -184,10 +182,10 @@ const Features = () => {
         <div className="container mx-auto text-center">
           <h2 className="text-3xl font-bold mb-4">Ready to Strengthen Your Security?</h2>
           <p className="text-xl mb-8 opacity-90">
-            Join thousands of organizations using PhishGuard to improve their security awareness.
+            Join thousands of organizations using LureX to improve their security awareness.
           </p>
           <Button size="lg" variant="secondary" onClick={() => navigate("/dashboard")}>
-            Start Your Free Trial
+            Start Now
           </Button>
         </div>
       </div>

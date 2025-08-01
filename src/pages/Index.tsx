@@ -72,17 +72,26 @@ const Index = () => {
           <Badge variant="outline" className="mb-4 bg-white/50">
             🚀 Advanced Phishing Simulation Platform
           </Badge>
-          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
-            LureX Security
-            <span className="text-blue-600 block">Security Posture</span>
-          </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Train your employees to recognize and respond to phishing attacks with realistic simulations, 
-            comprehensive reporting, and AI-powered content generation.
-          </p>
+          <h1
+  className="text-5xl md:text-7xl font-extrabold text-gray-900 mb-6 leading-tight tracking-tight drop-shadow-md transition-transform duration-300 hover:scale-[1.02]"
+  style={{
+    fontFamily: "'Poppins', sans-serif",
+  }}
+>
+  LureX
+  <span className="text-blue-600 block drop-shadow-sm transition-transform duration-300 hover:-translate-y-1">
+    Lure. Trigger. Learn.
+  </span>
+</h1>
+
+<p className="text-xl text-gray-700 mb-10 max-w-3xl mx-auto leading-relaxed transition duration-300 hover:tracking-wider">
+  F*ck awareness posters — Run Real Phishing Ops
+</p>
+
+
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" onClick={() => navigate("/dashboard")} className="text-lg px-8">
-              Start Free Trial
+              Start Now
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
             <Button size="lg" variant="outline" onClick={() => navigate("/features")} className="text-lg px-8">

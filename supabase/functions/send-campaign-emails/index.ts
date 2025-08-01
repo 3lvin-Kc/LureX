@@ -83,7 +83,7 @@ serve(async (req) => {
 
         const fromEmail = campaign.domain_id
           ? `security@${campaign.domain_id}`
-          : 'LureX security <noreply@resend.dev>';
+          : 'WhyPhish Security <support@resend.dev>';
 
         const emailResponse = await resend.emails.send({
           from: fromEmail,

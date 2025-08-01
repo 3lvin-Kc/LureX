@@ -75,7 +75,7 @@ export class RealTimeTrackingService {
           metadata: newRecord.additional_data
         };
         
-        // Resolve geographic location if IP address is available
+         //Resolve geographic location if IP address is available
         if (newRecord.ip_address) {
           event.location = await this.resolveGeographicLocation(newRecord.ip_address);
         }

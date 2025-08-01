@@ -32,6 +32,27 @@ export const useTargetLists = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
+  const updateTargetCount = async (listId: string) => {
+    const { count, error: countError } = await supabase
+      .from('targets')
+      .select('*', { count: 'exact', head: true })
+      .eq('list_id', listId);
+
+    if (countError) throw countError;
+
+    const { error: updateError } = await supabase
+      .from('target_lists')
+      .update({ 
+        target_count: count || 0,
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', listId);
+
+    if (updateError) throw updateError;
+
+    return count || 0;
+  };
+
   const fetchTargetLists = async () => {
     if (!user) return;
 
@@ -58,18 +79,20 @@ export const useTargetLists = () => {
     if (!user) return;
 
     try {
+      // First create the list with 0 targets
       const { data: listData, error: listError } = await supabase
         .from('target_lists')
         .insert([{
           ...list,
           user_id: user.id,
-          target_count: targets.length,
+          target_count: 0, // Start with 0, will be updated after targets are added
         }])
         .select()
         .single();
 
       if (listError) throw listError;
 
+      // Add targets if any
       if (targets.length > 0) {
         const { error: targetsError } = await supabase
           .from('targets')
@@ -80,14 +103,26 @@ export const useTargetLists = () => {
 
         if (targetsError) throw targetsError;
       }
+
+      // Update the target count
+      await updateTargetCount(listData.id);
+
+      // Refresh the list to get updated count
+      const { data: updatedList, error: fetchError } = await supabase
+        .from('target_lists')
+        .select('*')
+        .eq('id', listData.id)
+        .single();
+
+      if (fetchError) throw fetchError;
       
-      setTargetLists(prev => [listData, ...prev]);
+      setTargetLists(prev => [updatedList, ...prev.filter(l => l.id !== listData.id)]);
       toast({
         title: "Success",
         description: "Target list created successfully",
       });
       
-      return listData;
+      return updatedList;
     } catch (error: any) {
       toast({
         title: "Error",
@@ -102,6 +137,15 @@ export const useTargetLists = () => {
     if (!user) return;
 
     try {
+      // First delete all targets in the list
+      const { error: deleteTargetsError } = await supabase
+        .from('targets')
+        .delete()
+        .eq('list_id', id);
+
+      if (deleteTargetsError) throw deleteTargetsError;
+
+      // Then delete the list
       const { error } = await supabase
         .from('target_lists')
         .delete()
@@ -112,7 +156,7 @@ export const useTargetLists = () => {
       setTargetLists(prev => prev.filter(list => list.id !== id));
       toast({
         title: "Success",
-        description: "Target list deleted successfully",
+        description: "Target list and all its targets deleted successfully",
       });
     } catch (error: any) {
       toast({
@@ -168,12 +212,36 @@ export const useTargetLists = () => {
     fetchTargetLists();
   }, [user]);
 
+  // Add a function to refresh a single target list
+  const refreshTargetList = async (listId: string) => {
+    try {
+      await updateTargetCount(listId);
+      const { data, error } = await supabase
+        .from('target_lists')
+        .select('*')
+        .eq('id', listId)
+        .single();
+
+      if (error) throw error;
+
+      setTargetLists(prev => 
+        prev.map(list => list.id === listId ? data : list)
+      );
+      
+      return data;
+    } catch (error) {
+      console.error('Error refreshing target list:', error);
+      throw error;
+    }
+  };
+
   return {
     targetLists,
     loading,
     createTargetList,
     deleteTargetList,
     exportTargetList,
+    refreshTargetList,
     refetchTargetLists: fetchTargetLists,
   };
 };
