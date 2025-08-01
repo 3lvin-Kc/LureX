@@ -36,17 +36,35 @@ const LiveMetricsDashboard: React.FC<LiveMetricsDashboardProps> = ({ maxEvents =
   useEffect(() => {
     fetchDashboardMetrics();
     
-    // Subscribe to real-time updates
+    // Subscribe to real-time updates for live feed
     const unsubscribe = realTimeSubscriptionService.subscribe(
-      'dashboard-metrics',
+      'dashboard-live-feed',
       (event) => {
-        setLiveEvents(prev => [event, ...prev.slice(0, maxEvents - 1)]); // Keep last 10 events
-        // Update relevant metrics based on the event
+        // Add new event to live feed with proper formatting
+        const formattedEvent = {
+          ...event,
+          timestamp: event.timestamp || new Date().toISOString(),
+        };
+        
+        setLiveEvents(prev => [formattedEvent, ...prev.slice(0, maxEvents - 1)]);
+        
+        // Update click-through rate metric in real-time
         if (event.eventType === 'clicked') {
-          setMetrics(prev => ({
-            ...prev,
-            clickThroughRate: prev.clickThroughRate + 0.1 // This would be calculated properly
-          }));
+          setMetrics(prev => {
+            const newClickedCount = prev.recentActivity.filter(m => m.clicked_at).length + 1;
+            const totalSent = prev.recentActivity.filter(m => m.sent_at).length;
+            const newClickThroughRate = totalSent > 0 ? (newClickedCount / totalSent) * 100 : 0;
+            
+            return {
+              ...prev,
+              clickThroughRate: newClickThroughRate
+            };
+          });
+        }
+        
+        // Refresh recent activity data periodically to include new metrics
+        if (Math.random() < 0.3) { // 30% chance to refresh on new events
+          fetchRecentActivity();
         }
       }
     );
@@ -54,7 +72,7 @@ const LiveMetricsDashboard: React.FC<LiveMetricsDashboardProps> = ({ maxEvents =
     return () => {
       unsubscribe();
     };
-  }, []);
+  }, [maxEvents]);
 
   const fetchDashboardMetrics = async () => {
     try {
@@ -77,18 +95,12 @@ const LiveMetricsDashboard: React.FC<LiveMetricsDashboardProps> = ({ maxEvents =
 
       const totalTargets = targetLists?.reduce((sum, list) => sum + (list.target_count || 0), 0) || 0;
 
-      // Fetch recent metrics
-      const { data: recentMetrics, error: metricsError } = await supabase
-        .from('campaign_metrics')
-        .select('*')
-        .order('sent_at', { ascending: false })
-        .limit(10);
+      // Fetch recent metrics with enhanced query
+      const recentActivity = await fetchRecentActivity();
 
-      if (metricsError) throw metricsError;
-
-      // Calculate click-through rate
-      const sentCount = recentMetrics?.filter(m => m.sent_at).length || 0;
-      const clickedCount = recentMetrics?.filter(m => m.clicked_at).length || 0;
+      // Calculate click-through rate from recent activity
+      const sentCount = recentActivity.filter(m => m.sent_at).length || 0;
+      const clickedCount = recentActivity.filter(m => m.clicked_at).length || 0;
       const clickThroughRate = sentCount > 0 ? (clickedCount / sentCount) * 100 : 0;
 
       setMetrics({
@@ -96,12 +108,53 @@ const LiveMetricsDashboard: React.FC<LiveMetricsDashboardProps> = ({ maxEvents =
         activeCampaigns,
         totalTargets,
         clickThroughRate,
-        recentActivity: recentMetrics || []
+        recentActivity
       });
     } catch (error) {
       console.error('Error fetching dashboard metrics:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchRecentActivity = async () => {
+    try {
+      // Fetch recent metrics with campaign names and enhanced details
+      const { data: recentMetrics, error: metricsError } = await supabase
+        .from('campaign_metrics')
+        .select(`
+          *,
+          campaigns!inner (
+            id,
+            name,
+            status,
+            created_at
+          )
+        `)
+        .order('sent_at', { ascending: false })
+        .limit(20);
+
+      if (metricsError) throw metricsError;
+
+      // Filter for active campaigns and recent activity (last 7 days)
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      
+      const filteredMetrics = recentMetrics?.filter(metric => {
+        const hasRecentActivity = metric.sent_at && new Date(metric.sent_at) > sevenDaysAgo;
+        return hasRecentActivity;
+      }) || [];
+
+      // Update recent activity in state
+      setMetrics(prev => ({
+        ...prev,
+        recentActivity: filteredMetrics.slice(0, 10)
+      }));
+
+      return filteredMetrics;
+    } catch (error) {
+      console.error('Error fetching recent activity:', error);
+      return [];
     }
   };
 
@@ -260,21 +313,40 @@ const LiveMetricsDashboard: React.FC<LiveMetricsDashboardProps> = ({ maxEvents =
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {metrics.recentActivity.map((activity) => (
-                    <TableRow key={activity.id}>
-                      <TableCell className="font-medium">{activity.target_email}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {getEventStatusIcon(activity)}
-                          {getEventStatus(activity)}
-                        </div>
+                  {metrics.recentActivity.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                        <Clock className="h-8 w-8 mx-auto mb-2 opacity-20" />
+                        <p>No recent campaign activity</p>
+                        <p className="text-sm">Activity will appear here once campaigns are launched</p>
                       </TableCell>
-                      <TableCell>
-                        {activity.sent_at ? format(new Date(activity.sent_at), 'MMM d, h:mm a') : '—'}
-                      </TableCell>
-                      <TableCell>{activity.campaign_id}</TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    metrics.recentActivity.map((activity) => (
+                      <TableRow key={activity.id}>
+                        <TableCell className="font-medium">{activity.target_email}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {getEventStatusIcon(activity)}
+                            {getEventStatus(activity)}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {activity.sent_at ? format(new Date(activity.sent_at), 'MMM d, h:mm a') : '—'}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-medium text-sm">
+                              {activity.campaigns?.name || 'Unknown Campaign'}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {activity.campaigns?.status || 'draft'}
+                            </span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
