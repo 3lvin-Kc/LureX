@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      benchmark_data: {
+        Row: {
+          company_size: string
+          id: string
+          industry: string
+          metric_name: string
+          metric_value: number
+          period_quarter: number | null
+          period_year: number
+          updated_at: string
+        }
+        Insert: {
+          company_size: string
+          id?: string
+          industry: string
+          metric_name: string
+          metric_value: number
+          period_quarter?: number | null
+          period_year: number
+          updated_at?: string
+        }
+        Update: {
+          company_size?: string
+          id?: string
+          industry?: string
+          metric_name?: string
+          metric_value?: number
+          period_quarter?: number | null
+          period_year?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       campaign_metrics: {
         Row: {
           additional_data: Json | null
@@ -141,6 +174,42 @@ export type Database = {
           },
         ]
       }
+      compliance_reports: {
+        Row: {
+          configuration: Json
+          created_at: string
+          framework_type: string
+          id: string
+          is_automated: boolean
+          last_generated_at: string | null
+          next_due_date: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          configuration?: Json
+          created_at?: string
+          framework_type: string
+          id?: string
+          is_automated?: boolean
+          last_generated_at?: string | null
+          next_due_date?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          configuration?: Json
+          created_at?: string
+          framework_type?: string
+          id?: string
+          is_automated?: boolean
+          last_generated_at?: string | null
+          next_due_date?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       custom_domains: {
         Row: {
           created_at: string
@@ -222,6 +291,39 @@ export type Database = {
         }
         Relationships: []
       }
+      executive_dashboards: {
+        Row: {
+          configuration: Json
+          created_at: string
+          id: string
+          is_default: boolean
+          name: string
+          updated_at: string
+          user_id: string
+          widgets: Json
+        }
+        Insert: {
+          configuration?: Json
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name: string
+          updated_at?: string
+          user_id: string
+          widgets?: Json
+        }
+        Update: {
+          configuration?: Json
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          updated_at?: string
+          user_id?: string
+          widgets?: Json
+        }
+        Relationships: []
+      }
       phishing_pages: {
         Row: {
           category: string | null
@@ -293,6 +395,143 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      report_templates: {
+        Row: {
+          configuration: Json
+          created_at: string
+          description: string | null
+          id: string
+          is_public: boolean
+          name: string
+          report_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          configuration?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          name: string
+          report_type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          configuration?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          name?: string
+          report_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      roi_metrics: {
+        Row: {
+          campaign_id: string | null
+          cost_per_training_hour: number | null
+          created_at: string
+          id: string
+          incident_cost_average: number | null
+          incident_prevention_count: number | null
+          period_end: string
+          period_start: string
+          total_roi: number | null
+          training_hours_saved: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          cost_per_training_hour?: number | null
+          created_at?: string
+          id?: string
+          incident_cost_average?: number | null
+          incident_prevention_count?: number | null
+          period_end: string
+          period_start: string
+          total_roi?: number | null
+          training_hours_saved?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string | null
+          cost_per_training_hour?: number | null
+          created_at?: string
+          id?: string
+          incident_cost_average?: number | null
+          incident_prevention_count?: number | null
+          period_end?: string
+          period_start?: string
+          total_roi?: number | null
+          training_hours_saved?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      scheduled_reports: {
+        Row: {
+          created_at: string
+          delivery_format: string
+          description: string | null
+          id: string
+          is_active: boolean
+          last_sent_at: string | null
+          name: string
+          next_send_at: string | null
+          recipients: Json
+          report_template_id: string | null
+          schedule_cron: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          delivery_format?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          last_sent_at?: string | null
+          name: string
+          next_send_at?: string | null
+          recipients?: Json
+          report_template_id?: string | null
+          schedule_cron: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          delivery_format?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          last_sent_at?: string | null
+          name?: string
+          next_send_at?: string | null
+          recipients?: Json
+          report_template_id?: string | null
+          schedule_cron?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_scheduled_reports_report_template"
+            columns: ["report_template_id"]
+            isOneToOne: false
+            referencedRelation: "report_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       target_lists: {
         Row: {
