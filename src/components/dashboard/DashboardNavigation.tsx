@@ -11,7 +11,8 @@ import {
   LogOut,
   Shield,
   Mail,
-  Settings
+  Settings,
+  TrendingUp
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -51,6 +52,11 @@ const navigationItems = [
     name: 'Reports',
     href: '/reports',
     icon: BarChart3,
+  },
+  {
+    name: 'Advanced Reports',
+    href: '/advanced-reports',
+    icon: TrendingUp,
   },
   {
     name: 'Settings',
