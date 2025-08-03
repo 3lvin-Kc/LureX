@@ -202,6 +202,20 @@ const Templates = () => {
             )}
           </CardContent>
         </Card>
+          </TabsContent>
+
+          <TabsContent value="intelligent">
+            <IntelligentTemplateEngine 
+              onTemplateCreated={() => {
+                refetchTemplates();
+                toast({
+                  title: "Template Created",
+                  description: "Intelligent template created successfully",
+                });
+              }}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   );

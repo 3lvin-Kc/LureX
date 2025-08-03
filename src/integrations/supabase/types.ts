@@ -210,6 +210,48 @@ export type Database = {
         }
         Relationships: []
       }
+      context_events: {
+        Row: {
+          created_at: string | null
+          event_data: Json
+          event_date: string
+          event_description: string | null
+          event_title: string
+          event_type: string
+          id: string
+          is_active: boolean | null
+          relevance_score: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_data?: Json
+          event_date: string
+          event_description?: string | null
+          event_title: string
+          event_type: string
+          id?: string
+          is_active?: boolean | null
+          relevance_score?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          event_data?: Json
+          event_date?: string
+          event_description?: string | null
+          event_title?: string
+          event_type?: string
+          id?: string
+          is_active?: boolean | null
+          relevance_score?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       custom_domains: {
         Row: {
           created_at: string
@@ -252,11 +294,15 @@ export type Database = {
       email_templates: {
         Row: {
           category: string | null
+          context_aware: boolean | null
           created_at: string | null
           description: string | null
+          dynamic_content: boolean | null
           html_content: string
           id: string
+          industry_type: string | null
           name: string
+          personalization_variables: Json | null
           subject: string
           text_content: string | null
           updated_at: string | null
@@ -265,11 +311,15 @@ export type Database = {
         }
         Insert: {
           category?: string | null
+          context_aware?: boolean | null
           created_at?: string | null
           description?: string | null
+          dynamic_content?: boolean | null
           html_content: string
           id?: string
+          industry_type?: string | null
           name: string
+          personalization_variables?: Json | null
           subject: string
           text_content?: string | null
           updated_at?: string | null
@@ -278,11 +328,15 @@ export type Database = {
         }
         Update: {
           category?: string | null
+          context_aware?: boolean | null
           created_at?: string | null
           description?: string | null
+          dynamic_content?: boolean | null
           html_content?: string
           id?: string
+          industry_type?: string | null
           name?: string
+          personalization_variables?: Json | null
           subject?: string
           text_content?: string | null
           updated_at?: string | null
@@ -321,6 +375,36 @@ export type Database = {
           updated_at?: string
           user_id?: string
           widgets?: Json
+        }
+        Relationships: []
+      }
+      industry_templates: {
+        Row: {
+          created_at: string | null
+          id: string
+          industry_type: string
+          sophistication_level: string | null
+          template_data: Json
+          template_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          industry_type: string
+          sophistication_level?: string | null
+          template_data: Json
+          template_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          industry_type?: string
+          sophistication_level?: string | null
+          template_data?: Json
+          template_name?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -609,6 +693,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      template_variables: {
+        Row: {
+          created_at: string | null
+          data_mapping: Json
+          data_source: string
+          description: string | null
+          id: string
+          industry_specific: boolean | null
+          name: string
+          updated_at: string | null
+          user_id: string
+          variable_key: string
+        }
+        Insert: {
+          created_at?: string | null
+          data_mapping?: Json
+          data_source: string
+          description?: string | null
+          id?: string
+          industry_specific?: boolean | null
+          name: string
+          updated_at?: string | null
+          user_id: string
+          variable_key: string
+        }
+        Update: {
+          created_at?: string | null
+          data_mapping?: Json
+          data_source?: string
+          description?: string | null
+          id?: string
+          industry_specific?: boolean | null
+          name?: string
+          updated_at?: string | null
+          user_id?: string
+          variable_key?: string
+        }
+        Relationships: []
       }
     }
     Views: {
