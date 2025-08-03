@@ -25,7 +25,7 @@ import { ScheduledReport, ReportTemplate } from '@/hooks/useAdvancedReports';
 interface ScheduledReportingProps {
   scheduledReports: ScheduledReport[];
   reportTemplates: ReportTemplate[];
-  onCreateScheduledReport: (report: Omit<ScheduledReport, 'id'>) => Promise<void>;
+  onCreateScheduledReport: (report: Omit<ScheduledReport, 'id'>) => Promise<any>;
 }
 
 const ScheduledReporting: React.FC<ScheduledReportingProps> = ({

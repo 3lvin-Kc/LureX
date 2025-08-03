@@ -37,7 +37,7 @@ interface ReportWidget {
 
 interface CustomReportBuilderProps {
   templates: ReportTemplate[];
-  onCreateTemplate: (template: Omit<ReportTemplate, 'id'>) => Promise<void>;
+  onCreateTemplate: (template: Omit<ReportTemplate, 'id'>) => Promise<any>;
 }
 
 const CustomReportBuilder: React.FC<CustomReportBuilderProps> = ({ 
