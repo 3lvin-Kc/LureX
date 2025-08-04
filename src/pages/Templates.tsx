@@ -5,17 +5,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { PlusCircle, Edit, Trash2, Copy, Eye, Wand2 } from "lucide-react";
 import { format } from "date-fns";
 import { useTemplates } from "@/hooks/useTemplates";
+import { IntelligentTemplateEngine } from "@/components/templates/IntelligentTemplateEngine";
 
 const Templates = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { templates, loading, deleteTemplate, createTemplate } = useTemplates();
+  const { templates, loading, deleteTemplate, createTemplate, refetchTemplates } = useTemplates();
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   const handleDeleteTemplate = async (id: string) => {
@@ -91,117 +93,124 @@ const Templates = () => {
           </div>
         </div>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle>Template Library</CardTitle>
-            <CardDescription>
-              Browse and manage your email templates for phishing campaigns
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex justify-center items-center h-32">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              </div>
-            ) : templates.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground mb-4">No templates found</p>
-                <Button onClick={() => navigate("/templates/new")}> 
-                  <PlusCircle size={16} className="mr-2" />
-                  Create Your First Template
-                </Button>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Subject</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Version</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {templates.map((template) => (
-                    <TableRow key={template.id}>
-                      <TableCell className="font-medium">{template.name}</TableCell>
-                      <TableCell>{template.subject}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="capitalize">
-                          {template.category}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>v{template.version}</TableCell>
-                      <TableCell>
-                        {format(new Date(template.created_at), "MMM d, yyyy")}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  onClick={() => navigate(`/templates/${template.id}/preview`)}
-                                >
-                                  <Eye size={16} />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Preview</TooltipContent>
-                            </Tooltip>
+        <Tabs defaultValue="library" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="library">Template Library</TabsTrigger>
+            <TabsTrigger value="intelligent">Intelligent Engine</TabsTrigger>
+          </TabsList>
 
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  onClick={() => navigate(`/templates/${template.id}/edit`)}
-                                >
-                                  <Edit size={16} />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Edit</TooltipContent>
-                            </Tooltip>
+          <TabsContent value="library">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle>Template Library</CardTitle>
+                <CardDescription>
+                  Browse and manage your email templates for phishing campaigns
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="flex justify-center items-center h-32">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                  </div>
+                ) : templates.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground mb-4">No templates found</p>
+                    <Button onClick={() => navigate("/templates/new")}> 
+                      <PlusCircle size={16} className="mr-2" />
+                      Create Your First Template
+                    </Button>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Subject</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Version</TableHead>
+                        <TableHead>Created</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {templates.map((template) => (
+                        <TableRow key={template.id}>
+                          <TableCell className="font-medium">{template.name}</TableCell>
+                          <TableCell>{template.subject}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="capitalize">
+                              {template.category}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>v{template.version}</TableCell>
+                          <TableCell>
+                            {format(new Date(template.created_at), "MMM d, yyyy")}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      onClick={() => navigate(`/templates/${template.id}/preview`)}
+                                    >
+                                      <Eye size={16} />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Preview</TooltipContent>
+                                </Tooltip>
 
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  onClick={() => handleDuplicateTemplate(template.id)}
-                                >
-                                  <Copy size={16} />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Duplicate</TooltipContent>
-                            </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      onClick={() => navigate(`/templates/${template.id}/edit`)}
+                                    >
+                                      <Edit size={16} />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Edit</TooltipContent>
+                                </Tooltip>
 
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  disabled={isDeleting === template.id}
-                                  onClick={() => handleDeleteTemplate(template.id)}
-                                >
-                                  <Trash2 size={16} />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Delete</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      onClick={() => handleDuplicateTemplate(template.id)}
+                                    >
+                                      <Copy size={16} />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Duplicate</TooltipContent>
+                                </Tooltip>
+
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      disabled={isDeleting === template.id}
+                                      onClick={() => handleDeleteTemplate(template.id)}
+                                    >
+                                      <Trash2 size={16} />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Delete</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="intelligent">
