@@ -208,7 +208,10 @@ export const SocialMediaDashboard = () => {
         <SocialMediaCampaignForm
           open={showCampaignForm}
           onClose={() => setShowCampaignForm(false)}
-          onSubmit={createSocialMediaCampaign}
+          onSubmit={async (data) => {
+            await createSocialMediaCampaign(data);
+            setShowCampaignForm(false);
+          }}
           platforms={platforms}
           templates={templates}
         />
