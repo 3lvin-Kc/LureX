@@ -27,8 +27,6 @@ import Auth from "./pages/Auth";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import TemplatePreview from "./pages/TemplatePreview";
 import AdvancedReports from "./pages/AdvancedReports";
-import SocialMedia from "./pages/SocialMedia";
-import Training from "./pages/Training";
 
 const queryClient = new QueryClient();
 
@@ -63,8 +61,6 @@ function App() {
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
             <Route path="/advanced-reports" element={<ProtectedRoute><AdvancedReports /></ProtectedRoute>} />
-            <Route path="/social-media" element={<ProtectedRoute><SocialMedia /></ProtectedRoute>} />
-            <Route path="/training" element={<ProtectedRoute><Training /></ProtectedRoute>} />
           </Routes>
         </Router>
         </AuthProvider>
