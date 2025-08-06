@@ -346,14 +346,20 @@ export type Database = {
           created_at: string | null
           description: string | null
           dynamic_content: boolean | null
+          effectiveness_score: number | null
           html_content: string
           id: string
           industry_type: string | null
           name: string
           personalization_variables: Json | null
+          source_template_id: string | null
           subject: string
+          tags: string[] | null
+          template_history: Json | null
+          template_source: string | null
           text_content: string | null
           updated_at: string | null
+          usage_count: number | null
           user_id: string
           version: number | null
         }
@@ -363,14 +369,20 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           dynamic_content?: boolean | null
+          effectiveness_score?: number | null
           html_content: string
           id?: string
           industry_type?: string | null
           name: string
           personalization_variables?: Json | null
+          source_template_id?: string | null
           subject: string
+          tags?: string[] | null
+          template_history?: Json | null
+          template_source?: string | null
           text_content?: string | null
           updated_at?: string | null
+          usage_count?: number | null
           user_id: string
           version?: number | null
         }
@@ -380,18 +392,32 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           dynamic_content?: boolean | null
+          effectiveness_score?: number | null
           html_content?: string
           id?: string
           industry_type?: string | null
           name?: string
           personalization_variables?: Json | null
+          source_template_id?: string | null
           subject?: string
+          tags?: string[] | null
+          template_history?: Json | null
+          template_source?: string | null
           text_content?: string | null
           updated_at?: string | null
+          usage_count?: number | null
           user_id?: string
           version?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "email_templates_source_template_id_fkey"
+            columns: ["source_template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       executive_dashboards: {
         Row: {
@@ -986,6 +1012,54 @@ export type Database = {
             columns: ["list_id"]
             isOneToOne: false
             referencedRelation: "target_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      template_analytics: {
+        Row: {
+          campaign_id: string | null
+          id: string
+          metadata: Json | null
+          metric_type: string
+          metric_value: number
+          recorded_at: string
+          template_id: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          id?: string
+          metadata?: Json | null
+          metric_type: string
+          metric_value: number
+          recorded_at?: string
+          template_id: string
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string | null
+          id?: string
+          metadata?: Json | null
+          metric_type?: string
+          metric_value?: number
+          recorded_at?: string
+          template_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_analytics_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "template_analytics_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
             referencedColumns: ["id"]
           },
         ]
