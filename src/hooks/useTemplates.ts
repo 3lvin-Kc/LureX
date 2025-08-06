@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -15,6 +14,14 @@ export interface EmailTemplate {
   version: number;
   created_at: string;
   updated_at: string;
+  template_source?: 'manual' | 'ai_generated' | 'industry_template' | 'duplicated';
+  source_template_id?: string;
+  template_history?: any[];
+  effectiveness_score?: number;
+  usage_count?: number;
+  tags?: string[];
+  industry_type?: string;
+  personalization_variables?: any;
 }
 
 export const useTemplates = () => {
@@ -33,7 +40,7 @@ export const useTemplates = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setTemplates(data || []);
+      setTemplates((data || []) as EmailTemplate[]);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -45,7 +52,7 @@ export const useTemplates = () => {
     }
   };
 
-  const createTemplate = async (template: Omit<EmailTemplate, 'id' | 'created_at' | 'updated_at'>) => {
+  const createTemplate = async (template: Omit<EmailTemplate, 'id' | 'created_at' | 'updated_at'>, options?: { source?: 'manual' | 'ai_generated' | 'industry_template' | 'duplicated', sourceTemplateId?: string }) => {
     if (!user) return;
 
     try {
@@ -54,13 +61,19 @@ export const useTemplates = () => {
         .insert([{
           ...template,
           user_id: user.id,
+          template_source: options?.source || 'manual',
+          source_template_id: options?.sourceTemplateId || null,
+          template_history: [],
+          effectiveness_score: 0,
+          usage_count: 0,
+          tags: template.tags || [],
         }])
         .select()
         .single();
 
       if (error) throw error;
       
-      setTemplates(prev => [data, ...prev]);
+      setTemplates(prev => [data as EmailTemplate, ...prev]);
       toast({
         title: "Success",
         description: "Email template created successfully",
@@ -91,7 +104,7 @@ export const useTemplates = () => {
       if (error) throw error;
       
       setTemplates(prev => prev.map(template => 
-        template.id === id ? data : template
+        template.id === id ? data as EmailTemplate : template
       ));
       
       toast({
@@ -136,6 +149,85 @@ export const useTemplates = () => {
     }
   };
 
+  const handleDuplicateTemplate = async (templateId: string) => {
+    const templateToDuplicate = templates.find(t => t.id === templateId);
+    if (!templateToDuplicate) {
+      toast({
+        title: "Template not found",
+        description: "Could not find the template to duplicate.",
+        variant: "destructive"
+      });
+      return;
+    }
+    try {
+      await createTemplate({
+        name: `${templateToDuplicate.name} (Copy)`,
+        subject: templateToDuplicate.subject,
+        category: templateToDuplicate.category,
+        html_content: templateToDuplicate.html_content,
+        text_content: templateToDuplicate.text_content,
+        description: templateToDuplicate.description,
+        version: 1,
+        tags: templateToDuplicate.tags || [],
+        industry_type: templateToDuplicate.industry_type,
+        personalization_variables: templateToDuplicate.personalization_variables,
+      }, { 
+        source: 'duplicated', 
+        sourceTemplateId: templateToDuplicate.id 
+      });
+      toast({
+        title: "Template duplicated",
+        description: `"${templateToDuplicate.name}" has been duplicated successfully`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error duplicating template",
+        description: "Failed to duplicate email template",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Get template analytics
+  const getTemplateAnalytics = async (templateId: string) => {
+    if (!user) return [];
+
+    try {
+      const { data, error } = await supabase
+        .from('template_analytics')
+        .select('*')
+        .eq('template_id', templateId)
+        .order('recorded_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error: any) {
+      console.error('Error fetching template analytics:', error);
+      return [];
+    }
+  };
+
+  // Record template analytics
+  const recordTemplateAnalytics = async (templateId: string, metricType: string, metricValue: number, campaignId?: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('template_analytics')
+        .insert([{
+          template_id: templateId,
+          user_id: user.id,
+          metric_type: metricType,
+          metric_value: metricValue,
+          campaign_id: campaignId,
+        }]);
+
+      if (error) throw error;
+    } catch (error: any) {
+      console.error('Error recording template analytics:', error);
+    }
+  };
+
   useEffect(() => {
     fetchTemplates();
   }, [user]);
@@ -147,5 +239,8 @@ export const useTemplates = () => {
     updateTemplate,
     deleteTemplate,
     refetchTemplates: fetchTemplates,
+    handleDuplicateTemplate,
+    getTemplateAnalytics,
+    recordTemplateAnalytics,
   };
 };
