@@ -1,14 +1,11 @@
-
 import React, { useState } from 'react';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Settings as SettingsIcon, Globe, User, Bell, Shield } from 'lucide-react';
 import CustomDomainManager from '@/components/domains/CustomDomainManager';
-
 const Settings = () => {
-  return (
-    <DashboardLayout>
+  return <DashboardLayout>
       <div className="container mx-auto p-4 max-w-6xl">
         <div className="mb-6">
           <h1 className="text-3xl font-bold flex items-center gap-2">
@@ -26,14 +23,8 @@ const Settings = () => {
               <Globe className="h-4 w-4" />
               Domains
             </TabsTrigger>
-            <TabsTrigger value="profile" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Profile
-            </TabsTrigger>
-            <TabsTrigger value="notifications" className="flex items-center gap-2">
-              <Bell className="h-4 w-4" />
-              Notifications
-            </TabsTrigger>
+            
+            
             <TabsTrigger value="security" className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
               Security
@@ -87,8 +78,6 @@ const Settings = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </DashboardLayout>
-  );
+    </DashboardLayout>;
 };
-
 export default Settings;
