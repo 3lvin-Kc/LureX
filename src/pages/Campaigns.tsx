@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { PlusCircle, BarChart3, Send, Clock, AlertCircle, CheckCircle, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,13 +11,17 @@ import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { useCampaigns } from "@/hooks/useCampaigns";
 import { format } from "date-fns";
-
 const Campaigns = () => {
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("all");
-  const { campaigns, loading, updateCampaignStatus } = useCampaigns();
-
+  const {
+    campaigns,
+    loading,
+    updateCampaignStatus
+  } = useCampaigns();
   const handleStartCampaign = async (campaignId: string) => {
     try {
       await updateCampaignStatus(campaignId, 'in_progress');
@@ -26,7 +29,6 @@ const Campaigns = () => {
       // Error handling is done in the hook
     }
   };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case "draft":
@@ -43,7 +45,6 @@ const Campaigns = () => {
         return "bg-gray-100 text-gray-800";
     }
   };
-
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "draft":
@@ -60,23 +61,15 @@ const Campaigns = () => {
         return null;
     }
   };
-
-  const filteredCampaigns = activeTab === "all" 
-    ? campaigns 
-    : campaigns?.filter(campaign => campaign.status === activeTab);
-
-  return (
-    <DashboardLayout>
+  const filteredCampaigns = activeTab === "all" ? campaigns : campaigns?.filter(campaign => campaign.status === activeTab);
+  return <DashboardLayout>
       <div className="container mx-auto p-4 max-w-7xl">
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-bold">Campaigns</h1>
             <p className="text-muted-foreground">Manage your phishing simulation campaigns</p>
           </div>
-          <Button 
-            onClick={() => navigate("/campaigns/new")}
-            className="flex items-center gap-2"
-          >
+          <Button onClick={() => navigate("/campaigns/new")} className="flex items-center gap-2">
             <PlusCircle size={16} />
             New Campaign
           </Button>
@@ -90,34 +83,21 @@ const Campaigns = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs 
-              defaultValue="all" 
-              className="w-full"
-              onValueChange={setActiveTab}
-            >
+            <Tabs defaultValue="all" className="w-full" onValueChange={setActiveTab}>
               <TabsList className="grid grid-cols-5 w-full">
                 <TabsTrigger value="all">All</TabsTrigger>
                 <TabsTrigger value="draft">Draft</TabsTrigger>
-                <TabsTrigger value="scheduled">Scheduled</TabsTrigger>
+                
                 <TabsTrigger value="in_progress">In Progress</TabsTrigger>
                 <TabsTrigger value="completed">Completed</TabsTrigger>
               </TabsList>
               <TabsContent value={activeTab} className="mt-4">
-                {loading ? (
-                  <div className="text-center py-8">Loading campaigns...</div>
-                ) : filteredCampaigns?.length === 0 ? (
-                  <div className="text-center py-8">
+                {loading ? <div className="text-center py-8">Loading campaigns...</div> : filteredCampaigns?.length === 0 ? <div className="text-center py-8">
                     <p className="text-muted-foreground">No campaigns found</p>
-                    <Button 
-                      variant="outline" 
-                      className="mt-4"
-                      onClick={() => navigate("/campaigns/new")}
-                    >
+                    <Button variant="outline" className="mt-4" onClick={() => navigate("/campaigns/new")}>
                       Create Campaign
                     </Button>
-                  </div>
-                ) : (
-                  <Table>
+                  </div> : <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Campaign Name</TableHead>
@@ -129,8 +109,7 @@ const Campaigns = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredCampaigns?.map((campaign) => (
-                        <TableRow key={campaign.id}>
+                      {filteredCampaigns?.map(campaign => <TableRow key={campaign.id}>
                           <TableCell className="font-medium">{campaign.name}</TableCell>
                           <TableCell>{campaign.template?.name || "—"}</TableCell>
                           <TableCell>{campaign.target_list?.name || "—"}</TableCell>
@@ -141,48 +120,32 @@ const Campaigns = () => {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            {campaign.schedule_time 
-                              ? format(new Date(campaign.schedule_time), "MMM d, yyyy h:mm a")
-                              : "—"}
+                            {campaign.schedule_time ? format(new Date(campaign.schedule_time), "MMM d, yyyy h:mm a") : "—"}
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
                               <TooltipProvider>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <Button
-                                      variant="outline"
-                                      size="icon"
-                                      onClick={() => navigate(`/campaigns/${campaign.id}/edit`)}
-                                    >
+                                    <Button variant="outline" size="icon" onClick={() => navigate(`/campaigns/${campaign.id}/edit`)}>
                                       <Edit size={16} />
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>Edit Campaign</TooltipContent>
                                 </Tooltip>
 
-                                {campaign.status === "draft" && (
-                                  <Tooltip>
+                                {campaign.status === "draft" && <Tooltip>
                                     <TooltipTrigger asChild>
-                                      <Button
-                                        variant="outline"
-                                        size="icon"
-                                        onClick={() => handleStartCampaign(campaign.id)}
-                                      >
+                                      <Button variant="outline" size="icon" onClick={() => handleStartCampaign(campaign.id)}>
                                         <Send size={16} />
                                       </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>Start Campaign</TooltipContent>
-                                  </Tooltip>
-                                )}
+                                  </Tooltip>}
 
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <Button
-                                      variant="outline"
-                                      size="icon"
-                                      onClick={() => navigate(`/campaigns/${campaign.id}/results`)}
-                                    >
+                                    <Button variant="outline" size="icon" onClick={() => navigate(`/campaigns/${campaign.id}/results`)}>
                                       <BarChart3 size={16} />
                                     </Button>
                                   </TooltipTrigger>
@@ -191,18 +154,14 @@ const Campaigns = () => {
                               </TooltipProvider>
                             </div>
                           </TableCell>
-                        </TableRow>
-                      ))}
+                        </TableRow>)}
                     </TableBody>
-                  </Table>
-                )}
+                  </Table>}
               </TabsContent>
             </Tabs>
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
-  );
+    </DashboardLayout>;
 };
-
 export default Campaigns;
