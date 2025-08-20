@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { BarChart3, Download, Filter, Calendar, Users, Mail, MousePointer } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,14 +11,18 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { useReports } from "@/hooks/useReports";
 import { useCampaigns } from "@/hooks/useCampaigns";
-
 const Reports = () => {
   const navigate = useNavigate();
   const [selectedCampaign, setSelectedCampaign] = useState("all");
   const [dateRange, setDateRange] = useState("30");
-  const { reportData, loading, exportReport } = useReports();
-  const { campaigns } = useCampaigns();
-
+  const {
+    reportData,
+    loading,
+    exportReport
+  } = useReports();
+  const {
+    campaigns
+  } = useCampaigns();
   const handleExportPDF = async () => {
     try {
       await exportReport('pdf');
@@ -27,7 +30,6 @@ const Reports = () => {
       console.error('Failed to export PDF:', error);
     }
   };
-
   const handleExportCSV = async () => {
     try {
       await exportReport('csv');
@@ -35,21 +37,16 @@ const Reports = () => {
       console.error('Failed to export CSV:', error);
     }
   };
-
   if (loading) {
-    return (
-      <DashboardLayout>
+    return <DashboardLayout>
         <div className="container mx-auto p-4 max-w-7xl">
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
           </div>
         </div>
-      </DashboardLayout>
-    );
+      </DashboardLayout>;
   }
-
-  return (
-    <DashboardLayout>
+  return <DashboardLayout>
       <div className="container mx-auto p-4 max-w-7xl">
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -80,11 +77,9 @@ const Reports = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Campaigns</SelectItem>
-                    {campaigns.map(campaign => (
-                      <SelectItem key={campaign.id} value={campaign.id}>
+                    {campaigns.map(campaign => <SelectItem key={campaign.id} value={campaign.id}>
                         {campaign.name}
-                      </SelectItem>
-                    ))}
+                      </SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -154,8 +149,8 @@ const Reports = () => {
           <TabsList className="mb-6">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="campaigns">Campaign Details</TabsTrigger>
-            <TabsTrigger value="departments">Department Analysis</TabsTrigger>
-            <TabsTrigger value="trends">Trends</TabsTrigger>
+            
+            
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -167,8 +162,7 @@ const Reports = () => {
                   <CardDescription>Email interactions by campaign</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {reportData?.campaignData && reportData.campaignData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={300}>
+                  {reportData?.campaignData && reportData.campaignData.length > 0 ? <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={reportData.campaignData}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="name" />
@@ -179,47 +173,16 @@ const Reports = () => {
                         <Bar dataKey="clicked" fill="#ffc658" name="Clicked" />
                         <Bar dataKey="submitted" fill="#ff7300" name="Submitted" />
                       </BarChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="flex items-center justify-center h-64 text-muted-foreground">
+                    </ResponsiveContainer> : <div className="flex items-center justify-center h-64 text-muted-foreground">
                       No campaign data available
-                    </div>
-                  )}
+                    </div>}
                 </CardContent>
               </Card>
 
               {/* Department Vulnerability */}
               <Card>
-                <CardHeader>
-                  <CardTitle>Department Analysis</CardTitle>
-                  <CardDescription>Risk by department</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {reportData?.departmentData && reportData.departmentData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={300}>
-                      <PieChart>
-                        <Pie
-                          data={reportData.departmentData}
-                          cx="50%"
-                          cy="50%"
-                          outerRadius={100}
-                          fill="#8884d8"
-                          dataKey="value"
-                          label
-                        >
-                          {reportData.departmentData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="flex items-center justify-center h-64 text-muted-foreground">
-                      No department data available
-                    </div>
-                  )}
-                </CardContent>
+                
+                
               </Card>
             </div>
           </TabsContent>
@@ -231,14 +194,12 @@ const Reports = () => {
                 <CardDescription>Detailed performance metrics for each campaign</CardDescription>
               </CardHeader>
               <CardContent>
-                {reportData?.campaignData && reportData.campaignData.length > 0 ? (
-                  <div className="space-y-4">
-                    {reportData.campaignData.map((campaign, index) => (
-                      <div key={index} className="border rounded-lg p-4">
+                {reportData?.campaignData && reportData.campaignData.length > 0 ? <div className="space-y-4">
+                    {reportData.campaignData.map((campaign, index) => <div key={index} className="border rounded-lg p-4">
                         <div className="flex justify-between items-center mb-2">
                           <h4 className="font-medium">{campaign.name}</h4>
                           <Badge variant="outline">
-                            {campaign.sent > 0 ? Math.round((campaign.clicked / campaign.sent) * 100) : 0}% click rate
+                            {campaign.sent > 0 ? Math.round(campaign.clicked / campaign.sent * 100) : 0}% click rate
                           </Badge>
                         </div>
                         <div className="grid grid-cols-4 gap-4 text-sm">
@@ -259,14 +220,10 @@ const Reports = () => {
                             <p className="font-medium">{campaign.submitted}</p>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
+                      </div>)}
+                  </div> : <div className="text-center py-8 text-muted-foreground">
                     No campaign data available
-                  </div>
-                )}
+                  </div>}
               </CardContent>
             </Card>
           </TabsContent>
@@ -278,29 +235,22 @@ const Reports = () => {
                 <CardDescription>Security awareness by department</CardDescription>
               </CardHeader>
               <CardContent>
-                {reportData?.departmentData && reportData.departmentData.length > 0 ? (
-                  <div className="space-y-4">
-                    {reportData.departmentData.map((dept, index) => (
-                      <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
+                {reportData?.departmentData && reportData.departmentData.length > 0 ? <div className="space-y-4">
+                    {reportData.departmentData.map((dept, index) => <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
                         <div className="flex items-center space-x-4">
-                          <div 
-                            className="w-4 h-4 rounded"
-                            style={{ backgroundColor: dept.color }}
-                          ></div>
+                          <div className="w-4 h-4 rounded" style={{
+                      backgroundColor: dept.color
+                    }}></div>
                           <span className="font-medium">{dept.name}</span>
                         </div>
                         <div className="flex items-center space-x-4">
                           <Progress value={dept.value} className="w-32" />
                           <span className="text-sm font-medium">{dept.value}%</span>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
+                      </div>)}
+                  </div> : <div className="text-center py-8 text-muted-foreground">
                     No department data available
-                  </div>
-                )}
+                  </div>}
               </CardContent>
             </Card>
           </TabsContent>
@@ -320,8 +270,6 @@ const Reports = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </DashboardLayout>
-  );
+    </DashboardLayout>;
 };
-
 export default Reports;
