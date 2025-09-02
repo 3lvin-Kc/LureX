@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/components/auth/AuthProvider";
 import { useEffect } from "react";
 import { securityLogger, SecurityEventType } from "@/utils/securityLogger";
 import Index from "./pages/Index";
@@ -95,11 +96,12 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>  
+            <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/features" element={<Features />} />
             <Route path="/guide" element={<Guide />} />
@@ -130,9 +132,10 @@ const App = () => {
             <Route path="/phishing-pages/:id/preview" element={<PhishingPagePreview />} />
             <Route path="/phishing-pages/:id/edit" element={<EditPhishingPage />} />
             <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 };
