@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, Code, Save, X, Plus, Info } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { createSecureIframeDoc } from "@/utils/htmlSanitizer";
 
 const formSchema = z.object({
   name: z.string().min(1, "Template name is required"),
@@ -128,12 +129,10 @@ const EnhancedTemplateEditor: React.FC<EnhancedTemplateEditorProps> = ({
   useEffect(() => {
     if (activeTab === "preview" && iframeRef.current) {
       const iframe = iframeRef.current;
-      const doc = iframe.contentDocument || iframe.contentWindow?.document;
-      if (doc) {
-        doc.open();
-        doc.write(previewContent || form.getValues("html_content"));
-        doc.close();
-      }
+      const htmlContent = previewContent || form.getValues("html_content");
+      iframe.src = 'data:text/html;charset=utf-8,' + encodeURIComponent(
+        createSecureIframeDoc(htmlContent, '', '')
+      );
     }
   }, [activeTab, previewContent]);
 

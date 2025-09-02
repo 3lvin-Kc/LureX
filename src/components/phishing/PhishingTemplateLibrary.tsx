@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Globe, Mail, CreditCard, Cloud } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { sanitizePhishingPageHtml } from "@/utils/htmlSanitizer";
 
 export interface PhishingTemplate {
   id: string;
@@ -143,7 +144,7 @@ const PhishingTemplateLibrary: React.FC<PhishingTemplateLibraryProps> = ({ onSel
             <div className="border rounded-md p-2 mb-4 bg-gray-50 max-h-32 overflow-hidden">
               <div 
                 className="text-xs transform scale-75 origin-top-left"
-                dangerouslySetInnerHTML={{ __html: template.htmlContent }}
+                dangerouslySetInnerHTML={{ __html: sanitizePhishingPageHtml(template.htmlContent) }}
               />
             </div>
             <Button 

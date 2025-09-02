@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { ArrowLeft, Edit, LoaderCircle } from "lucide-react";
 import { usePhishingPages } from "@/hooks/usePhishingPages";
+import { createSecureIframeDoc } from "@/utils/htmlSanitizer";
 
 const PhishingPagePreview = () => {
   const { id } = useParams<{ id: string }>();
@@ -88,18 +89,11 @@ const PhishingPagePreview = () => {
           <CardContent>
             <div className="border rounded-lg bg-white">
               <iframe
-                srcDoc={`
-                  <!DOCTYPE html>
-                  <html>
-                    <head>
-                      <style>${page.css_content || ''}</style>
-                    </head>
-                    <body>
-                      ${page.html_content}
-                      <script>${page.js_content || ''}</script>
-                    </body>
-                  </html>
-                `}
+                srcDoc={createSecureIframeDoc(
+                  page.html_content,
+                  page.css_content,
+                  page.js_content
+                )}
                 className="w-full h-96 border-0"
                 title="Page Preview"
               />

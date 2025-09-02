@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoaderCircle, Eye } from "lucide-react";
+import { sanitizeEmailHtml } from "@/utils/htmlSanitizer";
 
 const formSchema = z.object({
   name: z.string().min(1, { message: "Template name is required" }),
@@ -230,7 +231,7 @@ const TemplateForm: React.FC<TemplateFormProps> = ({ onSubmit, initialData, isEd
                   </div>
                   <div className="border rounded-lg p-4 bg-white min-h-64">
                     {previewHtml ? (
-                      <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
+                      <div dangerouslySetInnerHTML={{ __html: sanitizeEmailHtml(previewHtml) }} />
                     ) : (
                       <p className="text-muted-foreground">Click "Update Preview" to see how your email will look</p>
                     )}
