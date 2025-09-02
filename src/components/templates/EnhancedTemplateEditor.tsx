@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { createSecureStringSchema, createCampaignNameSchema, createTemplateContentSchema } from "@/utils/inputValidation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -16,12 +17,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { createSecureIframeDoc } from "@/utils/htmlSanitizer";
 
 const formSchema = z.object({
-  name: z.string().min(1, "Template name is required"),
-  subject: z.string().min(1, "Subject is required"),
-  category: z.string().min(1, "Category is required"),
-  description: z.string().optional(),
-  html_content: z.string().min(1, "HTML content is required"),
-  text_content: z.string().optional(),
+  name: createCampaignNameSchema(),
+  subject: createSecureStringSchema(1, 200),
+  category: createSecureStringSchema(1, 50),
+  description: createSecureStringSchema(0, 500).optional(),
+  html_content: createTemplateContentSchema(),
+  text_content: createSecureStringSchema(0, 10000).optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
