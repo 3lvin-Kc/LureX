@@ -209,10 +209,7 @@ const CreateTemplate = () => {
                     <Label htmlFor="subject">Email Subject</Label>
                     <div className="flex gap-2">
                       <Input id="subject" placeholder="Enter email subject line" className="flex-1" required value={form.subject} onChange={handleChange} />
-                      <Button type="button" variant="outline" onClick={handleGenerateWithAI} className="flex items-center gap-2">
-                        <Sparkles size={16} />
-                        AI Generate
-                      </Button>
+                      
                     </div>
                   </div>
 
@@ -232,10 +229,7 @@ const CreateTemplate = () => {
                               <Eye size={14} />
                               Preview
                             </Button>
-                            <Button type="button" variant="outline" size="sm" onClick={handleGenerateWithAI} className="flex items-center gap-2">
-                              <Sparkles size={14} />
-                              Generate with AI
-                            </Button>
+                            
                           </div>
                         </div>
                         <Textarea ref={textareaRef} id="html_content" className="min-h-96 font-mono text-sm" placeholder="Enter your email content here..." required value={form.html_content} onChange={handleChange} />
