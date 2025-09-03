@@ -4,11 +4,10 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import { Wand2, Bot, Archive } from "lucide-react";
+import { Bot, Archive } from "lucide-react";
 import { useTemplates } from "@/hooks/useTemplates";
 import { TemplateLibrary } from "@/components/templates/TemplateLibrary";
 import { AITemplateGenerator } from "@/components/templates/AITemplateGenerator";
-import { IntelligentTemplateEngine } from "@/components/templates/IntelligentTemplateEngine";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Templates = () => {
@@ -37,13 +36,6 @@ const Templates = () => {
     });
   };
 
-  const handleIntelligentTemplateCreated = () => {
-    refetchTemplates();
-    toast({
-      title: "Template Created",
-      description: "Intelligent template created successfully",
-    });
-  };
 
   return (
     <DashboardLayout>
@@ -56,7 +48,7 @@ const Templates = () => {
         </div>
 
         <Tabs defaultValue="library" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="library" className="flex items-center gap-2">
               <Archive size={16} />
               Template Library
@@ -64,10 +56,6 @@ const Templates = () => {
             <TabsTrigger value="ai-generator" className="flex items-center gap-2">
               <Bot size={16} />
               AI Generator
-            </TabsTrigger>
-            <TabsTrigger value="intelligent" className="flex items-center gap-2">
-              <Wand2 size={16} />
-              Intelligent Engine
             </TabsTrigger>
           </TabsList>
 
@@ -83,10 +71,6 @@ const Templates = () => {
 
           <TabsContent value="ai-generator">
             <AITemplateGenerator onTemplateGenerated={handleTemplateGenerated} />
-          </TabsContent>
-
-          <TabsContent value="intelligent">
-            <IntelligentTemplateEngine onTemplateCreated={handleIntelligentTemplateCreated} />
           </TabsContent>
         </Tabs>
       </div>

@@ -168,7 +168,10 @@ export const usePhishingPages = () => {
   };
 
   useEffect(() => {
-    fetchPhishingPages();
+    // Only fetch when user is defined (not null/undefined)
+    if (user !== undefined) {
+      fetchPhishingPages();
+    }
   }, [user]);
 
   return {

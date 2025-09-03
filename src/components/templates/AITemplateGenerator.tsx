@@ -12,6 +12,8 @@ import { Badge } from '@/components/ui/badge';
 import { Sparkles, Bot, Target, Zap, Settings, Eye } from 'lucide-react';
 import { useTemplates } from '@/hooks/useTemplates';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import DOMPurify from 'dompurify';
 
 interface AITemplateGeneratorProps {
   onTemplateGenerated?: (template: any) => void;
@@ -83,35 +85,53 @@ export const AITemplateGenerator: React.FC<AITemplateGeneratorProps> = ({
     setProgress(0);
 
     try {
-      // Simulate AI generation process with progress updates
-      const steps = [
-        { message: "Analyzing industry context...", progress: 20 },
-        { message: "Generating template structure...", progress: 40 },
-        { message: "Personalizing content...", progress: 60 },
-        { message: "Optimizing effectiveness...", progress: 80 },
-        { message: "Finalizing template...", progress: 100 }
-      ];
+      // Progress simulation
+      setProgress(20);
+      
+      // Build comprehensive prompt for AI generation
+      const prompt = buildPrompt(formData);
+      
+      setProgress(40);
 
-      for (const step of steps) {
-        await new Promise(resolve => setTimeout(resolve, 800));
-        setProgress(step.progress);
+      // Call AI service
+      const { data, error } = await supabase.functions.invoke('generate-template-ai', {
+        body: { 
+          category: formData.target_industry,
+          prompt: prompt
+        }
+      });
+
+      setProgress(80);
+
+      if (error) throw error;
+
+      if (!data.success || !data.template) {
+        throw new Error('Failed to generate template');
       }
 
-      // Mock generated template - In real implementation, this would call AI service
-      const mockTemplate = {
-        name: formData.template_name || `${formData.campaign_type.replace(/_/g, ' ')} - ${formData.target_industry}`,
-        subject: generateMockSubject(formData),
+      const aiTemplate = data.template;
+      
+      // Create properly formatted template with sanitized content
+      const template = {
+        name: formData.template_name || aiTemplate.name || `${formData.campaign_type.replace(/_/g, ' ')} - ${formData.target_industry}`,
+        subject: aiTemplate.subject || `Urgent: Action Required`,
         category: formData.target_industry,
-        html_content: generateMockContent(formData),
-        text_content: generateMockTextContent(formData),
-        description: `AI-generated ${formData.campaign_type.replace(/_/g, ' ')} template for ${formData.target_industry} industry`,
+        html_content: DOMPurify.sanitize(aiTemplate.html_content || '<p>Template content could not be generated.</p>', {
+          ALLOWED_TAGS: ['p', 'div', 'span', 'h1', 'h2', 'h3', 'h4', 'strong', 'em', 'ul', 'ol', 'li', 'a', 'br', 'table', 'tr', 'td', 'th'],
+          ALLOWED_ATTR: ['style', 'href', 'target'],
+          FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'input'],
+        }),
+        text_content: aiTemplate.text_content || aiTemplate.html_content?.replace(/<[^>]*>/g, '') || '',
+        description: aiTemplate.description || `AI-generated ${formData.campaign_type.replace(/_/g, ' ')} template for ${formData.target_industry} industry`,
         version: 1,
         industry_type: formData.target_industry,
+        template_source: 'ai_generated',
         personalization_variables: {
           sophistication_level: formData.sophistication_level,
           tone: formData.tone,
           urgency_level: formData.urgency_level,
-          ai_generated: true
+          ai_generated: true,
+          generation_params: formData
         },
         tags: [
           formData.campaign_type,
@@ -121,17 +141,19 @@ export const AITemplateGenerator: React.FC<AITemplateGeneratorProps> = ({
         ]
       };
 
-      setGeneratedTemplate(mockTemplate);
+      setProgress(100);
+      setGeneratedTemplate(template);
 
       toast({
         title: "Template Generated!",
         description: "AI has successfully created your template. Review and save it below.",
       });
 
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Template generation error:', error);
       toast({
         title: "Generation Failed",
-        description: "Failed to generate template. Please try again.",
+        description: error.message || "Failed to generate template. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -139,13 +161,42 @@ export const AITemplateGenerator: React.FC<AITemplateGeneratorProps> = ({
     }
   };
 
+  const buildPrompt = (data: any): string => {
+    return `Generate a professional phishing email template for cybersecurity awareness training with the following specifications:
+
+**Campaign Type:** ${data.campaign_type.replace(/_/g, ' ')}
+**Target Industry:** ${data.target_industry}
+**Sophistication Level:** ${data.sophistication_level}
+**Communication Tone:** ${data.tone}
+**Urgency Level:** ${data.urgency_level}
+
+${data.company_context ? `**Company Context:** ${data.company_context}` : ''}
+${data.specific_request ? `**Specific Requirements:** ${data.specific_request}` : ''}
+
+**CRITICAL REQUIREMENTS:**
+1. This is for AUTHORIZED SECURITY AWARENESS TRAINING ONLY
+2. Include realistic but EDUCATIONAL elements appropriate for ${data.target_industry}
+3. Use ${data.sophistication_level} level sophistication
+4. Maintain a ${data.tone} tone throughout
+5. Include industry-specific terminology and context
+6. Add subtle urgency indicators if urgency level is medium/high
+7. Include personalization placeholders like {{first_name}}, {{company_name}}, {{position}}
+8. Make it realistic enough to test employee awareness but clearly educational in nature
+
+Please respond with a JSON object containing:
+- name: A descriptive name for the template
+- subject: An engaging email subject line appropriate for the campaign type
+- html_content: Professional HTML email content with inline CSS styling that is email-client compatible
+- description: Brief description of the template's purpose and effectiveness
+
+Focus on creating content that would realistically test employee security awareness while being appropriate for training purposes in the ${data.target_industry} industry.`;
+  };
+
   const handleSaveTemplate = async () => {
     if (!generatedTemplate) return;
 
     try {
-      const savedTemplate = await createTemplate(generatedTemplate, {
-        source: 'ai_generated'
-      });
+      const savedTemplate = await createTemplate(generatedTemplate);
 
       if (savedTemplate && onTemplateGenerated) {
         onTemplateGenerated(savedTemplate);
@@ -428,6 +479,14 @@ export const AITemplateGenerator: React.FC<AITemplateGeneratorProps> = ({
                     {generatedTemplate.description}
                   </p>
                 </div>
+
+                <Alert>
+                  <Bot className="h-4 w-4" />
+                  <AlertDescription>
+                    This template was generated using AI and has been sanitized for security. 
+                    Always review content before using in campaigns.
+                  </AlertDescription>
+                </Alert>
               </CardContent>
             </Card>
           </TabsContent>
@@ -436,90 +495,3 @@ export const AITemplateGenerator: React.FC<AITemplateGeneratorProps> = ({
     </div>
   );
 };
-
-// Helper functions for mock generation
-function generateMockSubject(formData: any): string {
-  const subjects = {
-    credential_harvesting: [
-      "Urgent: Your account will be suspended",
-      "Security Alert: Unusual login activity detected",
-      "Action Required: Verify your account immediately"
-    ],
-    business_email_compromise: [
-      "Urgent Wire Transfer Request",
-      "Confidential: Change in banking details",
-      "Invoice Payment - Updated Account Information"
-    ],
-    ceo_fraud: [
-      "Confidential Request from CEO",
-      "Urgent: Acquisition Details",
-      "Private: Board Meeting Preparation"
-    ]
-  };
-  
-  const categorySubjects = subjects[formData.campaign_type as keyof typeof subjects] || [
-    "Important Update Required",
-    "Urgent: Action Needed",
-    "Security Notice"
-  ];
-  
-  return categorySubjects[Math.floor(Math.random() * categorySubjects.length)];
-}
-
-function generateMockContent(formData: any): string {
-  return `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px;">
-        <h2 style="color: #333; margin-bottom: 20px;">{{company_name}} Security Notice</h2>
-        
-        <p>Dear {{first_name}} {{last_name}},</p>
-        
-        <p>We've detected unusual activity on your {{company_name}} account and need you to verify your credentials immediately to prevent account suspension.</p>
-        
-        <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0;">
-          <strong>⚠️ Action Required:</strong> Please verify your account within 24 hours to maintain access.
-        </div>
-        
-        <p>Click the button below to verify your account:</p>
-        
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="{{tracking_link}}" style="background-color: #007bff; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
-            Verify Account Now
-          </a>
-        </div>
-        
-        <p>If you don't verify your account, it will be temporarily suspended for security purposes.</p>
-        
-        <p>Best regards,<br>
-        {{company_name}} Security Team</p>
-        
-        <hr style="margin-top: 30px; border: none; border-top: 1px solid #eee;">
-        <p style="font-size: 12px; color: #666;">
-          This email was sent to {{email}}. If you believe this was sent in error, please contact our support team.
-        </p>
-      </div>
-    </div>
-  `;
-}
-
-function generateMockTextContent(formData: any): string {
-  return `
-    {{company_name}} Security Notice
-
-    Dear {{first_name}} {{last_name}},
-
-    We've detected unusual activity on your {{company_name}} account and need you to verify your credentials immediately to prevent account suspension.
-
-    ACTION REQUIRED: Please verify your account within 24 hours to maintain access.
-
-    Verify your account here: {{tracking_link}}
-
-    If you don't verify your account, it will be temporarily suspended for security purposes.
-
-    Best regards,
-    {{company_name}} Security Team
-
-    ---
-    This email was sent to {{email}}. If you believe this was sent in error, please contact our support team.
-  `;
-}
