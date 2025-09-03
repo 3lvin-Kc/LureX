@@ -1,4 +1,3 @@
-
 import React, { useRef } from "react";
 import { useParams } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
@@ -16,22 +15,31 @@ import { useTemplates } from "@/hooks/useTemplates";
 import VariableAutocomplete from "@/components/templates/VariableAutocomplete";
 import SmartTemplateSuggestions, { TemplateSuggestion } from "@/components/templates/SmartTemplateSuggestions";
 import TemplateEffectivenessScorer from "@/components/templates/TemplateEffectivenessScorer";
-
 const CreateTemplate = () => {
-  const { id } = useParams<{ id: string }>();
+  const {
+    id
+  } = useParams<{
+    id: string;
+  }>();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const { createTemplate, updateTemplate, templates, loading } = useTemplates();
+  const {
+    toast
+  } = useToast();
+  const {
+    createTemplate,
+    updateTemplate,
+    templates,
+    loading
+  } = useTemplates();
   const isEditing = !!id;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
   const [form, setForm] = React.useState({
     name: "",
     subject: "",
     category: "",
     html_content: "",
     text_content: "",
-    description: "",
+    description: ""
   });
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState("editor");
@@ -48,20 +56,23 @@ const CreateTemplate = () => {
           category: found.category || "",
           html_content: found.html_content || "",
           text_content: found.text_content || "",
-          description: found.description || "",
+          description: found.description || ""
         });
       }
     }
   }, [isEditing, id, templates]);
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setForm({ ...form, [e.target.id]: e.target.value });
+    setForm({
+      ...form,
+      [e.target.id]: e.target.value
+    });
   };
-
   const handleCategoryChange = (value: string) => {
-    setForm({ ...form, category: value });
+    setForm({
+      ...form,
+      category: value
+    });
   };
-
   const handleGenerateWithAI = () => {
     toast({
       title: "Feature In Development",
@@ -69,16 +80,17 @@ const CreateTemplate = () => {
       duration: 5000
     });
   };
-
   const handleVariableInsert = (variable: string) => {
     if (textareaRef.current) {
       const textarea = textareaRef.current;
       const start = textarea.selectionStart;
       const end = textarea.selectionEnd;
       const newValue = form.html_content.substring(0, start) + `{{${variable}}}` + form.html_content.substring(end);
-      
-      setForm({ ...form, html_content: newValue });
-      
+      setForm({
+        ...form,
+        html_content: newValue
+      });
+
       // Restore cursor position
       setTimeout(() => {
         textarea.focus();
@@ -86,7 +98,6 @@ const CreateTemplate = () => {
       }, 0);
     }
   };
-
   const handleSuggestionSelect = (suggestion: TemplateSuggestion) => {
     setForm({
       ...form,
@@ -94,21 +105,18 @@ const CreateTemplate = () => {
       subject: suggestion.subject,
       category: suggestion.category,
       html_content: suggestion.html_content,
-      description: suggestion.description,
+      description: suggestion.description
     });
     setActiveTab("editor");
   };
-
   const handleSuggestionPreview = (suggestion: TemplateSuggestion) => {
     setPreviewContent(suggestion.html_content);
     setActiveTab("preview");
   };
-
   const handlePreview = () => {
     setPreviewContent(form.html_content);
     setActiveTab("preview");
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -120,7 +128,7 @@ const CreateTemplate = () => {
           category: form.category || "general",
           html_content: form.html_content,
           text_content: form.text_content,
-          description: form.description,
+          description: form.description
         });
       } else {
         await createTemplate({
@@ -130,7 +138,7 @@ const CreateTemplate = () => {
           html_content: form.html_content,
           text_content: form.text_content,
           description: form.description,
-          version: 1,
+          version: 1
         });
       }
       navigate("/templates");
@@ -140,15 +148,9 @@ const CreateTemplate = () => {
       setIsSubmitting(false);
     }
   };
-
-  return (
-    <DashboardLayout>
+  return <DashboardLayout>
       <div className="container mx-auto p-4 max-w-4xl">
-        <Button 
-          variant="ghost" 
-          className="mb-4" 
-          onClick={() => navigate("/templates")}
-        >
+        <Button variant="ghost" className="mb-4" onClick={() => navigate("/templates")}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Templates
         </Button>
@@ -158,9 +160,7 @@ const CreateTemplate = () => {
             {isEditing ? "Edit Email Template" : "Create New Email Template"}
           </h1>
           <p className="text-muted-foreground">
-            {isEditing 
-              ? "Make changes to your existing template" 
-              : "Create a new phishing email template that can be used in campaigns"}
+            {isEditing ? "Make changes to your existing template" : "Create a new phishing email template that can be used in campaigns"}
           </p>
         </div>
 
@@ -185,13 +185,7 @@ const CreateTemplate = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="name">Template Name</Label>
-                      <Input
-                        id="name"
-                        placeholder="Enter template name"
-                        required
-                        value={form.name}
-                        onChange={handleChange}
-                      />
+                      <Input id="name" placeholder="Enter template name" required value={form.name} onChange={handleChange} />
                     </div>
 
                     <div className="space-y-2">
@@ -214,20 +208,8 @@ const CreateTemplate = () => {
                   <div className="space-y-2">
                     <Label htmlFor="subject">Email Subject</Label>
                     <div className="flex gap-2">
-                      <Input
-                        id="subject"
-                        placeholder="Enter email subject line"
-                        className="flex-1"
-                        required
-                        value={form.subject}
-                        onChange={handleChange}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleGenerateWithAI}
-                        className="flex items-center gap-2"
-                      >
+                      <Input id="subject" placeholder="Enter email subject line" className="flex-1" required value={form.subject} onChange={handleChange} />
+                      <Button type="button" variant="outline" onClick={handleGenerateWithAI} className="flex items-center gap-2">
                         <Sparkles size={16} />
                         AI Generate
                       </Button>
@@ -236,13 +218,7 @@ const CreateTemplate = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="description">Description (Optional)</Label>
-                    <Textarea
-                      id="description"
-                      className="min-h-20"
-                      placeholder="Brief description (optional)"
-                      value={form.description}
-                      onChange={handleChange}
-                    />
+                    <Textarea id="description" className="min-h-20" placeholder="Brief description (optional)" value={form.description} onChange={handleChange} />
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -252,75 +228,37 @@ const CreateTemplate = () => {
                         <div className="flex items-center justify-between">
                           <Label htmlFor="html_content">Email Content</Label>
                           <div className="flex gap-2">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={handlePreview}
-                              className="flex items-center gap-2"
-                            >
+                            <Button type="button" variant="outline" size="sm" onClick={handlePreview} className="flex items-center gap-2">
                               <Eye size={14} />
                               Preview
                             </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={handleGenerateWithAI}
-                              className="flex items-center gap-2"
-                            >
+                            <Button type="button" variant="outline" size="sm" onClick={handleGenerateWithAI} className="flex items-center gap-2">
                               <Sparkles size={14} />
                               Generate with AI
                             </Button>
                           </div>
                         </div>
-                        <Textarea 
-                          ref={textareaRef}
-                          id="html_content"
-                          className="min-h-96 font-mono text-sm"
-                          placeholder="Enter your email content here..."
-                          required
-                          value={form.html_content}
-                          onChange={handleChange}
-                        />
+                        <Textarea ref={textareaRef} id="html_content" className="min-h-96 font-mono text-sm" placeholder="Enter your email content here..." required value={form.html_content} onChange={handleChange} />
                       </div>
 
                       <div className="space-y-2">
                         <Label htmlFor="text_content">Plain Text Content (Optional)</Label>
-                        <Textarea
-                          id="text_content"
-                          className="min-h-32"
-                          placeholder="Enter plain text version (optional)"
-                          value={form.text_content}
-                          onChange={handleChange}
-                        />
+                        <Textarea id="text_content" className="min-h-32" placeholder="Enter plain text version (optional)" value={form.text_content} onChange={handleChange} />
                       </div>
                     </div>
 
                     {/* Variable Autocomplete */}
                     <div className="space-y-4">
-                      <div>
-                        <h3 className="text-lg font-medium mb-3">Variables & Tools</h3>
-                        <VariableAutocomplete
-                          textareaRef={textareaRef}
-                          onVariableInsert={handleVariableInsert}
-                          selectedCategory={form.category}
-                        />
-                      </div>
+                      
                     </div>
                   </div>
 
                   <div className="flex justify-end gap-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => navigate("/templates")}
-                      disabled={isSubmitting}
-                    >
+                    <Button type="button" variant="outline" onClick={() => navigate("/templates")} disabled={isSubmitting}>
                       Cancel
                     </Button>
                     <Button type="submit" disabled={isSubmitting}>
-                      {isSubmitting ? (isEditing ? "Updating..." : "Creating...") : (isEditing ? "Update Template" : "Create Template")}
+                      {isSubmitting ? isEditing ? "Updating..." : "Creating..." : isEditing ? "Update Template" : "Create Template"}
                     </Button>
                   </div>
                 </form>
@@ -329,11 +267,7 @@ const CreateTemplate = () => {
           </TabsContent>
 
           <TabsContent value="suggestions">
-            <SmartTemplateSuggestions
-              selectedCategory={form.category}
-              onSuggestionSelect={handleSuggestionSelect}
-              onSuggestionPreview={handleSuggestionPreview}
-            />
+            <SmartTemplateSuggestions selectedCategory={form.category} onSuggestionSelect={handleSuggestionSelect} onSuggestionPreview={handleSuggestionPreview} />
           </TabsContent>
 
           <TabsContent value="preview">
@@ -364,17 +298,11 @@ const CreateTemplate = () => {
                       <h4 className="font-medium">Email Content</h4>
                     </div>
                     <div className="p-4 bg-white">
-                      {previewContent || form.html_content ? (
-                        <div 
-                          dangerouslySetInnerHTML={{ 
-                            __html: previewContent || form.html_content 
-                          }} 
-                        />
-                      ) : (
-                        <p className="text-muted-foreground text-center py-8">
+                      {previewContent || form.html_content ? <div dangerouslySetInnerHTML={{
+                      __html: previewContent || form.html_content
+                    }} /> : <p className="text-muted-foreground text-center py-8">
                           Add content to see preview
-                        </p>
-                      )}
+                        </p>}
                     </div>
                   </div>
                 </div>
@@ -383,22 +311,17 @@ const CreateTemplate = () => {
           </TabsContent>
 
           <TabsContent value="analysis">
-            <TemplateEffectivenessScorer
-              templateContent={{
-                subject: form.subject,
-                html_content: form.html_content,
-                text_content: form.text_content,
-                category: form.category
-              }}
-              onScoreUpdate={(metrics) => {
-                console.log("Template effectiveness metrics:", metrics);
-              }}
-            />
+            <TemplateEffectivenessScorer templateContent={{
+            subject: form.subject,
+            html_content: form.html_content,
+            text_content: form.text_content,
+            category: form.category
+          }} onScoreUpdate={metrics => {
+            console.log("Template effectiveness metrics:", metrics);
+          }} />
           </TabsContent>
         </Tabs>
       </div>
-    </DashboardLayout>
-  );
+    </DashboardLayout>;
 };
-
 export default CreateTemplate;
