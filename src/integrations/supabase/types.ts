@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -59,6 +59,39 @@ export type Database = {
           strength_areas?: Json | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      audit_log: {
+        Row: {
+          action: string
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+          row_id: string | null
+          table_name: string
+          timestamp: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          row_id?: string | null
+          table_name: string
+          timestamp?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          row_id?: string | null
+          table_name?: string
+          timestamp?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -254,48 +287,6 @@ export type Database = {
           last_generated_at?: string | null
           next_due_date?: string | null
           updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      context_events: {
-        Row: {
-          created_at: string | null
-          event_data: Json
-          event_date: string
-          event_description: string | null
-          event_title: string
-          event_type: string
-          id: string
-          is_active: boolean | null
-          relevance_score: number | null
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          event_data?: Json
-          event_date: string
-          event_description?: string | null
-          event_title: string
-          event_type: string
-          id?: string
-          is_active?: boolean | null
-          relevance_score?: number | null
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          event_data?: Json
-          event_date?: string
-          event_description?: string | null
-          event_title?: string
-          event_type?: string
-          id?: string
-          is_active?: boolean | null
-          relevance_score?: number | null
-          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
@@ -1064,45 +1055,6 @@ export type Database = {
           },
         ]
       }
-      template_variables: {
-        Row: {
-          created_at: string | null
-          data_mapping: Json
-          data_source: string
-          description: string | null
-          id: string
-          industry_specific: boolean | null
-          name: string
-          updated_at: string | null
-          user_id: string
-          variable_key: string
-        }
-        Insert: {
-          created_at?: string | null
-          data_mapping?: Json
-          data_source: string
-          description?: string | null
-          id?: string
-          industry_specific?: boolean | null
-          name: string
-          updated_at?: string | null
-          user_id: string
-          variable_key: string
-        }
-        Update: {
-          created_at?: string | null
-          data_mapping?: Json
-          data_source?: string
-          description?: string | null
-          id?: string
-          industry_specific?: boolean | null
-          name?: string
-          updated_at?: string | null
-          user_id?: string
-          variable_key?: string
-        }
-        Relationships: []
-      }
       training_assessments: {
         Row: {
           assessment_type: string
@@ -1289,7 +1241,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
