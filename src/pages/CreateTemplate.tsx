@@ -167,9 +167,9 @@ const CreateTemplate = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="editor">Editor</TabsTrigger>
-            <TabsTrigger value="suggestions">Smart Suggestions</TabsTrigger>
-            <TabsTrigger value="preview">Preview</TabsTrigger>
-            <TabsTrigger value="analysis">Analysis</TabsTrigger>
+            
+            
+            
           </TabsList>
 
           <TabsContent value="editor" className="space-y-6">
