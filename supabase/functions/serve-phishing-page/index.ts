@@ -150,9 +150,15 @@ function buildPhishingPage(htmlContent: string, cssContent?: string, jsContent?:
                 formData: data,
                 submittedAt: new Date().toISOString()
               })
-            }).then(() => {
-              // Show success message or redirect
-              document.body.innerHTML = '<div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;"><h2>Thank you!</h2><p>Your information has been submitted successfully.</p></div>';
+            }).then(async (response) => {
+              const result = await response.json();
+              if (result.educationUrl) {
+                // Redirect to educational experience
+                window.location.href = result.educationUrl;
+              } else {
+                // Fallback message
+                document.body.innerHTML = '<div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;"><h2>Thank you!</h2><p>Your information has been submitted successfully.</p></div>';
+              }
             }).catch(console.error);
           });
         });
@@ -307,8 +313,15 @@ function buildDefaultPhishingPage(trackingData: any): string {
               formData: data,
               submittedAt: new Date().toISOString()
             })
-          }).then(() => {
-            document.body.innerHTML = '<div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;"><h2>✅ Login Successful</h2><p>You have been successfully authenticated. Please wait while we redirect you...</p></div>';
+          }).then(async (response) => {
+            const result = await response.json();
+            if (result.educationUrl) {
+              // Redirect to educational experience
+              window.location.href = result.educationUrl;
+            } else {
+              // Fallback message
+              document.body.innerHTML = '<div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;"><h2>✅ Login Successful</h2><p>You have been successfully authenticated. Please wait while we redirect you...</p></div>';
+            }
           }).catch(console.error);
         });
       </script>
