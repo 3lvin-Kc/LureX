@@ -521,6 +521,108 @@ export type Database = {
         }
         Relationships: []
       }
+      learning_modules: {
+        Row: {
+          content_data: Json
+          created_at: string
+          difficulty_level: string
+          effectiveness_score: number | null
+          estimated_duration: number | null
+          id: string
+          interactive_elements: Json | null
+          is_active: boolean | null
+          module_name: string
+          module_type: string
+          quiz_questions: Json | null
+          updated_at: string
+        }
+        Insert: {
+          content_data?: Json
+          created_at?: string
+          difficulty_level?: string
+          effectiveness_score?: number | null
+          estimated_duration?: number | null
+          id?: string
+          interactive_elements?: Json | null
+          is_active?: boolean | null
+          module_name: string
+          module_type: string
+          quiz_questions?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          content_data?: Json
+          created_at?: string
+          difficulty_level?: string
+          effectiveness_score?: number | null
+          estimated_duration?: number | null
+          id?: string
+          interactive_elements?: Json | null
+          is_active?: boolean | null
+          module_name?: string
+          module_type?: string
+          quiz_questions?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      phishing_education_sessions: {
+        Row: {
+          campaign_id: string
+          clicked_indicators: Json | null
+          created_at: string
+          education_completed: boolean | null
+          education_completed_at: string | null
+          education_started_at: string | null
+          engagement_metrics: Json | null
+          id: string
+          interaction_patterns: Json | null
+          learning_score: number | null
+          missed_red_flags: Json | null
+          phishing_template_type: string | null
+          session_token: string
+          target_email: string
+          time_to_click: number | null
+          updated_at: string
+        }
+        Insert: {
+          campaign_id: string
+          clicked_indicators?: Json | null
+          created_at?: string
+          education_completed?: boolean | null
+          education_completed_at?: string | null
+          education_started_at?: string | null
+          engagement_metrics?: Json | null
+          id?: string
+          interaction_patterns?: Json | null
+          learning_score?: number | null
+          missed_red_flags?: Json | null
+          phishing_template_type?: string | null
+          session_token: string
+          target_email: string
+          time_to_click?: number | null
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          clicked_indicators?: Json | null
+          created_at?: string
+          education_completed?: boolean | null
+          education_completed_at?: string | null
+          education_started_at?: string | null
+          engagement_metrics?: Json | null
+          id?: string
+          interaction_patterns?: Json | null
+          learning_score?: number | null
+          missed_red_flags?: Json | null
+          phishing_template_type?: string | null
+          session_token?: string
+          target_email?: string
+          time_to_click?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       phishing_pages: {
         Row: {
           category: string | null
@@ -729,6 +831,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      security_achievements: {
+        Row: {
+          achievement_type: string
+          badge_icon: string | null
+          created_at: string
+          criteria: Json
+          description: string
+          id: string
+          is_active: boolean | null
+          points: number | null
+          title: string
+        }
+        Insert: {
+          achievement_type: string
+          badge_icon?: string | null
+          created_at?: string
+          criteria?: Json
+          description: string
+          id?: string
+          is_active?: boolean | null
+          points?: number | null
+          title: string
+        }
+        Update: {
+          achievement_type?: string
+          badge_icon?: string | null
+          created_at?: string
+          criteria?: Json
+          description?: string
+          id?: string
+          is_active?: boolean | null
+          points?: number | null
+          title?: string
+        }
+        Relationships: []
       }
       social_media_campaigns: {
         Row: {
@@ -1173,6 +1311,96 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      user_achievements: {
+        Row: {
+          achievement_id: string
+          earned_at: string | null
+          education_session_id: string
+          id: string
+        }
+        Insert: {
+          achievement_id: string
+          earned_at?: string | null
+          education_session_id: string
+          id?: string
+        }
+        Update: {
+          achievement_id?: string
+          earned_at?: string | null
+          education_session_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_achievements_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "security_achievements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_achievements_education_session_id_fkey"
+            columns: ["education_session_id"]
+            isOneToOne: false
+            referencedRelation: "phishing_education_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_learning_sessions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          education_session_id: string
+          id: string
+          interactions: Json | null
+          module_id: string
+          quiz_responses: Json | null
+          score: number | null
+          started_at: string | null
+          time_spent: number | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          education_session_id: string
+          id?: string
+          interactions?: Json | null
+          module_id: string
+          quiz_responses?: Json | null
+          score?: number | null
+          started_at?: string | null
+          time_spent?: number | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          education_session_id?: string
+          id?: string
+          interactions?: Json | null
+          module_id?: string
+          quiz_responses?: Json | null
+          score?: number | null
+          started_at?: string | null
+          time_spent?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_learning_sessions_education_session_id_fkey"
+            columns: ["education_session_id"]
+            isOneToOne: false
+            referencedRelation: "phishing_education_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_learning_sessions_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "learning_modules"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_training_progress: {
         Row: {
