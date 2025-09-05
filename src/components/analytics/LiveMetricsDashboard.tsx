@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Activity, TrendingUp, Users, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { Activity, TrendingUp, Users, AlertCircle, CheckCircle, Clock, Zap } from 'lucide-react';
 import { realTimeSubscriptionService } from '@/utils/realTimeSubscriptionService';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
+import EnhancedNotificationCard from './EnhancedNotificationCard';
+import HistoricalTimelineView from './HistoricalTimelineView';
 
 interface DashboardMetrics {
   totalCampaigns: number;
@@ -17,11 +18,32 @@ interface DashboardMetrics {
   recentActivity: any[];
 }
 
+interface NotificationEvent {
+  id: string;
+  targetEmail: string;
+  eventType: 'sent' | 'opened' | 'clicked' | 'submitted' | 'reported';
+  timestamp: string;
+  campaignId?: string;
+  campaignName?: string;
+  userAgent?: string;
+  ipAddress?: string;
+  location?: {
+    city?: string;
+    country?: string;
+  };
+  sentAt?: string;
+  openedAt?: string;
+  clickedAt?: string;
+  submittedAt?: string;
+  reportedAt?: string;
+  additionalData?: any;
+}
+
 interface LiveMetricsDashboardProps {
   maxEvents?: number;
 }
 
-const LiveMetricsDashboard: React.FC<LiveMetricsDashboardProps> = ({ maxEvents = 10 }) => {
+const LiveMetricsDashboard: React.FC<LiveMetricsDashboardProps> = ({ maxEvents = 20 }) => {
   const [metrics, setMetrics] = useState<DashboardMetrics>({
     totalCampaigns: 0,
     activeCampaigns: 0,
@@ -30,49 +52,112 @@ const LiveMetricsDashboard: React.FC<LiveMetricsDashboardProps> = ({ maxEvents =
     recentActivity: []
   });
   
-  const [liveEvents, setLiveEvents] = useState<any[]>([]);
+  const [liveEvents, setLiveEvents] = useState<NotificationEvent[]>([]);
+  const [newEventCount, setNewEventCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
     fetchDashboardMetrics();
     
-    // Subscribe to real-time updates for live feed
-    const unsubscribe = realTimeSubscriptionService.subscribe(
-      'dashboard-live-feed',
-      (event) => {
-        // Add new event to live feed with proper formatting
-        const formattedEvent = {
-          ...event,
-          timestamp: event.timestamp || new Date().toISOString(),
-        };
-        
-        setLiveEvents(prev => [formattedEvent, ...prev.slice(0, maxEvents - 1)]);
-        
-        // Update click-through rate metric in real-time
-        if (event.eventType === 'clicked') {
-          setMetrics(prev => {
-            const newClickedCount = prev.recentActivity.filter(m => m.clicked_at).length + 1;
-            const totalSent = prev.recentActivity.filter(m => m.sent_at).length;
-            const newClickThroughRate = totalSent > 0 ? (newClickedCount / totalSent) * 100 : 0;
-            
-            return {
-              ...prev,
-              clickThroughRate: newClickThroughRate
-            };
-          });
+    // Subscribe to real-time updates from campaign metrics
+    const channel = supabase
+      .channel('campaign-metrics-live-feed')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'campaign_metrics'
+        },
+        (payload) => {
+          console.log('Live metrics update:', payload);
+          handleRealtimeMetricsUpdate(payload);
         }
-        
-        // Refresh recent activity data periodically to include new metrics
-        if (Math.random() < 0.3) { // 30% chance to refresh on new events
-          fetchRecentActivity();
-        }
-      }
-    );
+      )
+      .subscribe();
 
     return () => {
-      unsubscribe();
+      supabase.removeChannel(channel);
     };
-  }, [maxEvents]);
+  }, [maxEvents, isPaused]);
+
+  const handleRealtimeMetricsUpdate = async (payload: any) => {
+    const { new: newRecord, old: oldRecord, eventType } = payload;
+    
+    if (eventType === 'INSERT' || eventType === 'UPDATE') {
+      // Determine what event just happened
+      const currentEventType = determineLatestEventType(newRecord, oldRecord);
+      
+      if (currentEventType && !isPaused) {
+        // Fetch campaign name for the event
+        const { data: campaign } = await supabase
+          .from('campaigns')
+          .select('name')
+          .eq('id', newRecord.campaign_id)
+          .single();
+
+        const notificationEvent: NotificationEvent = {
+          id: newRecord.id,
+          targetEmail: newRecord.target_email,
+          eventType: currentEventType,
+          timestamp: new Date().toISOString(),
+          campaignId: newRecord.campaign_id,
+          campaignName: campaign?.name || 'Unknown Campaign',
+          userAgent: newRecord.user_agent,
+          ipAddress: newRecord.ip_address,
+          sentAt: newRecord.sent_at,
+          openedAt: newRecord.opened_at,
+          clickedAt: newRecord.clicked_at,
+          submittedAt: newRecord.data_submitted_at,
+          reportedAt: newRecord.reported_at,
+          additionalData: newRecord.additional_data
+        };
+
+        // Add to live feed
+        setLiveEvents(prev => {
+          const updated = [notificationEvent, ...prev.slice(0, maxEvents - 1)];
+          return updated;
+        });
+
+        // Increment new event counter
+        setNewEventCount(prev => prev + 1);
+
+        // Update metrics
+        updateRealTimeMetrics(currentEventType);
+      }
+    }
+  };
+
+  const determineLatestEventType = (newRecord: any, oldRecord?: any): NotificationEvent['eventType'] | null => {
+    if (newRecord.reported_at && (!oldRecord || !oldRecord.reported_at)) return 'reported';
+    if (newRecord.data_submitted_at && (!oldRecord || !oldRecord.data_submitted_at)) return 'submitted';
+    if (newRecord.clicked_at && (!oldRecord || !oldRecord.clicked_at)) return 'clicked';
+    if (newRecord.opened_at && (!oldRecord || !oldRecord.opened_at)) return 'opened';
+    if (newRecord.delivered_at && (!oldRecord || !oldRecord.delivered_at)) return null; // Don't show delivered events
+    if (newRecord.sent_at && (!oldRecord || !oldRecord.sent_at)) return 'sent';
+    return null;
+  };
+
+  const updateRealTimeMetrics = (eventType: string) => {
+    if (eventType === 'clicked') {
+      setMetrics(prev => {
+        const newClickedCount = prev.recentActivity.filter(m => m.clicked_at).length + 1;
+        const totalSent = prev.recentActivity.filter(m => m.sent_at).length;
+        const newClickThroughRate = totalSent > 0 ? (newClickedCount / totalSent) * 100 : 0;
+        
+        return {
+          ...prev,
+          clickThroughRate: newClickThroughRate
+        };
+      });
+      
+      // Refresh recent activity periodically
+      if (Math.random() < 0.2) { // 20% chance
+        fetchRecentActivity();
+      }
+    }
+  };
 
   const fetchDashboardMetrics = async () => {
     try {
@@ -250,44 +335,66 @@ const LiveMetricsDashboard: React.FC<LiveMetricsDashboardProps> = ({ maxEvents =
         <TabsContent value="live-feed">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5" />
-                Real-time Activity
-              </CardTitle>
-              <CardDescription>
-                Live updates from active campaigns
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Zap className="h-5 w-5 text-primary animate-pulse" />
+                    Live Activity Feed
+                  </CardTitle>
+                  <CardDescription>
+                    Real-time notifications with risk analysis and device information
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  {newEventCount > 0 && !isPaused && (
+                    <Badge variant="destructive" className="animate-pulse">
+                      {newEventCount} new
+                    </Badge>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setIsPaused(!isPaused);
+                      if (isPaused) {
+                        setNewEventCount(0);
+                      }
+                    }}
+                  >
+                    {isPaused ? 'Resume' : 'Pause'}
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {liveEvents.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Activity className="h-12 w-12 mx-auto mb-4 opacity-20" />
-                  <p>Waiting for live activity...</p>
-                  <p className="text-sm">Events will appear here in real-time when campaigns are active</p>
+                <div className="text-center py-12 text-muted-foreground">
+                  <Activity className="h-16 w-16 mx-auto mb-4 opacity-20" />
+                  <h3 className="font-semibold text-lg mb-2">Waiting for live activity</h3>
+                  <p>Events will appear here in real-time when campaigns are active</p>
+                  <p className="text-sm mt-1">Click on any notification to see detailed information</p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {liveEvents.map((event, index) => (
-                    <div key={`${event.id}-${index}`} className="flex items-center gap-4 p-3 border rounded-lg animate-in slide-in-from-top-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{event.targetEmail}</span>
-                          <Badge variant="outline" className="text-xs">
-                            {event.eventType}
-                          </Badge>
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {format(new Date(event.timestamp), 'HH:mm:ss')}
-                        </div>
-                      </div>
-                      {event.location && (
-                        <div className="text-xs text-muted-foreground">
-                          {event.location.city}, {event.location.country}
-                        </div>
-                      )}
+                <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+                  {isPaused && (
+                    <div className="text-center py-2 text-sm text-muted-foreground bg-muted/30 rounded-lg">
+                      Feed paused - Click Resume to continue receiving updates
                     </div>
+                  )}
+                  
+                  {liveEvents.map((event, index) => (
+                    <EnhancedNotificationCard
+                      key={`${event.id}-${index}`}
+                      event={event}
+                      isNew={index < newEventCount && !isPaused}
+                    />
                   ))}
+                  
+                  {liveEvents.length >= maxEvents && (
+                    <div className="text-center py-4 text-sm text-muted-foreground border-t">
+                      Showing latest {maxEvents} events. Older events moved to Recent Activity.
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -295,62 +402,10 @@ const LiveMetricsDashboard: React.FC<LiveMetricsDashboardProps> = ({ maxEvents =
         </TabsContent>
 
         <TabsContent value="recent-activity">
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Campaign Activity</CardTitle>
-              <CardDescription>
-                Latest interactions from your campaigns
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Target Email</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Last Activity</TableHead>
-                    <TableHead>Campaign</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {metrics.recentActivity.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                        <Clock className="h-8 w-8 mx-auto mb-2 opacity-20" />
-                        <p>No recent campaign activity</p>
-                        <p className="text-sm">Activity will appear here once campaigns are launched</p>
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    metrics.recentActivity.map((activity) => (
-                      <TableRow key={activity.id}>
-                        <TableCell className="font-medium">{activity.target_email}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {getEventStatusIcon(activity)}
-                            {getEventStatus(activity)}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {activity.sent_at ? format(new Date(activity.sent_at), 'MMM d, h:mm a') : '—'}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col">
-                            <span className="font-medium text-sm">
-                              {activity.campaigns?.name || 'Unknown Campaign'}
-                            </span>
-                            <span className="text-xs text-muted-foreground">
-                              {activity.campaigns?.status || 'draft'}
-                            </span>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          <HistoricalTimelineView
+            activities={metrics.recentActivity}
+            onRefresh={fetchRecentActivity}
+          />
         </TabsContent>
       </Tabs>
     </div>
