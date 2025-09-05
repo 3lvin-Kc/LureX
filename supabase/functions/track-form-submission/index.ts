@@ -1,7 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
-import { nanoid } from 'https://esm.sh/nanoid@5.1.5';
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
@@ -46,37 +45,9 @@ serve(async (req) => {
       throw error;
     }
 
-    // Create education session for personalized learning
-    const sessionToken = nanoid(32);
-    const { error: sessionError } = await supabase
-      .from('phishing_education_sessions')
-      .insert({
-        campaign_id: campaignId,
-        target_email: targetEmail,
-        session_token: sessionToken,
-        clicked_indicators: [],
-        missed_red_flags: [],
-        interaction_patterns: {
-          form_submitted: true,
-          submitted_at: submittedAt,
-          form_data: formData
-        }
-      });
+    console.log(`Form submitted - Campaign: ${campaignId}, Target: ${targetEmail}, Data:`, formData);
 
-    if (sessionError) {
-      console.error('Error creating education session:', sessionError);
-    }
-
-    console.log(`Form submitted - Campaign: ${campaignId}, Target: ${targetEmail}, Education token: ${sessionToken}`);
-
-    // Return education URL for redirect
-    const educationUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/serve-education-page?token=${sessionToken}`;
-
-    return new Response(JSON.stringify({ 
-      success: true,
-      educationUrl,
-      sessionToken
-    }), {
+    return new Response(JSON.stringify({ success: true }), {
       headers: { 
         'Content-Type': 'application/json',
         ...corsHeaders 

@@ -12,8 +12,7 @@ import {
   Shield,
   Mail,
   Settings,
-  TrendingUp,
-  GraduationCap
+  TrendingUp
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -53,11 +52,6 @@ const navigationItems = [
     name: 'Reports',
     href: '/reports',
     icon: BarChart3,
-  },
-  {
-    name: 'Education Results',
-    href: '/education-results',
-    icon: GraduationCap,
   },
   {
     name: 'Advanced Reports',
