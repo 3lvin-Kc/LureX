@@ -45,11 +45,24 @@ const CreateTemplate = () => {
   const [activeTab, setActiveTab] = React.useState("editor");
   const [previewContent, setPreviewContent] = React.useState("");
 
+  const [isTemplateLoaded, setIsTemplateLoaded] = React.useState(false);
+
   // Load template data for editing
   React.useEffect(() => {
-    if (isEditing && id && !loading && templates.length > 0) {
+    console.log('CreateTemplate useEffect triggered:', { isEditing, id, loading, templatesLength: templates.length });
+    
+    if (isEditing && id) {
+      if (loading) {
+        console.log('Still loading templates...');
+        setIsTemplateLoaded(false);
+        return;
+      }
+      
       const found = templates.find(t => t.id === id);
+      console.log('Found template:', found);
+      
       if (found) {
+        console.log('Setting form data from template:', found);
         setForm({
           name: found.name || "",
           subject: found.subject || "",
@@ -58,7 +71,22 @@ const CreateTemplate = () => {
           text_content: found.text_content || "",
           description: found.description || ""
         });
+        setIsTemplateLoaded(true);
+      } else {
+        console.log('Template not found for id:', id);
+        setIsTemplateLoaded(false);
       }
+    } else if (!isEditing) {
+      // Reset form for new template
+      setForm({
+        name: "",
+        subject: "",
+        category: "",
+        html_content: "",
+        text_content: "",
+        description: ""
+      });
+      setIsTemplateLoaded(true);
     }
   }, [isEditing, id, templates, loading]);
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -148,13 +176,14 @@ const CreateTemplate = () => {
       setIsSubmitting(false);
     }
   };
-  // Show loading if editing and templates are still loading
-  if (isEditing && loading) {
+  // Show loading if editing and templates are still loading or template not loaded yet
+  if (isEditing && (loading || !isTemplateLoaded)) {
     return (
       <DashboardLayout>
         <div className="container mx-auto p-4 max-w-4xl">
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <span className="ml-2">Loading template...</span>
           </div>
         </div>
       </DashboardLayout>
@@ -162,13 +191,13 @@ const CreateTemplate = () => {
   }
 
   // Show not found if editing and template doesn't exist after loading
-  if (isEditing && !loading && id && !templates.find(t => t.id === id)) {
+  if (isEditing && !loading && id && templates.length > 0 && !templates.find(t => t.id === id)) {
     return (
       <DashboardLayout>
         <div className="container mx-auto p-4 max-w-4xl">
           <div className="text-center py-8">
             <h2 className="text-2xl font-bold mb-2">Template Not Found</h2>
-            <p className="text-muted-foreground mb-4">The template you're looking for doesn't exist.</p>
+            <p className="text-muted-foreground mb-4">The template you're looking for doesn't exist or you don't have access to it.</p>
             <Button onClick={() => navigate("/templates")}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Templates

@@ -75,9 +75,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Fixed Sidebar */}
-        <nav className="w-64 bg-white border-r border-gray-200 flex-shrink-0 overflow-y-auto">
-          <div className="p-4">
+        {/* Fixed Static Sidebar - No Scrolling */}
+        <nav className="w-64 bg-white border-r border-gray-200 flex-shrink-0">
+          <div className="p-4 h-full">
             <div className="space-y-2">
               {navItems.map((item) => {
                 const Icon = item.icon;
