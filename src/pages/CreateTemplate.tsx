@@ -47,7 +47,7 @@ const CreateTemplate = () => {
 
   // Load template data for editing
   React.useEffect(() => {
-    if (isEditing && id && templates.length > 0) {
+    if (isEditing && id && !loading && templates.length > 0) {
       const found = templates.find(t => t.id === id);
       if (found) {
         setForm({
@@ -60,7 +60,7 @@ const CreateTemplate = () => {
         });
       }
     }
-  }, [isEditing, id, templates]);
+  }, [isEditing, id, templates, loading]);
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({
       ...form,
@@ -148,6 +148,37 @@ const CreateTemplate = () => {
       setIsSubmitting(false);
     }
   };
+  // Show loading if editing and templates are still loading
+  if (isEditing && loading) {
+    return (
+      <DashboardLayout>
+        <div className="container mx-auto p-4 max-w-4xl">
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Show not found if editing and template doesn't exist after loading
+  if (isEditing && !loading && id && !templates.find(t => t.id === id)) {
+    return (
+      <DashboardLayout>
+        <div className="container mx-auto p-4 max-w-4xl">
+          <div className="text-center py-8">
+            <h2 className="text-2xl font-bold mb-2">Template Not Found</h2>
+            <p className="text-muted-foreground mb-4">The template you're looking for doesn't exist.</p>
+            <Button onClick={() => navigate("/templates")}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Templates
+            </Button>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return <DashboardLayout>
       <div className="container mx-auto p-4 max-w-4xl">
         <Button variant="ghost" className="mb-4" onClick={() => navigate("/templates")}>

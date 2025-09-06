@@ -57,13 +57,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const location = useLocation();
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-4 lg:px-6">
+    <div className="h-screen bg-gray-50 flex flex-col">
+      {/* Fixed Header */}
+      <header className="bg-white border-b border-gray-200 px-4 lg:px-6 flex-shrink-0 z-10">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-4">
             <Link to="/dashboard" className="flex items-center space-x-2">
-              
               <span className="text-xl font-bold text-gray-900">LureX Security</span>
             </Link>
           </div>
@@ -75,9 +74,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         </div>
       </header>
 
-      <div className="flex">
-        {/* Sidebar */}
-        <nav className="w-64 bg-white border-r border-gray-200 min-h-[calc(100vh-4rem)]">
+      <div className="flex flex-1 overflow-hidden">
+        {/* Fixed Sidebar */}
+        <nav className="w-64 bg-white border-r border-gray-200 flex-shrink-0 overflow-y-auto">
           <div className="p-4">
             <div className="space-y-2">
               {navItems.map((item) => {
@@ -104,8 +103,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </div>
         </nav>
 
-        {/* Main Content */}
-        <main className="flex-1">
+        {/* Scrollable Main Content */}
+        <main className="flex-1 overflow-y-auto">
           {children}
         </main>
       </div>
