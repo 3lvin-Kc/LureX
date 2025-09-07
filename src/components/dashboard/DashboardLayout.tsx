@@ -4,6 +4,7 @@ import { Outlet, Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Shield, BarChart3, Users, Mail, Globe, FileText, Settings } from "lucide-react";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 interface NavItem {
   title: string;
@@ -57,16 +58,18 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const location = useLocation();
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col">
+    <div className="h-screen bg-background flex flex-col">
       {/* Fixed Header */}
-      <header className="bg-white border-b border-gray-200 px-4 lg:px-6 flex-shrink-0 z-10">
+      <header className="bg-background border-b border-border px-4 lg:px-6 flex-shrink-0 z-10">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-4">
             <Link to="/dashboard" className="flex items-center space-x-2">
-              <span className="text-xl font-bold text-gray-900">LureX Security</span>
+              <Shield className="h-6 w-6 text-primary" />
+              <span className="text-xl font-bold text-foreground">LureX Security</span>
             </Link>
           </div>
           <div className="flex items-center space-x-4">
+            <ThemeToggle />
             <Button variant="outline" asChild>
               <Link to="/">Back to Home</Link>
             </Button>
@@ -76,7 +79,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Fixed Static Sidebar - No Scrolling */}
-        <nav className="w-64 bg-white border-r border-gray-200 flex-shrink-0">
+        <nav className="w-64 bg-sidebar border-r border-sidebar-border flex-shrink-0">
           <div className="p-4 h-full">
             <div className="space-y-2">
               {navItems.map((item) => {
@@ -88,10 +91,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                     key={item.href}
                     to={item.href}
                     className={cn(
-                      "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                      "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200",
                       isActive
-                        ? "bg-blue-100 text-blue-700"
-                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                        ? "bg-sidebar-accent text-sidebar-primary border border-sidebar-primary/20"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
                     )}
                   >
                     <Icon className="h-5 w-5" />
