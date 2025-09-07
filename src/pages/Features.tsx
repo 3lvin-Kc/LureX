@@ -18,6 +18,7 @@ import {
   Clock,
   CheckCircle
 } from "lucide-react";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const Features = () => {
   const navigate = useNavigate();
@@ -62,20 +63,23 @@ const Features = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-white border-b">
+      <div className="bg-card border-b border-border">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Button variant="ghost" onClick={() => navigate("/")}>
+                <Shield className="h-6 w-6 text-primary mr-2" />
                 <span className="text-xl font-bold text-primary">LureX</span>
-              
               </Button>
             </div>
-            <Button onClick={() => navigate("/dashboard")}>
-              Get Started
-            </Button>
+            <div className="flex items-center space-x-4">
+              <ThemeToggle />
+              <Button onClick={() => navigate("/dashboard")}>
+                Get Started
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -83,12 +87,11 @@ const Features = () => {
       {/* Hero Section */}
       <div className="py-16 px-4">
         <div className="container mx-auto text-center">
-          
-          <h1 className="text-4xl md:text-6xl font-bold mb-6">
+          <h1 className="text-4xl md:text-6xl font-bold mb-6 text-foreground">
             Comprehensive Phishing
             <span className="text-primary block">Simulation Features</span>
           </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+          <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
             Everything you need to test, educate, and strengthen your organization's security posture against phishing attacks.
           </p>
           <Button size="lg" onClick={() => navigate("/dashboard")}>
@@ -98,11 +101,11 @@ const Features = () => {
       </div>
 
       {/* Features Grid */}
-      <div className="py-16 px-4 bg-white">
+      <div className="py-16 px-4 bg-card">
         <div className="container mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">Powerful Features</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
+            <p className="text-muted-foreground max-w-2xl mx-auto">
               Our platform provides all the tools needed for effective phishing simulations and security awareness training.
             </p>
           </div>
@@ -132,11 +135,11 @@ const Features = () => {
       </div>
 
       {/* Workflow Section */}
-      <div className="py-16 px-4 bg-gray-50">
+      <div className="py-16 px-4 bg-background">
         <div className="container mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">Simple 4-Step Process</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
+            <p className="text-muted-foreground max-w-2xl mx-auto">
               Launch comprehensive phishing simulations in minutes, not hours.
             </p>
           </div>
@@ -147,7 +150,7 @@ const Features = () => {
                 <Users className="h-8 w-8 text-primary" />
               </div>
               <h3 className="text-xl font-semibold mb-2">1. Import Targets</h3>
-              <p className="text-gray-600">Upload your target list via CSV or add recipients manually.</p>
+              <p className="text-muted-foreground">Upload your target list via CSV or add recipients manually.</p>
             </div>
 
             <div className="text-center">
@@ -155,7 +158,7 @@ const Features = () => {
                 <Bot className="h-8 w-8 text-primary" />
               </div>
               <h3 className="text-xl font-semibold mb-2">2. Generate Content</h3>
-              <p className="text-gray-600">Create email templates and phishing pages with AI assistance.</p>
+              <p className="text-muted-foreground">Create email templates and phishing pages with AI assistance.</p>
             </div>
 
             <div className="text-center">
@@ -163,7 +166,7 @@ const Features = () => {
                 <Target className="h-8 w-8 text-primary" />
               </div>
               <h3 className="text-xl font-semibold mb-2">3. Launch Campaign</h3>
-              <p className="text-gray-600">Schedule and deploy your phishing simulation campaign.</p>
+              <p className="text-muted-foreground">Schedule and deploy your phishing simulation campaign.</p>
             </div>
 
             <div className="text-center">
@@ -171,14 +174,14 @@ const Features = () => {
                 <BarChart3 className="h-8 w-8 text-primary" />
               </div>
               <h3 className="text-xl font-semibold mb-2">4. Analyze Results</h3>
-              <p className="text-gray-600">Review detailed analytics and generate compliance reports.</p>
+              <p className="text-muted-foreground">Review detailed analytics and generate compliance reports.</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* CTA Section */}
-      <div className="py-16 px-4 bg-primary text-white">
+      <div className="py-16 px-4 bg-primary text-primary-foreground">
         <div className="container mx-auto text-center">
           <h2 className="text-3xl font-bold mb-4">Ready to Strengthen Your Security?</h2>
           <p className="text-xl mb-8 opacity-90">

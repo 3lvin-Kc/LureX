@@ -2,8 +2,9 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Users, BarChart3, Mail, Target, CheckCircle } from "lucide-react";
+import { ArrowRight, Users, BarChart3, Mail, Target, CheckCircle, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -40,13 +41,14 @@ const Index = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-background">
       {/* Navigation */}
-      <nav className="bg-white/80 backdrop-blur-md border-b border-white/20 sticky top-0 z-50">
+      <nav className="bg-card/80 backdrop-blur-md border-b border-border sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-2">
-              
+              <Shield className="h-6 w-6 text-primary" />
+              <span className="text-xl font-bold text-foreground">LureX</span>
             </div>
             <div className="hidden md:flex items-center space-x-8">
               <Button variant="ghost" onClick={() => navigate("/features")}>
@@ -58,6 +60,7 @@ const Index = () => {
               <Button variant="ghost" onClick={() => navigate("/auth")}>
                 Sign In
               </Button>
+              <ThemeToggle />
               <Button onClick={() => navigate("/dashboard")}>
                 Get Started
               </Button>
@@ -69,25 +72,24 @@ const Index = () => {
       {/* Hero Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto text-center">
-          <Badge variant="outline" className="mb-4 bg-white/50">
+          <Badge variant="outline" className="mb-4 bg-card/50">
             🚀 Advanced Phishing Simulation Platform
           </Badge>
           <h1
-  className="text-5xl md:text-7xl font-extrabold text-gray-900 mb-6 leading-tight tracking-tight drop-shadow-md transition-transform duration-300 hover:scale-[1.02]"
-  style={{
-    fontFamily: "'Poppins', sans-serif",
-  }}
->
-  LureX
-  <span className="text-blue-600 block drop-shadow-sm transition-transform duration-300 hover:-translate-y-1">
-    Lure. Trigger. Learn.
-  </span>
-</h1>
+            className="text-5xl md:text-7xl font-extrabold text-foreground mb-6 leading-tight tracking-tight drop-shadow-md transition-transform duration-300 hover:scale-[1.02]"
+            style={{
+              fontFamily: "'Poppins', sans-serif",
+            }}
+          >
+            LureX
+            <span className="text-primary block drop-shadow-sm transition-transform duration-300 hover:-translate-y-1">
+              Lure. Trigger. Learn.
+            </span>
+          </h1>
 
-<p className="text-xl text-gray-700 mb-10 max-w-3xl mx-auto leading-relaxed transition duration-300 hover:tracking-wider">
-  F*ck awareness posters — Run Real Phishing Ops
-</p>
-
+          <p className="text-xl text-muted-foreground mb-10 max-w-3xl mx-auto leading-relaxed transition duration-300 hover:tracking-wider">
+            F*ck awareness posters — Run Real Phishing Ops
+          </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" onClick={() => navigate("/dashboard")} className="text-lg px-8">
