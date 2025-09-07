@@ -1,69 +1,44 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import { 
-  Mail, 
-  Users, 
-  BarChart3, 
-  Shield, 
-  Target, 
-  Globe, 
-  Bot, 
-  Eye,
-  MousePointer,
-  FileText,
-  Clock,
-  CheckCircle
-} from "lucide-react";
+import { Mail, Users, BarChart3, Shield, Target, Globe, Bot, Eye, MousePointer, FileText, Clock, CheckCircle } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-
 const Features = () => {
   const navigate = useNavigate();
-
-  const features = [
-    {
-      icon: <Mail className="h-8 w-8" />,
-      title: "Email Template Designer",
-      description: "Create realistic phishing emails with our intuitive template editor and AI-powered generation.",
-      highlights: ["AI Content Generation", "HTML/Text Support", "Template Library", "Version Control"]
-    },
-    {
-      icon: <Users className="h-8 w-8" />,
-      title: "Target Management",
-      description: "Organize and manage your test recipients with advanced targeting capabilities.",
-      highlights: ["CSV Import/Export", "Department Filtering", "Custom Fields", "Bulk Operations"]
-    },
-    {
-      icon: <Globe className="h-8 w-8" />,
-      title: "Phishing Page Builder",
-      description: "Create convincing fake login pages or clone existing websites for realistic simulations.",
-      highlights: ["Website Cloning", "Custom Pages", "Mobile Responsive", "Form Capture"]
-    },
-    {
-      icon: <BarChart3 className="h-8 w-8" />,
-      title: "Advanced Analytics",
-      description: "Track campaign performance with detailed reporting and real-time analytics.",
-      highlights: ["Real-time Tracking", "Department Reports", "Export Options", "Trend Analysis"]
-    },
-    {
-      icon: <Eye className="h-8 w-8" />,
-      title: "Email Tracking",
-      description: "Monitor email opens, clicks, and user interactions with invisible tracking pixels.",
-      highlights: ["Open Tracking", "Click Tracking"]
-    },
-    {
-      icon: <Shield className="h-8 w-8" />,
-      title: "Security & Compliance",
-      description: "Enterprise-grade security with compliance reporting for regulatory requirements.",
-      highlights: ["Data Encryption", "GDPR Compliant", "Audit Trails", "Role-based Access"]
-    }
-  ];
-
-  return (
-    <div className="min-h-screen bg-background">
+  const features = [{
+    icon: <Mail className="h-8 w-8" />,
+    title: "Email Template Designer",
+    description: "Create realistic phishing emails with our intuitive template editor and AI-powered generation.",
+    highlights: ["AI Content Generation", "HTML/Text Support", "Template Library", "Version Control"]
+  }, {
+    icon: <Users className="h-8 w-8" />,
+    title: "Target Management",
+    description: "Organize and manage your test recipients with advanced targeting capabilities.",
+    highlights: ["CSV Import/Export", "Department Filtering", "Custom Fields", "Bulk Operations"]
+  }, {
+    icon: <Globe className="h-8 w-8" />,
+    title: "Phishing Page Builder",
+    description: "Create convincing fake login pages or clone existing websites for realistic simulations.",
+    highlights: ["Website Cloning", "Custom Pages", "Mobile Responsive", "Form Capture"]
+  }, {
+    icon: <BarChart3 className="h-8 w-8" />,
+    title: "Advanced Analytics",
+    description: "Track campaign performance with detailed reporting and real-time analytics.",
+    highlights: ["Real-time Tracking", "Department Reports", "Export Options", "Trend Analysis"]
+  }, {
+    icon: <Eye className="h-8 w-8" />,
+    title: "Email Tracking",
+    description: "Monitor email opens, clicks, and user interactions with invisible tracking pixels.",
+    highlights: ["Open Tracking", "Click Tracking"]
+  }, {
+    icon: <Shield className="h-8 w-8" />,
+    title: "Security & Compliance",
+    description: "Enterprise-grade security with compliance reporting for regulatory requirements.",
+    highlights: ["Data Encryption", "GDPR Compliant", "Audit Trails", "Role-based Access"]
+  }];
+  return <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="bg-card border-b border-border">
         <div className="container mx-auto px-4 py-6">
@@ -111,8 +86,7 @@ const Features = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <Card key={index} className="h-full">
+            {features.map((feature, index) => <Card key={index} className="h-full">
                 <CardHeader>
                   <div className="text-primary mb-4">{feature.icon}</div>
                   <CardTitle className="text-xl">{feature.title}</CardTitle>
@@ -120,16 +94,13 @@ const Features = () => {
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2">
-                    {feature.highlights.map((highlight, i) => (
-                      <li key={i} className="flex items-center text-sm">
+                    {feature.highlights.map((highlight, i) => <li key={i} className="flex items-center text-sm">
                         <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
                         {highlight}
-                      </li>
-                    ))}
+                      </li>)}
                   </ul>
                 </CardContent>
-              </Card>
-            ))}
+              </Card>)}
           </div>
         </div>
       </div>
@@ -181,19 +152,7 @@ const Features = () => {
       </div>
 
       {/* CTA Section */}
-      <div className="py-16 px-4 bg-primary text-primary-foreground">
-        <div className="container mx-auto text-center">
-          <h2 className="text-3xl font-bold mb-4">Ready to Strengthen Your Security?</h2>
-          <p className="text-xl mb-8 opacity-90">
-            Join thousands of organizations using LureX to improve their security awareness.
-          </p>
-          <Button size="lg" variant="secondary" onClick={() => navigate("/dashboard")}>
-            Start Now
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
+      
+    </div>;
 };
-
 export default Features;
