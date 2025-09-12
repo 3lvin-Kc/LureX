@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { Mail, Users, BarChart3, Shield, Target, Globe, Bot, Eye, MousePointer, FileText, Clock, CheckCircle } from "lucide-react";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 const Features = () => {
   const navigate = useNavigate();
   const features = [{
@@ -50,7 +49,6 @@ const Features = () => {
               </Button>
             </div>
             <div className="flex items-center space-x-4">
-              <ThemeToggle />
               <Button onClick={() => navigate("/dashboard")}>
                 Get Started
               </Button>

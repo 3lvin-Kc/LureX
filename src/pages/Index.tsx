@@ -3,7 +3,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Users, BarChart3, Mail, Target, CheckCircle, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { ProfileDropdown } from "@/components/ui/ProfileDropdown";
 
@@ -68,7 +67,6 @@ const Index = () => {
                       <Button variant="ghost" onClick={() => navigate("/auth")}>
                         Sign In
                       </Button>
-                      <ThemeToggle />
                       <Button onClick={() => navigate("/dashboard")}>
                         Get Started
                       </Button>

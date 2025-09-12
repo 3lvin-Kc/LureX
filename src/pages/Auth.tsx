@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { Shield, Mail, Lock, User, Building } from 'lucide-react';
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -148,9 +146,6 @@ const Auth = () => {
           </div>
           <h1 className="text-3xl font-bold text-foreground">LureX</h1>
           <p className="text-muted-foreground mt-2">Secure Phishing Simulation Platform</p>
-          <div className="flex justify-center mt-4">
-            <ThemeToggle />
-          </div>
         </div>
 
         <Card>

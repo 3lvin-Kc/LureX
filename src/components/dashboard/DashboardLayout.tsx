@@ -1,10 +1,8 @@
-
 import React from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Shield, BarChart3, Users, Mail, Globe, FileText, Settings } from "lucide-react";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 interface NavItem {
   title: string;
@@ -69,7 +67,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             </Link>
           </div>
           <div className="flex items-center space-x-4">
-            <ThemeToggle />
             <Button variant="outline" asChild>
               <Link to="/">Back to Home</Link>
             </Button>
