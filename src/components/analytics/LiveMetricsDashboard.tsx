@@ -27,10 +27,6 @@ interface NotificationEvent {
   campaignName?: string;
   userAgent?: string;
   ipAddress?: string;
-  location?: {
-    city?: string;
-    country?: string;
-  };
   sentAt?: string;
   openedAt?: string;
   clickedAt?: string;
@@ -59,6 +55,7 @@ const LiveMetricsDashboard: React.FC<LiveMetricsDashboardProps> = ({ maxEvents =
 
   useEffect(() => {
     fetchDashboardMetrics();
+    loadRecentActivityIntoFeed();
     
     // Subscribe to real-time updates from campaign metrics
     const channel = supabase
@@ -259,6 +256,71 @@ const LiveMetricsDashboard: React.FC<LiveMetricsDashboardProps> = ({ maxEvents =
     if (metric.opened_at) return 'Opened';
     if (metric.delivered_at) return 'Delivered';
     return 'Sent';
+  };
+
+  const loadRecentActivityIntoFeed = async () => {
+    try {
+      // Fetch recent metrics from last 24 hours to populate the feed initially
+      const oneDayAgo = new Date();
+      oneDayAgo.setHours(oneDayAgo.getHours() - 24);
+
+      const { data: recentMetrics, error } = await supabase
+        .from('campaign_metrics')
+        .select(`
+          *,
+          campaigns!inner (
+            id,
+            name
+          )
+        `)
+        .gte('created_at', oneDayAgo.toISOString())
+        .order('created_at', { ascending: false })
+        .limit(maxEvents);
+
+      if (error) throw error;
+
+      // Convert metrics to notification events
+      const events: NotificationEvent[] = recentMetrics?.map(metric => {
+        // Determine the latest event type for this metric
+        let eventType: 'sent' | 'opened' | 'clicked' | 'submitted' | 'reported' = 'sent';
+        let timestamp = metric.sent_at;
+
+        if (metric.reported_at) {
+          eventType = 'reported';
+          timestamp = metric.reported_at;
+        } else if (metric.data_submitted_at) {
+          eventType = 'submitted';
+          timestamp = metric.data_submitted_at;
+        } else if (metric.clicked_at) {
+          eventType = 'clicked';
+          timestamp = metric.clicked_at;
+        } else if (metric.opened_at) {
+          eventType = 'opened';
+          timestamp = metric.opened_at;
+        }
+
+        return {
+          id: metric.id,
+          targetEmail: metric.target_email,
+          eventType,
+          timestamp,
+          campaignId: metric.campaign_id,
+          campaignName: metric.campaigns?.name || 'Unknown Campaign',
+          userAgent: metric.user_agent,
+          ipAddress: metric.ip_address,
+          sentAt: metric.sent_at,
+          openedAt: metric.opened_at,
+          clickedAt: metric.clicked_at,
+          submittedAt: metric.data_submitted_at,
+          reportedAt: metric.reported_at,
+          additionalData: metric.additional_data
+        };
+      }) || [];
+
+      setLiveEvents(events);
+    } catch (error) {
+      console.error('Error loading recent activity into feed:', error);
+    }
   };
 
   if (isLoading) {

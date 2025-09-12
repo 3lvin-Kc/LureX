@@ -1,3 +1,6 @@
+-- Drop the trigger if it already exists (must be done before dropping function)
+drop trigger if exists update_target_count_trigger on public.targets;
+
 -- Drop the function if it already exists
 drop function if exists update_target_count();
 
@@ -28,9 +31,6 @@ begin
   end if;
 end;
 $$ language plpgsql security definer;
-
--- Drop the trigger if it already exists
-drop trigger if exists update_target_count_trigger on public.targets;
 
 -- Create a trigger that calls the function after insert, update, or delete on targets
 create trigger update_target_count_trigger
