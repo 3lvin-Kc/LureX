@@ -23,6 +23,7 @@ import Reports from "./pages/Reports";
 import Features from "./pages/Features";
 import Help from "./pages/Help";
 import Settings from "./pages/Settings";
+import Documentation from "./pages/Documentation";
 import DomainManagement from "./pages/DomainManagement";
 import Auth from "./pages/Auth";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
@@ -48,6 +49,7 @@ function App() {
             <Route path="/" element={<Index />} />
             <Route path="/features" element={<Features />} />
             <Route path="/help" element={<Help />} />
+            <Route path="/docs" element={<Documentation />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />

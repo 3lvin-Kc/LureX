@@ -79,8 +79,37 @@ CREATE TABLE public.campaigns (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+--this is newly created and just for testing purpose if it sucks during testing , just fuckin delete this.
 
+-- Create campaign metrics table
+CREATE TABLE public.campaign_metrics (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  campaign_id UUID NOT NULL REFERENCES public.campaigns(id) ON DELETE CASCADE,
+  target_email TEXT NOT NULL,
+  sent_at TIMESTAMP WITH TIME ZONE,
+  delivered_at TIMESTAMP WITH TIME ZONE,
+  opened_at TIMESTAMP WITH TIME ZONE,
+  clicked_at TIMESTAMP WITH TIME ZONE,
+  data_submitted_at TIMESTAMP WITH TIME ZONE,
+  reported_at TIMESTAMP WITH TIME ZONE,
+  ip_address TEXT,
+  user_agent TEXT,
+  additional_data JSONB DEFAULT '{}',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  
+  -- Ensure unique combination of campaign and target email
+  UNIQUE(campaign_id, target_email)
+);
 
+-- Create indexes for campaign_metrics
+CREATE INDEX idx_campaign_metrics_campaign_id ON public.campaign_metrics(campaign_id);
+CREATE INDEX idx_campaign_metrics_target_email ON public.campaign_metrics(target_email);
+CREATE INDEX idx_campaign_metrics_sent_at ON public.campaign_metrics(sent_at);
+CREATE INDEX idx_campaign_metrics_opened_at ON public.campaign_metrics(opened_at);
+CREATE INDEX idx_campaign_metrics_clicked_at ON public.campaign_metrics(clicked_at);
+CREATE INDEX idx_campaign_metrics_data_submitted_at ON public.campaign_metrics(data_submitted_at);
+-- from there to here L82-112 , just fuckin delete if this even tryin to suck
 -- Enable Row Level Security
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.email_templates ENABLE ROW LEVEL SECURITY;

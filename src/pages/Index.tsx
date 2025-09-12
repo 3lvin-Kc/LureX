@@ -1,13 +1,15 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Users, BarChart3, Mail, Target, CheckCircle, Shield } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { ProfileDropdown } from "@/components/ui/ProfileDropdown";
 
 const Index = () => {
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
 
   const features = [
     {
@@ -57,13 +59,23 @@ const Index = () => {
               <Button variant="ghost" onClick={() => navigate("/help")}>
                 Help
               </Button>
-              <Button variant="ghost" onClick={() => navigate("/auth")}>
-                Sign In
-              </Button>
-              <ThemeToggle />
-              <Button onClick={() => navigate("/dashboard")}>
-                Get Started
-              </Button>
+              {!loading && (
+                <>
+                  {user ? (
+                    <ProfileDropdown />
+                  ) : (
+                    <>
+                      <Button variant="ghost" onClick={() => navigate("/auth")}>
+                        Sign In
+                      </Button>
+                      <ThemeToggle />
+                      <Button onClick={() => navigate("/dashboard")}>
+                        Get Started
+                      </Button>
+                    </>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>
