@@ -433,8 +433,9 @@ Focus on creating content that would realistically test employee security awaren
                   <div className="bg-muted p-3 border-b">
                     <h4 className="font-medium">Email Content</h4>
                   </div>
-                  <div className="p-4 bg-white">
+                  <div className="p-4 bg-background border border-border rounded-b-lg">
                     <div 
+                      className="prose prose-sm max-w-none dark:prose-invert"
                       dangerouslySetInnerHTML={{ 
                         __html: generatedTemplate.html_content 
                       }} 
