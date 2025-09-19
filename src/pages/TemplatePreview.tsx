@@ -88,7 +88,7 @@ const TemplatePreview = () => {
             )}
             <div className="mb-4">
               <strong>HTML Preview:</strong>
-              <div className="border rounded-lg p-4 bg-white min-h-64 mt-2">
+              <div className="border rounded-lg p-4 bg-background dark:bg-card min-h-64 mt-2">
                 <div dangerouslySetInnerHTML={{ __html: template.html_content }} />
               </div>
             </div>

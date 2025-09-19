@@ -72,29 +72,32 @@ const CloneWebsitePage = () => {
   return (
     <DashboardLayout>
       <div className="container mx-auto p-4 max-w-2xl">
-        <div className="mb-6">
+        <div className="mb-8">
           <Button
-            variant="ghost"
+            variant="outline"
+            size="icon"
             onClick={() => navigate("/phishing-pages")}
-            className="mb-2"
+            className="hover:bg-accent/50 transition-all duration-200 border-border/50 hover:border-border shadow-sm mb-4"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Phishing Pages
+            <ArrowLeft size={16} />
           </Button>
-          <h1 className="text-3xl font-bold">Clone Website</h1>
-          <p className="text-muted-foreground">Create a phishing page by cloning an existing website</p>
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">Clone Website</h1>
+            <p className="text-muted-foreground">Create a phishing page by cloning an existing website</p>
+          </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+        <div className="space-y-8">
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
               <Globe className="w-5 h-5" />
               Website Cloning
-            </CardTitle>
-            <CardDescription>
+            </h2>
+            <p className="text-muted-foreground">
               Enter the URL of the website you want to clone for your phishing simulation
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
+            </p>
+          </div>
+          <div className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="url">Website URL</Label>
               <Input
@@ -171,8 +174,8 @@ const CloneWebsitePage = () => {
                 {isCloning ? "Cloning Website..." : "Clone Website"}
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </DashboardLayout>
   );

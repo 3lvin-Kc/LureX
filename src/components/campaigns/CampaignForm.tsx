@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { LoaderCircle, Calendar, Mail, Users, Globe } from "lucide-react";
+import { LoaderCircle, Calendar, Mail, Users, Globe, FileText, Link, Paperclip } from "lucide-react";
 import { useTemplates } from "@/hooks/useTemplates";
 import { useTargetLists } from "@/hooks/useTargetLists";
 import { usePhishingPages } from "@/hooks/usePhishingPages";
@@ -25,11 +25,27 @@ import { useCustomDomains } from "@/hooks/useCustomDomains";
 const formSchema = z.object({
   name: z.string().min(1, { message: "Campaign name is required" }),
   description: z.string().optional(),
+  simulation_type: z.enum(["link", "file"], { message: "Simulation type is required" }),
+  file_type: z.string().optional(),
+  file_name: z.string().optional(),
   template_id: z.string().min(1, { message: "Email template is required" }),
   target_list_id: z.string().min(1, { message: "Target list is required" }),
-  phishing_page_id: z.string().min(1, { message: "Phishing page is required" }),
+  phishing_page_id: z.string().optional(),
   domain_id: z.string().optional(),
   schedule_time: z.string().optional(),
+}).refine((data) => {
+  // For link simulation, phishing_page_id is required
+  if (data.simulation_type === "link") {
+    return data.phishing_page_id && data.phishing_page_id.length > 0;
+  }
+  // For file simulation, file_type and file_name are required
+  if (data.simulation_type === "file") {
+    return data.file_type && data.file_type.length > 0 && data.file_name && data.file_name.length > 0;
+  }
+  return true;
+}, {
+  message: "Required fields are missing for the selected simulation type",
+  path: ["simulation_type"]
 });
 
 interface CampaignFormProps {
@@ -40,6 +56,7 @@ interface CampaignFormProps {
 const CampaignForm: React.FC<CampaignFormProps> = ({ onSubmit, initialData }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isScheduled, setIsScheduled] = useState(false);
+  const [simulationType, setSimulationType] = useState<"link" | "file">("link");
   
   const { templates, loading: templatesLoading } = useTemplates();
   const { targetLists, loading: targetListsLoading } = useTargetLists();
@@ -53,10 +70,13 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ onSubmit, initialData }) =>
     defaultValues: {
       name: initialData?.name || "",
       description: initialData?.description || "",
+      simulation_type: initialData?.simulation_type || "link",
+      file_type: initialData?.file_type || "pdf",
+      file_name: initialData?.file_name || "",
       template_id: initialData?.template_id || "",
       target_list_id: initialData?.target_list_id || "",
-      phishing_page_id: initialData?.phishing_page_id || "",
-      domain_id: initialData?.domain_id || "default",
+      phishing_page_id: initialData?.phishing_page_id || undefined,
+      domain_id: initialData?.domain_id || undefined,
       schedule_time: initialData?.schedule_time ? new Date(initialData.schedule_time).toISOString().slice(0, 16) : "",
     },
   });
@@ -66,7 +86,9 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ onSubmit, initialData }) =>
     try {
       const submitValues = {
         ...values,
-        domain_id: values.domain_id === "default" ? null : values.domain_id,
+        // Convert empty strings to null for UUID fields
+        phishing_page_id: values.phishing_page_id && values.phishing_page_id.trim() !== "" ? values.phishing_page_id : null,
+        domain_id: values.domain_id && values.domain_id !== "default" && values.domain_id.trim() !== "" ? values.domain_id : null,
       };
       await onSubmit(submitValues);
     } finally {
@@ -126,6 +148,108 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ onSubmit, initialData }) =>
                 </FormItem>
               )}
             />
+
+            {/* Simulation Type Selection */}
+            <FormField
+              control={form.control}
+              name="simulation_type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Simulation Type</FormLabel>
+                  <Select 
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      setSimulationType(value as "link" | "file");
+                    }} 
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose simulation type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="link">
+                        <div className="flex items-center gap-2">
+                          <Link className="w-4 h-4" />
+                          Link-based Phishing
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="file">
+                        <div className="flex items-center gap-2">
+                          <Paperclip className="w-4 h-4" />
+                          File Attachment Phishing
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    {simulationType === "link" 
+                      ? "Users will receive emails with malicious links to click"
+                      : "Users will receive emails with file attachments to download/open"
+                    }
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* File Configuration - Only show when file type is selected */}
+            {simulationType === "file" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 border rounded-lg bg-muted/20">
+                <FormField
+                  control={form.control}
+                  name="file_type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2">
+                        <FileText className="w-4 h-4" />
+                        File Type
+                      </FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select file type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="pdf">PDF Document (.pdf)</SelectItem>
+                          <SelectItem value="docx">Word Document (.docx)</SelectItem>
+                          <SelectItem value="xlsx">Excel Spreadsheet (.xlsx)</SelectItem>
+                          <SelectItem value="zip">ZIP Archive (.zip)</SelectItem>
+                          <SelectItem value="exe">Executable (.exe)</SelectItem>
+                          <SelectItem value="jpg">Image (.jpg)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        The type of file attachment to simulate
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="file_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>File Name</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="e.g., Invoice_December_2024.pdf" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        The filename that will appear in the email
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
 
            
             
@@ -205,42 +329,44 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ onSubmit, initialData }) =>
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="phishing_page_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2">
-                      <Globe className="w-4 h-4" />
-                      Landing Page
-                    </FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select landing page" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {pagesLoading ? (
-                          <SelectItem value="loading" disabled>Loading pages...</SelectItem>
-                        ) : phishingPages.length === 0 ? (
-                          <SelectItem value="no-pages" disabled>No phishing pages available</SelectItem>
-                        ) : (
-                          phishingPages.map((page) => (
-                            <SelectItem key={page.id} value={page.id}>
-                              {page.name} {page.category && `(${page.category})`}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      The page targets will see when they click the email
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {simulationType !== 'file' && (
+                <FormField
+                  control={form.control}
+                  name="phishing_page_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2">
+                        <Globe className="w-4 h-4" />
+                        Landing Page
+                      </FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select landing page" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {pagesLoading ? (
+                            <SelectItem value="loading" disabled>Loading pages...</SelectItem>
+                          ) : phishingPages.length === 0 ? (
+                            <SelectItem value="no-pages" disabled>No phishing pages available</SelectItem>
+                          ) : (
+                            phishingPages.map((page) => (
+                              <SelectItem key={page.id} value={page.id}>
+                                {page.name} {page.category && `(${page.category})`}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        The page targets will see when they click the email
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
             </div>
 
             {/* Domain Selection */}

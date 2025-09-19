@@ -40,93 +40,106 @@ const TargetLists = () => {
   return (
     <DashboardLayout>
       <div className="container mx-auto p-4 max-w-7xl">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-3xl font-bold">Target Lists</h1>
-            <p className="text-muted-foreground">Manage recipient lists for your phishing campaigns</p>
+        <div className="flex justify-between items-center mb-8">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">Target Lists</h1>
+            <p className="text-muted-foreground text-lg">Manage recipient lists for your phishing campaigns</p>
           </div>
           <Button 
             onClick={() => navigate("/target-lists/new")}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 h-10 px-4 bg-primary hover:bg-primary/90 transition-all duration-200 shadow-sm hover:shadow-md"
           >
             <PlusCircle size={16} />
             New Target List
           </Button>
         </div>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle>Target List Library</CardTitle>
-            <CardDescription>
+        <Card className="border-border/50 shadow-sm hover:shadow-md transition-all duration-300">
+          <CardHeader className="pb-4 border-b border-border/50">
+            <CardTitle className="text-xl font-semibold">Target List Library</CardTitle>
+            <CardDescription className="text-base">
               Browse and manage your recipient lists for phishing campaigns
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             {loading ? (
               <div className="flex items-center justify-center h-32">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
             ) : targetLists.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground mb-4">No target lists found</p>
+              <div className="text-center py-12 px-6">
+                <div className="mx-auto w-16 h-16 bg-muted/30 rounded-full flex items-center justify-center mb-4">
+                  <Users className="w-8 h-8 text-muted-foreground/60" />
+                </div>
+                <p className="text-muted-foreground text-lg mb-2">No target lists found</p>
+                <p className="text-muted-foreground/70 text-sm mb-8">Create your first target list to get started</p>
                 <Button 
-                  variant="outline" 
                   onClick={() => navigate("/target-lists/new")}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 h-10 px-4 bg-primary hover:bg-primary/90 transition-all duration-200"
                 >
                   <PlusCircle size={16} />
                   Create Target List
                 </Button>
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Recipients</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {targetLists.map((list) => (
-                    <TableRow key={list.id}>
-                      <TableCell className="font-medium">{list.name}</TableCell>
-                      <TableCell>{list.description || "—"}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="flex items-center gap-1 w-fit">
-                          <Users size={12} />
-                          {list.target_count} recipients
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(list.created_at), "MMM d, yyyy")}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <TooltipProvider>
-
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  disabled={isDeleting === list.id}
-                                  onClick={() => handleDeleteList(list.id)}
-                                >
-                                  <Trash2 size={16} />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Delete</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </div>
-                      </TableCell>
+              <div className="overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-border/50 hover:bg-muted/30">
+                      <TableHead className="font-semibold text-foreground/90 py-4">Name</TableHead>
+                      <TableHead className="font-semibold text-foreground/90">Description</TableHead>
+                      <TableHead className="font-semibold text-foreground/90">Recipients</TableHead>
+                      <TableHead className="font-semibold text-foreground/90">Created</TableHead>
+                      <TableHead className="text-right font-semibold text-foreground/90">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {targetLists.map((list) => (
+                      <TableRow 
+                        key={list.id}
+                        className="border-border/30 hover:bg-muted/20 transition-colors duration-200"
+                      >
+                        <TableCell className="font-medium py-4 text-foreground">{list.name}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {list.description || <span className="text-muted-foreground/50">—</span>}
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant="outline" 
+                            className="flex items-center gap-1 w-fit border-border/50 bg-muted/30 hover:bg-muted/50 transition-colors duration-200"
+                          >
+                            <Users size={12} />
+                            {list.target_count} recipients
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {format(new Date(list.created_at), "MMM d, yyyy")}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    disabled={isDeleting === list.id}
+                                    onClick={() => handleDeleteList(list.id)}
+                                    className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive transition-all duration-200 disabled:opacity-50"
+                                  >
+                                    <Trash2 size={14} className="text-muted-foreground" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="text-xs">Delete</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>

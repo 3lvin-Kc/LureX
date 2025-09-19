@@ -1,28 +1,78 @@
-
 import React, { useState } from "react";
-import { BarChart3, Download, Filter, Calendar, Users, Mail, MousePointer } from "lucide-react";
+import { BarChart3, Download, Filter, Calendar, Users, Mail, MousePointer, RotateCcw, AlertTriangle, Shield, TrendingUp, Building, ChevronDown, Clock, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-import { useReports } from "@/hooks/useReports";
-import { useCampaigns } from "@/hooks/useCampaigns";
+import HistoricalTimelineView from "@/components/analytics/HistoricalTimelineView";
+import SimulationKPICards from "@/components/analytics/SimulationKPICards";
+import SimulationSpiderChart from "@/components/analytics/SimulationSpiderChart";
+import TeamSecurityTrendChart from "@/components/analytics/TeamSecurityTrendChart";
+import { useSimulationMetrics, SimulationType } from "@/hooks/useSimulationMetrics";
+import { useSecurityTrends } from "@/hooks/useSecurityTrends";
+import { useHistoricalActivities } from "@/hooks/useHistoricalActivities";
+import { useDepartmentVulnerability } from "@/hooks/useDepartmentVulnerability";
+import { useCampaignSummary } from "@/hooks/useCampaignSummary";
+import DepartmentVulnerabilityCards from "@/components/analytics/DepartmentVulnerabilityCards";
+import DepartmentDetailsSidebar from "@/components/analytics/DepartmentDetailsSidebar";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Area, AreaChart } from "recharts";
 
 const Reports = () => {
   const navigate = useNavigate();
   const [selectedCampaign, setSelectedCampaign] = useState("all");
   const [dateRange, setDateRange] = useState("30");
-  const { reportData, loading, exportReport } = useReports();
-  const { campaigns } = useCampaigns();
+  const [riskLevel, setRiskLevel] = useState("all");
+  const [fileType, setFileType] = useState("all");
+  const [showRecentActivity, setShowRecentActivity] = useState(false);
+  const [simulationType, setSimulationType] = useState<SimulationType>('combined');
+  const [timePeriod, setTimePeriod] = useState(30);
+
+  // Simulation metrics hook
+  const { 
+    linkMetrics, 
+    fileMetrics, 
+    spiderData, 
+    loading: simulationLoading 
+  } = useSimulationMetrics(simulationType, timePeriod);
+
+  // Security trends hook
+  const { 
+    trendData, 
+    loading: trendsLoading 
+  } = useSecurityTrends(timePeriod);
+
+  // Historical activities hook
+  const { 
+    activities: historicalActivities, 
+    loading: activitiesLoading,
+    refetch: refetchActivities 
+  } = useHistoricalActivities();
+
+  // Department vulnerability hook
+  const { 
+    departments, 
+    loading: departmentsLoading, 
+    selectedDepartment, 
+    selectDepartment, 
+    closeSidebar 
+  } = useDepartmentVulnerability();
+
+  // Campaign summary hook
+  const {
+    campaigns: campaignSummary,
+    loading: campaignSummaryLoading
+  } = useCampaignSummary();
+
+  // All data now uses real hooks - no mock data needed
 
   const handleExportPDF = async () => {
     try {
-      await exportReport('pdf');
+      // TODO: Implement PDF export functionality
+      console.log('Exporting PDF report...');
     } catch (error) {
       console.error('Failed to export PDF:', error);
     }
@@ -30,23 +80,25 @@ const Reports = () => {
 
   const handleExportCSV = async () => {
     try {
-      await exportReport('csv');
+      // TODO: Implement CSV export functionality
+      console.log('Exporting CSV report...');
     } catch (error) {
       console.error('Failed to export CSV:', error);
     }
   };
 
-  if (loading) {
-    return (
-      <DashboardLayout>
-        <div className="container mx-auto p-4 max-w-7xl">
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
+  const getRiskBadgeVariant = (risk: string) => {
+    switch (risk.toLowerCase()) {
+      case 'high': return 'destructive';
+      case 'medium': return 'default';
+      case 'low': return 'secondary';
+      default: return 'outline';
+    }
+  };
+
+  const getStatusBadgeVariant = (status: string) => {
+    return status === 'Active' ? 'default' : 'secondary';
+  };
 
   return (
     <DashboardLayout>
@@ -57,268 +109,279 @@ const Reports = () => {
             <p className="text-muted-foreground">Analyze your phishing campaign performance and security metrics</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" className="flex items-center gap-2" onClick={handleExportPDF}>
-              <Download size={16} />
-              Export PDF
-            </Button>
-            <Button variant="outline" className="flex items-center gap-2" onClick={handleExportCSV}>
-              <Download size={16} />
-              Export CSV
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Download size={16} />
+                  Export
+                  <ChevronDown size={16} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={handleExportPDF}>
+                  <Download className="mr-2 h-4 w-4" />
+                  PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowRecentActivity(true)}
+              className="flex items-center gap-2"
+            >
+              <Clock size={16} />
+              Recent
             </Button>
           </div>
         </div>
 
-        {/* Filters */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="flex flex-wrap gap-4">
-              <div className="min-w-48">
-                <label className="text-sm font-medium mb-2 block">Campaign</label>
-                <Select value={selectedCampaign} onValueChange={setSelectedCampaign}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select campaign" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Campaigns</SelectItem>
-                    {campaigns.map(campaign => (
-                      <SelectItem key={campaign.id} value={campaign.id}>
-                        {campaign.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+        {showRecentActivity ? (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-bold">Recent Activity</h2>
+                <p className="text-muted-foreground">Historical user interactions and campaign activities</p>
               </div>
-              <div className="min-w-32">
-                <label className="text-sm font-medium mb-2 block">Date Range</label>
-                <Select value={dateRange} onValueChange={setDateRange}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="7">Last 7 days</SelectItem>
-                    <SelectItem value="30">Last 30 days</SelectItem>
-                    <SelectItem value="90">Last 3 months</SelectItem>
-                    <SelectItem value="365">Last year</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowRecentActivity(false)}
+                className="flex items-center gap-2"
+              >
+                <X size={16} />
+                Back to Reports
+              </Button>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Campaigns</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{reportData?.totalCampaigns || 0}</div>
-              <p className="text-xs text-muted-foreground">Active campaigns</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Emails Sent</CardTitle>
-              <Mail className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{reportData?.emailsSent?.toLocaleString() || 0}</div>
-              <p className="text-xs text-muted-foreground">Total delivered</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Click Rate</CardTitle>
-              <MousePointer className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{reportData?.clickRate || 0}%</div>
-              <p className="text-xs text-muted-foreground">Average click rate</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Participants</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{reportData?.participants?.toLocaleString() || 0}</div>
-              <p className="text-xs text-muted-foreground">Total participants</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="mb-6">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="campaigns">Campaign Details</TabsTrigger>
-            <TabsTrigger value="departments">Department Analysis</TabsTrigger>
-            <TabsTrigger value="trends">Trends</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Campaign Performance Chart */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Campaign Performance</CardTitle>
-                  <CardDescription>Email interactions by campaign</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {reportData?.campaignData && reportData.campaignData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={reportData.campaignData}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
-                        <Bar dataKey="sent" fill="#8884d8" name="Sent" />
-                        <Bar dataKey="opened" fill="#82ca9d" name="Opened" />
-                        <Bar dataKey="clicked" fill="#ffc658" name="Clicked" />
-                        <Bar dataKey="submitted" fill="#ff7300" name="Submitted" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="flex items-center justify-center h-64 text-muted-foreground">
-                      No campaign data available
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Department Vulnerability */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Department Analysis</CardTitle>
-                  <CardDescription>Risk by department</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {reportData?.departmentData && reportData.departmentData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={300}>
-                      <PieChart>
-                        <Pie
-                          data={reportData.departmentData}
-                          cx="50%"
-                          cy="50%"
-                          outerRadius={100}
-                          fill="#8884d8"
-                          dataKey="value"
-                          label
-                        >
-                          {reportData.departmentData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="flex items-center justify-center h-64 text-muted-foreground">
-                      No department data available
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="campaigns" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Campaign Details</CardTitle>
-                <CardDescription>Detailed performance metrics for each campaign</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {reportData?.campaignData && reportData.campaignData.length > 0 ? (
-                  <div className="space-y-4">
-                    {reportData.campaignData.map((campaign, index) => (
-                      <div key={index} className="border rounded-lg p-4">
-                        <div className="flex justify-between items-center mb-2">
-                          <h4 className="font-medium">{campaign.name}</h4>
-                          <Badge variant="outline">
-                            {campaign.sent > 0 ? Math.round((campaign.clicked / campaign.sent) * 100) : 0}% click rate
-                          </Badge>
-                        </div>
-                        <div className="grid grid-cols-4 gap-4 text-sm">
-                          <div>
-                            <p className="text-muted-foreground">Sent</p>
-                            <p className="font-medium">{campaign.sent}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Opened</p>
-                            <p className="font-medium">{campaign.opened}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Clicked</p>
-                            <p className="font-medium">{campaign.clicked}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Submitted</p>
-                            <p className="font-medium">{campaign.submitted}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+            <HistoricalTimelineView 
+              activities={historicalActivities}
+              onRefresh={refetchActivities}
+            />
+          </div>
+        ) : (
+          <>
+            {/* Filters Bar */}
+            <Card className="mb-6">
+              <CardContent className="pt-6">
+                <div className="flex flex-wrap gap-4 items-end">
+                  <div className="min-w-48">
+                    <label className="text-sm font-medium mb-2 block">Campaign</label>
+                    <Select value={selectedCampaign} onValueChange={setSelectedCampaign}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Campaigns" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Campaigns</SelectItem>
+                        <SelectItem value="holiday">Holiday Phishing Test</SelectItem>
+                        <SelectItem value="qr">QR Code Security Test</SelectItem>
+                        <SelectItem value="sms">SMS Phishing Campaign</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No campaign data available
+                  <div className="min-w-32">
+                    <label className="text-sm font-medium mb-2 block">Date Range</label>
+                    <Select value={dateRange} onValueChange={setDateRange}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="7">Last 7 days</SelectItem>
+                        <SelectItem value="30">Last 30 days</SelectItem>
+                        <SelectItem value="90">Last 3 months</SelectItem>
+                        <SelectItem value="365">Last year</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="departments" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Department Risk Analysis</CardTitle>
-                <CardDescription>Security awareness by department</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {reportData?.departmentData && reportData.departmentData.length > 0 ? (
-                  <div className="space-y-4">
-                    {reportData.departmentData.map((dept, index) => (
-                      <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex items-center space-x-4">
-                          <div 
-                            className="w-4 h-4 rounded"
-                            style={{ backgroundColor: dept.color }}
-                          ></div>
-                          <span className="font-medium">{dept.name}</span>
-                        </div>
-                        <div className="flex items-center space-x-4">
-                          <Progress value={dept.value} className="w-32" />
-                          <span className="text-sm font-medium">{dept.value}%</span>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="min-w-32">
+                    <label className="text-sm font-medium mb-2 block">Risk Level</label>
+                    <Select value={riskLevel} onValueChange={setRiskLevel}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Levels" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Levels</SelectItem>
+                        <SelectItem value="high">High Risk</SelectItem>
+                        <SelectItem value="medium">Medium Risk</SelectItem>
+                        <SelectItem value="low">Low Risk</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No department data available
+                  <div className="min-w-32">
+                    <label className="text-sm font-medium mb-2 block">File Type</label>
+                    <Select value={fileType} onValueChange={setFileType}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="All Types" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Types</SelectItem>
+                        <SelectItem value="email">Email</SelectItem>
+                        <SelectItem value="sms">SMS</SelectItem>
+                        <SelectItem value="qr">QR Code</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="trends" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Security Trends</CardTitle>
-                <CardDescription>Track improvement over time</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  Trend analysis will be available with more campaign data
+                  <div className="flex gap-2">
+                    <Button variant="outline" className="flex items-center gap-2">
+                      <Filter className="h-4 w-4" />
+                      More Filters
+                    </Button>
+                    <Button variant="outline" className="flex items-center gap-2">
+                      <RotateCcw className="h-4 w-4" />
+                      Reset
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+
+            {/* Simulation Type Analysis Section */}
+            <Card className="mb-6">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Simulation Type Analysis</CardTitle>
+                    <CardDescription>Performance metrics by phishing simulation type</CardDescription>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="min-w-48">
+                      <label className="text-sm font-medium mb-2 block">Simulation Type</label>
+                      <Select value={simulationType} onValueChange={(value: SimulationType) => setSimulationType(value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select simulation type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="combined">Combined View</SelectItem>
+                          <SelectItem value="link">Link-based Phishing</SelectItem>
+                          <SelectItem value="file">File-based Phishing</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="min-w-32">
+                      <label className="text-sm font-medium mb-2 block">Time Period</label>
+                      <Select value={timePeriod.toString()} onValueChange={(value) => setTimePeriod(parseInt(value))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="7">Last 7 days</SelectItem>
+                          <SelectItem value="30">Last 30 days</SelectItem>
+                          <SelectItem value="90">Last 90 days</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <SimulationKPICards
+                  simulationType={simulationType}
+                  linkMetrics={linkMetrics}
+                  fileMetrics={fileMetrics}
+                  loading={simulationLoading}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Campaign Summary Table */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Campaign Summary</CardTitle>
+            <CardDescription>Overview of all campaign activities</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Campaign</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Sent Date</TableHead>
+                  <TableHead>Recipients</TableHead>
+                  <TableHead>Interactions</TableHead>
+                  <TableHead>Risk</TableHead>
+                  <TableHead>Click Rate</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {campaignSummaryLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
+                    </TableCell>
+                  </TableRow>
+                ) : campaignSummary.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      No campaigns found. Create your first campaign to see summary data here.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  campaignSummary.map((campaign) => (
+                    <TableRow key={campaign.id}>
+                      <TableCell className="font-medium">{campaign.name}</TableCell>
+                      <TableCell>
+                        <Badge variant={campaign.type === 'file' ? 'destructive' : 'default'}>
+                          {campaign.type === 'file' ? 'File' : campaign.type === 'link' ? 'Link' : 'Mixed'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{campaign.sentDate}</TableCell>
+                      <TableCell>{campaign.recipients}</TableCell>
+                      <TableCell>{campaign.interactions}</TableCell>
+                      <TableCell>
+                        <Badge variant={
+                          campaign.riskLevel === 'high' ? 'destructive' : 
+                          campaign.riskLevel === 'medium' ? 'secondary' : 'default'
+                        }>
+                          {campaign.riskLevel}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{campaign.clickRate}%</TableCell>
+                      <TableCell>
+                        <Badge variant={
+                          campaign.status === 'active' ? 'default' : 
+                          campaign.status === 'completed' ? 'secondary' : 
+                          campaign.status === 'paused' ? 'destructive' : 'outline'
+                        }>
+                          {campaign.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        {/* Advanced Spider Chart */}
+        <SimulationSpiderChart 
+          data={spiderData}
+          loading={simulationLoading}
+          className="mb-6"
+        />
+
+        {/* Charts Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <TeamSecurityTrendChart 
+            data={trendData}
+            loading={trendsLoading}
+          />
+
+
+          <DepartmentVulnerabilityCards 
+            departments={departments}
+            loading={departmentsLoading}
+            onDepartmentClick={selectDepartment}
+          />
+        </div>
+
+          </>
+        )}
+
+        {/* Department Details Sidebar */}
+        <DepartmentDetailsSidebar 
+          department={selectedDepartment}
+          isOpen={!!selectedDepartment}
+          onClose={closeSidebar}
+        />
       </div>
     </DashboardLayout>
   );

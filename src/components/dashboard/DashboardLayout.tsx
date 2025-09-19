@@ -36,11 +36,7 @@ const navItems: NavItem[] = [
     href: "/phishing-pages",
     icon: Globe,
   },
-  {
-    title: "Reports",
-    href: "/reports",
-    icon: BarChart3,
-  },
+ 
   {
     title: "Settings",
     href: "/settings",
@@ -57,18 +53,18 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   return (
     <div className="h-screen bg-background flex flex-col">
-      {/* Fixed Header */}
-      <header className="bg-background border-b border-border px-4 lg:px-6 flex-shrink-0 z-10">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center space-x-4">
+      {/* Fixed Header - Compact and Transparent */}
+      <header className="bg-background/50 backdrop-blur-sm border-b border-border/20 px-4 lg:px-6 flex-shrink-0 z-10 h-12">
+        <div className="flex items-center justify-between h-full">
+          <div className="flex items-center space-x-3">
             <Link to="/dashboard" className="flex items-center space-x-2">
-              <Shield className="h-6 w-6 text-primary" />
-              <span className="text-xl font-bold text-foreground">LureX Security</span>
+              <Shield className="h-5 w-5 text-primary" />
+              <span className="text-lg font-semibold text-foreground">LureX</span>
             </Link>
           </div>
-          <div className="flex items-center space-x-4">
-            <Button variant="outline" asChild>
-              <Link to="/">Back to Home</Link>
+          <div className="flex items-center">
+            <Button variant="ghost" size="sm" className="h-8" asChild>
+              <Link to="/" className="text-sm">Home</Link>
             </Button>
           </div>
         </div>

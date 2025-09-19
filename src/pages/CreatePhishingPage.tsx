@@ -62,28 +62,28 @@ const CreatePhishingPage = () => {
   return (
     <DashboardLayout>
       <div className="container mx-auto p-4 max-w-4xl">
-        <div className="flex items-center gap-4 mb-6">
+        <div className="mb-8">
           <Button
             variant="outline"
             size="icon"
             onClick={() => navigate('/phishing-pages')}
+            className="hover:bg-accent/50 transition-all duration-200 border-border/50 hover:border-border shadow-sm mb-4"
           >
             <ArrowLeft size={16} />
           </Button>
-          <div>
-            <h1 className="text-3xl font-bold">Create Phishing Page</h1>
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">Create Phishing Page</h1>
             <p className="text-muted-foreground">Create a custom phishing page for your campaigns</p>
           </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Page Details</CardTitle>
-            <CardDescription>Configure your custom phishing page</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        <div className="space-y-8">
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold">Page Details</h2>
+            <p className="text-muted-foreground">Configure your custom phishing page</p>
+          </div>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField
                     control={form.control}
@@ -179,23 +179,27 @@ const CreatePhishingPage = () => {
                   )}
                 />
 
-                <div className="flex justify-end gap-4">
+                <div className="flex justify-end gap-3 pt-6">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => navigate('/phishing-pages')}
+                    className="hover:bg-muted/50 transition-colors duration-200"
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={isSubmitting}>
+                  <Button 
+                    type="submit" 
+                    disabled={isSubmitting}
+                    className="bg-primary hover:bg-primary/90 transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50"
+                  >
                     {isSubmitting && <Save className="mr-2 h-4 w-4 animate-spin" />}
                     Create Page
                   </Button>
                 </div>
               </form>
             </Form>
-          </CardContent>
-        </Card>
+        </div>
       </div>
     </DashboardLayout>
   );

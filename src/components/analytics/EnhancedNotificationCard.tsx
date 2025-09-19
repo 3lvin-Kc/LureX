@@ -15,7 +15,11 @@ import {
   Monitor,
   Tablet,
   Clock,
-  Globe
+  Globe,
+  Download,
+  FileText,
+  Link,
+  File
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { parseUserAgent, calculateTimeToClick, assessRisk, DeviceInfo, RiskIndicators } from '@/utils/deviceInfoParser';
@@ -23,10 +27,11 @@ import { parseUserAgent, calculateTimeToClick, assessRisk, DeviceInfo, RiskIndic
 interface NotificationEvent {
   id: string;
   targetEmail: string;
-  eventType: 'sent' | 'opened' | 'clicked' | 'submitted' | 'reported';
+  eventType: 'sent' | 'opened' | 'clicked' | 'submitted' | 'reported' | 'file_downloaded' | 'file_opened';
   timestamp: string;
   campaignId?: string;
   campaignName?: string;
+  simulationType?: 'link' | 'file';
   userAgent?: string;
   ipAddress?: string;
   location?: {
@@ -36,8 +41,12 @@ interface NotificationEvent {
   sentAt?: string;
   openedAt?: string;
   clickedAt?: string;
-  submittedAt?: string;
+  dataSubmittedAt?: string;
   reportedAt?: string;
+  fileDownloadedAt?: string;
+  fileOpenedAt?: string;
+  fileName?: string;
+  fileType?: string;
   additionalData?: any;
 }
 
@@ -61,7 +70,7 @@ const EnhancedNotificationCard: React.FC<EnhancedNotificationCardProps> = ({ eve
   
   const riskAssessment: RiskIndicators = assessRisk(
     timeToClick || undefined,
-    !!event.submittedAt,
+    !!event.dataSubmittedAt,
     !!event.reportedAt,
     deviceInfo
   );
@@ -78,9 +87,40 @@ const EnhancedNotificationCard: React.FC<EnhancedNotificationCardProps> = ({ eve
         return <Shield className="h-4 w-4" />;
       case 'reported':
         return <AlertTriangle className="h-4 w-4" />;
+      case 'file_downloaded':
+        return <Download className="h-4 w-4" />;
+      case 'file_opened':
+        return <FileText className="h-4 w-4" />;
       default:
         return <Mail className="h-4 w-4" />;
     }
+  };
+
+  const getCampaignTypeIcon = (simulationType?: 'link' | 'file') => {
+    return simulationType === 'file' ? 
+      <File className="h-3 w-3" /> : 
+      <Link className="h-3 w-3" />;
+  };
+
+  const getCampaignTypeBadge = (simulationType?: 'link' | 'file') => {
+    return simulationType === 'file' ? 
+      { text: 'File-based', class: 'bg-purple-100 text-purple-800 border-purple-200' } :
+      { text: 'Link-based', class: 'bg-blue-100 text-blue-800 border-blue-200' };
+  };
+
+  const getContextualMetrics = (simulationType?: 'link' | 'file') => {
+    if (simulationType === 'file') {
+      return {
+        metrics: ['Sent', 'Opened', 'Clicked', 'Reported', 'Downloaded'],
+        primaryAction: 'Downloaded',
+        secondaryActions: ['Opened', 'Clicked', 'Reported']
+      };
+    }
+    return {
+      metrics: ['Sent', 'Opened', 'Clicked', 'Reported', 'Submitted', 'Time to Click'],
+      primaryAction: 'Submitted',
+      secondaryActions: ['Opened', 'Clicked', 'Reported']
+    };
   };
 
   const getEventColor = (eventType: string) => {
@@ -91,6 +131,10 @@ const EnhancedNotificationCard: React.FC<EnhancedNotificationCardProps> = ({ eve
         return 'text-green-600 bg-green-50 border-green-200';
       case 'clicked':
         return 'text-orange-600 bg-orange-50 border-orange-200';
+      case 'file_downloaded':
+        return 'text-purple-600 bg-purple-50 border-purple-200';
+      case 'file_opened':
+        return 'text-indigo-600 bg-indigo-50 border-indigo-200';
       case 'submitted':
         return 'text-red-600 bg-red-50 border-red-200';
       case 'reported':
@@ -137,6 +181,13 @@ const EnhancedNotificationCard: React.FC<EnhancedNotificationCardProps> = ({ eve
                     <span className="font-medium text-sm truncate">{event.targetEmail}</span>
                     <Badge variant="outline" className="text-xs">
                       {event.eventType.charAt(0).toUpperCase() + event.eventType.slice(1)}
+                    </Badge>
+                    {/* Campaign Type Badge */}
+                    <Badge variant="outline" className={`text-xs ${getCampaignTypeBadge(event.simulationType).class}`}>
+                      <div className="flex items-center gap-1">
+                        {getCampaignTypeIcon(event.simulationType)}
+                        {getCampaignTypeBadge(event.simulationType).text}
+                      </div>
                     </Badge>
                     {riskAssessment.riskLevel !== 'low' && (
                       <Badge className={`text-xs ${riskAssessment.riskBadgeClass}`}>
@@ -190,8 +241,69 @@ const EnhancedNotificationCard: React.FC<EnhancedNotificationCardProps> = ({ eve
         <CollapsibleContent>
           <CardContent className="pt-0 pb-4 px-4">
             <div className="space-y-4 border-t pt-4">
+              {/* Context-Aware Metrics Display */}
+              <div>
+                <h4 className="text-sm font-medium mb-2">
+                  {event.simulationType === 'file' ? 'File-based Campaign Metrics' : 'Link-based Campaign Metrics'}
+                </h4>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  {getContextualMetrics(event.simulationType).metrics.map((metric, index) => {
+                    let value = '-';
+                    let status = 'pending';
+                    
+                    switch (metric) {
+                      case 'Sent':
+                        value = event.sentAt ? '✓' : '-';
+                        status = event.sentAt ? 'completed' : 'pending';
+                        break;
+                      case 'Opened':
+                        value = event.openedAt ? '✓' : '-';
+                        status = event.openedAt ? 'completed' : 'pending';
+                        break;
+                      case 'Clicked':
+                        value = event.clickedAt ? '✓' : '-';
+                        status = event.clickedAt ? 'completed' : 'pending';
+                        break;
+                      case 'Reported':
+                        value = event.reportedAt ? '✓' : '-';
+                        status = event.reportedAt ? 'completed' : 'pending';
+                        break;
+                      case 'Submitted':
+                        value = event.dataSubmittedAt ? '✓' : '-';
+                        status = event.dataSubmittedAt ? 'completed' : 'pending';
+                        break;
+                      case 'Downloaded':
+                        value = event.fileDownloadedAt ? '✓' : '-';
+                        status = event.fileDownloadedAt ? 'completed' : 'pending';
+                        break;
+                      case 'Time to Click':
+                        if (timeToClick) {
+                          value = formatTimeToClick(timeToClick);
+                          status = timeToClick < 30 ? 'high-risk' : timeToClick < 120 ? 'medium-risk' : 'low-risk';
+                        }
+                        break;
+                    }
+                    
+                    return (
+                      <div key={index} className="flex items-center justify-between p-2 rounded border">
+                        <span className="text-xs font-medium">{metric}</span>
+                        <span className={`text-xs font-mono ${
+                          status === 'completed' ? 'text-green-600' :
+                          status === 'high-risk' ? 'text-red-600' :
+                          status === 'medium-risk' ? 'text-orange-600' :
+                          status === 'low-risk' ? 'text-blue-600' :
+                          'text-muted-foreground'
+                        }`}>
+                          {value}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              
               {/* Detailed Event Timeline */}
-              {(event.sentAt || event.openedAt || event.clickedAt || event.submittedAt || event.reportedAt) && (
+              {(event.sentAt || event.openedAt || event.clickedAt || event.dataSubmittedAt || event.reportedAt || event.fileDownloadedAt || event.fileOpenedAt) && (
                 <div>
                   <h4 className="text-sm font-medium mb-2">Event Timeline</h4>
                   <div className="space-y-2">
@@ -210,13 +322,27 @@ const EnhancedNotificationCard: React.FC<EnhancedNotificationCardProps> = ({ eve
                     {event.clickedAt && (
                       <div className="flex items-center gap-2 text-xs">
                         <div className="w-2 h-2 rounded-full bg-orange-500"></div>
-                        <span>Clicked at {format(new Date(event.clickedAt), 'MMM d, h:mm:ss a')}</span>
+                        <span>{event.simulationType === 'file' ? 'File clicked' : 'Link clicked'} at {format(new Date(event.clickedAt), 'MMM d, h:mm:ss a')}</span>
                       </div>
                     )}
-                    {event.submittedAt && (
+                    {event.fileDownloadedAt && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+                        <span>File downloaded at {format(new Date(event.fileDownloadedAt), 'MMM d, h:mm:ss a')}</span>
+                        {event.fileName && <span className="text-muted-foreground">({event.fileName})</span>}
+                      </div>
+                    )}
+                    {event.fileOpenedAt && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
+                        <span>File opened at {format(new Date(event.fileOpenedAt), 'MMM d, h:mm:ss a')}</span>
+                        {event.fileName && <span className="text-muted-foreground">({event.fileName})</span>}
+                      </div>
+                    )}
+                    {event.dataSubmittedAt && (
                       <div className="flex items-center gap-2 text-xs">
                         <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                        <span>Data submitted at {format(new Date(event.submittedAt), 'MMM d, h:mm:ss a')}</span>
+                        <span>Data submitted at {format(new Date(event.dataSubmittedAt), 'MMM d, h:mm:ss a')}</span>
                       </div>
                     )}
                     {event.reportedAt && (

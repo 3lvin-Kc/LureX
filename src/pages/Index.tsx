@@ -58,9 +58,12 @@ const Index = () => {
               {!loading && (
                 <>
                   {user ? (
-                    <Button onClick={() => navigate("/dashboard")}>
-                      Dashboard
-                    </Button>
+                    <div className="flex items-center space-x-4">
+                      <Button variant="outline" onClick={() => navigate("/dashboard")}>
+                        Dashboard
+                      </Button>
+                      <ProfileDropdown />
+                    </div>
                   ) : (
                     <Button onClick={() => navigate("/auth")}>
                       Sign In

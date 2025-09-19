@@ -37,6 +37,7 @@ interface ActivityEvent {
     name: string;
     status: string;
     created_at: string;
+    simulation_type?: 'link' | 'file' | 'mixed';
   };
 }
 
@@ -199,6 +200,7 @@ const HistoricalTimelineView: React.FC<HistoricalTimelineViewProps> = ({ activit
       timestamp: latestTimestamp,
       campaignId: activity.campaign_id,
       campaignName: activity.campaigns?.name,
+      simulationType: activity.campaigns?.simulation_type as 'link' | 'file' | undefined,
       userAgent: activity.user_agent,
       ipAddress: activity.ip_address,
       sentAt: activity.sent_at,

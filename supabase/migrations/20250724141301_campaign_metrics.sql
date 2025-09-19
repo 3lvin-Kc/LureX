@@ -1,5 +1,5 @@
 -- Enable realtime for campaign_metrics table (only if not already added)
---i implement this cause of fuckin endless migration files error if it sucks just fuckin delete this.
+-- Implement this cause of fuckin endless migration files error if it sucks just fuckin delete this.
 DO $$
 BEGIN
     -- Check if campaign_metrics is already in the publication

@@ -44,21 +44,6 @@ const navigationItems = [
     icon: Globe,
   },
   {
-    name: 'Domain Management',
-    href: '/domain-management',
-    icon: Shield,
-  },
-  {
-    name: 'Reports',
-    href: '/reports',
-    icon: BarChart3,
-  },
-  {
-    name: 'Advanced Reports',
-    href: '/advanced-reports',
-    icon: TrendingUp,
-  },
-  {
     name: 'Settings',
     href: '/settings',
     icon: Settings,

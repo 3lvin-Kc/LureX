@@ -43,32 +43,86 @@ serve(async (req) => {
     for (const target of targets || []) {
       try {
         const trackingId = generateTrackingId(campaignId, target.email);
-        const phishingLink = `https://careful-eagle-40-tstv8hh2xqe7.deno.dev/?t=${trackingId}`;
-
+        
         let htmlContent = template.html_content || '';
         let textContent = template.text_content || '';
+        let attachments: any[] = [];
 
-        const replacements = {
+        // Handle file-based campaigns
+        if (campaign.simulation_type === 'file') {
+          // Generate file download link
+          const fileResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/generate-file-link`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
+            },
+            body: JSON.stringify({
+              campaign_id: campaignId,
+              target_email: target.email,
+              file_name: campaign.file_name,
+              file_type: campaign.file_type
+            })
+          });
+
+          if (fileResponse.ok) {
+            const fileData = await fileResponse.json();
+            
+            // Create fake file attachment
+            attachments.push({
+              filename: campaign.file_name,
+              content: generateFakeFileContent(campaign.file_type),
+              contentType: getContentType(campaign.file_type),
+              // Add tracking URL as a hidden link in the content
+              trackingUrl: fileData.downloadUrl
+            });
+
+            // Replace file placeholders in email content
+            const fileReplacements = {
+              '{{file_name}}': campaign.file_name || 'attachment',
+              '{{file_download_link}}': fileData.downloadUrl,
+            };
+
+            for (const [placeholder, value] of Object.entries(fileReplacements)) {
+              htmlContent = htmlContent.split(placeholder).join(value);
+              textContent = textContent.split(placeholder).join(value);
+            }
+          }
+        } else {
+          // Handle link-based campaigns (existing logic)
+          const phishingLink = `${Deno.env.get('SUPABASE_URL')}/functions/v1/serve-phishing-page?t=${trackingId}`;
+          
+          const replacements = {
+            '{{phishing_link}}': phishingLink,
+          };
+
+          for (const [placeholder, value] of Object.entries(replacements)) {
+            htmlContent = htmlContent.split(placeholder).join(value);
+            textContent = textContent.split(placeholder).join(value);
+          }
+
+          // Fallback: If {{phishing_link}} was never in the template, append it.
+          if (!template.html_content?.includes('{{phishing_link}}')) {
+            htmlContent += `<p><a href="${phishingLink}">Click here to view the link</a></p>`;
+          }
+
+          if (!template.text_content?.includes('{{phishing_link}}')) {
+            textContent += `\n\nVisit this link: ${phishingLink}`;
+          }
+        }
+
+        // Common replacements for both file and link campaigns
+        const commonReplacements = {
           '{{first_name}}': target.first_name || '',
           '{{last_name}}': target.last_name || '',
           '{{email}}': target.email || '',
           '{{department}}': target.department || '',
           '{{position}}': target.position || '',
-          '{{phishing_link}}': phishingLink,
         };
 
-        for (const [placeholder, value] of Object.entries(replacements)) {
+        for (const [placeholder, value] of Object.entries(commonReplacements)) {
           htmlContent = htmlContent.split(placeholder).join(value);
           textContent = textContent.split(placeholder).join(value);
-        }
-
-        // Fallback: If {{phishing_link}} was never in the template, append it.
-        if (!template.html_content?.includes('{{phishing_link}}')) {
-          htmlContent += `<p><a href="${phishingLink}">Click here to view the link</a></p>`;
-        }
-
-        if (!template.text_content?.includes('{{phishing_link}}')) {
-          textContent += `\n\nVisit this link: ${phishingLink}`;
         }
 
         const trackingPixel = `<img src="${Deno.env.get('SUPABASE_URL')}/functions/v1/track-email-open?t=${trackingId}" width="1" height="1" style="display:none;" />`;
@@ -85,7 +139,7 @@ serve(async (req) => {
           ? `security@${campaign.domain_id}`
           : 'WhyPhish Security <support@resend.dev>';
 
-        const emailResponse = await resend.emails.send({
+        const emailPayload: any = {
           from: fromEmail,
           to: [target.email],
           subject: template.subject,
@@ -96,7 +150,18 @@ serve(async (req) => {
             'X-Target-Email': target.email,
             'X-Tracking-ID': trackingId,
           },
-        });
+        };
+
+        // Add attachments for file-based campaigns
+        if (campaign.simulation_type === 'file' && attachments.length > 0) {
+          emailPayload.attachments = attachments.map(att => ({
+            filename: att.filename,
+            content: att.content,
+            contentType: att.contentType,
+          }));
+        }
+
+        const emailResponse = await resend.emails.send(emailPayload);
 
         if (emailResponse.data) {
           await supabase.from('campaign_metrics').upsert({
@@ -154,4 +219,35 @@ function generateTrackingId(campaignId: string, targetEmail: string): string {
   const timestamp = Date.now().toString();
   const data = `${campaignId}|${targetEmail}|${timestamp}`;
   return btoa(data);
+}
+
+function getContentType(fileType: string): string {
+  const contentTypes: Record<string, string> = {
+    pdf: 'application/pdf',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    zip: 'application/zip',
+    exe: 'application/octet-stream',
+    jpg: 'image/jpeg',
+    png: 'image/png',
+    txt: 'text/plain'
+  };
+  
+  return contentTypes[fileType] || 'application/octet-stream';
+}
+
+function generateFakeFileContent(fileType: string): string {
+  // Generate minimal fake file content based on type
+  const fakeContents: Record<string, string> = {
+    pdf: '%PDF-1.4\n1 0 obj\n<<\n/Type /Catalog\n/Pages 2 0 R\n>>\nendobj\n2 0 obj\n<<\n/Type /Pages\n/Kids [3 0 R]\n/Count 1\n>>\nendobj\n3 0 obj\n<<\n/Type /Page\n/Parent 2 0 R\n/MediaBox [0 0 612 792]\n>>\nendobj\nxref\n0 4\n0000000000 65535 f \n0000000009 00000 n \n0000000074 00000 n \n0000000120 00000 n \ntrailer\n<<\n/Size 4\n/Root 1 0 R\n>>\nstartxref\n174\n%%EOF',
+    docx: 'PK\x03\x04\x14\x00\x00\x00\x08\x00',
+    xlsx: 'PK\x03\x04\x14\x00\x00\x00\x08\x00',
+    zip: 'PK\x03\x04\x14\x00\x00\x00\x00\x00',
+    exe: 'MZ\x90\x00\x03\x00\x00\x00\x04\x00\x00\x00\xFF\xFF\x00\x00',
+    jpg: '\xFF\xD8\xFF\xE0\x00\x10JFIF\x00\x01\x01\x01\x00H\x00H\x00\x00\xFF\xDB\x00C\x00',
+    png: '\x89PNG\r\n\x1A\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xDE',
+    txt: 'This is a simulated file attachment for phishing simulation purposes.'
+  };
+  
+  return fakeContents[fileType] || 'Simulated file content';
 }

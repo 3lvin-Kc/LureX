@@ -10,6 +10,9 @@ interface Campaign {
   description?: string;
   status: string;
   schedule_time?: string;
+  simulation_type?: 'link' | 'file';
+  file_type?: string;
+  file_name?: string;
   template_id?: string;
   target_list_id?: string;
   phishing_page_id?: string;
@@ -56,6 +59,9 @@ export const useCampaigns = () => {
         description: data.description,
         schedule_time: data.schedule_time === '' ? null : data.schedule_time,
         status: data.status || 'draft',
+        simulation_type: data.simulation_type || 'link',
+        file_type: data.file_type,
+        file_name: data.file_name,
         template_id: data.template_id,
         target_list_id: data.target_list_id,
         phishing_page_id: data.phishing_page_id,

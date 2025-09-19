@@ -31,10 +31,13 @@ const CreateCampaign = () => {
         description: data.description,
         status: data.schedule_time ? 'scheduled' : 'draft',
         schedule_time: data.schedule_time,
+        simulation_type: data.simulation_type,
+        file_type: data.simulation_type === 'file' ? data.file_type : null,
+        file_name: data.simulation_type === 'file' ? data.file_name : null,
         template_id: data.template_id,
         target_list_id: data.target_list_id,
-        phishing_page_id: data.phishing_page_id,
-        domain_id: data.domain_id || null,
+        phishing_page_id: data.simulation_type === 'link' && data.phishing_page_id ? data.phishing_page_id : null,
+        domain_id: data.domain_id && data.domain_id.trim() !== '' ? data.domain_id : null,
       });
       
       toast({

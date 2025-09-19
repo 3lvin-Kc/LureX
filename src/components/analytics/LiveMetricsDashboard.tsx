@@ -8,7 +8,6 @@ import { realTimeSubscriptionService } from '@/utils/realTimeSubscriptionService
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import EnhancedNotificationCard from './EnhancedNotificationCard';
-import HistoricalTimelineView from './HistoricalTimelineView';
 
 interface DashboardMetrics {
   totalCampaigns: number;
@@ -21,17 +20,22 @@ interface DashboardMetrics {
 interface NotificationEvent {
   id: string;
   targetEmail: string;
-  eventType: 'sent' | 'opened' | 'clicked' | 'submitted' | 'reported';
+  eventType: 'sent' | 'opened' | 'clicked' | 'submitted' | 'reported' | 'file_downloaded' | 'file_opened';
   timestamp: string;
   campaignId?: string;
   campaignName?: string;
+  simulationType?: 'link' | 'file';
   userAgent?: string;
   ipAddress?: string;
   sentAt?: string;
   openedAt?: string;
   clickedAt?: string;
-  submittedAt?: string;
+  dataSubmittedAt?: string;
   reportedAt?: string;
+  fileDownloadedAt?: string;
+  fileOpenedAt?: string;
+  fileName?: string;
+  fileType?: string;
   additionalData?: any;
 }
 
@@ -87,7 +91,7 @@ const LiveMetricsDashboard: React.FC<LiveMetricsDashboardProps> = ({ maxEvents =
       const currentEventType = determineLatestEventType(newRecord, oldRecord);
       
       if (currentEventType && !isPaused) {
-        // Fetch campaign name for the event
+        // Fetch campaign details for the event
         const { data: campaign } = await supabase
           .from('campaigns')
           .select('name')
@@ -101,13 +105,18 @@ const LiveMetricsDashboard: React.FC<LiveMetricsDashboardProps> = ({ maxEvents =
           timestamp: new Date().toISOString(),
           campaignId: newRecord.campaign_id,
           campaignName: campaign?.name || 'Unknown Campaign',
+          simulationType: 'link', // Default to link for now
+          fileType: undefined,
+          fileName: undefined,
           userAgent: newRecord.user_agent,
           ipAddress: newRecord.ip_address,
           sentAt: newRecord.sent_at,
           openedAt: newRecord.opened_at,
           clickedAt: newRecord.clicked_at,
-          submittedAt: newRecord.data_submitted_at,
+          dataSubmittedAt: newRecord.data_submitted_at,
           reportedAt: newRecord.reported_at,
+          fileDownloadedAt: newRecord.file_downloaded_at,
+          fileOpenedAt: newRecord.file_opened_at,
           additionalData: newRecord.additional_data
         };
 
@@ -129,6 +138,8 @@ const LiveMetricsDashboard: React.FC<LiveMetricsDashboardProps> = ({ maxEvents =
   const determineLatestEventType = (newRecord: any, oldRecord?: any): NotificationEvent['eventType'] | null => {
     if (newRecord.reported_at && (!oldRecord || !oldRecord.reported_at)) return 'reported';
     if (newRecord.data_submitted_at && (!oldRecord || !oldRecord.data_submitted_at)) return 'submitted';
+    if (newRecord.file_opened_at && (!oldRecord || !oldRecord.file_opened_at)) return 'file_opened';
+    if (newRecord.file_downloaded_at && (!oldRecord || !oldRecord.file_downloaded_at)) return 'file_downloaded';
     if (newRecord.clicked_at && (!oldRecord || !oldRecord.clicked_at)) return 'clicked';
     if (newRecord.opened_at && (!oldRecord || !oldRecord.opened_at)) return 'opened';
     if (newRecord.delivered_at && (!oldRecord || !oldRecord.delivered_at)) return null; // Don't show delivered events
@@ -282,7 +293,7 @@ const LiveMetricsDashboard: React.FC<LiveMetricsDashboardProps> = ({ maxEvents =
       // Convert metrics to notification events
       const events: NotificationEvent[] = recentMetrics?.map(metric => {
         // Determine the latest event type for this metric
-        let eventType: 'sent' | 'opened' | 'clicked' | 'submitted' | 'reported' = 'sent';
+        let eventType: 'sent' | 'opened' | 'clicked' | 'submitted' | 'reported' | 'file_downloaded' | 'file_opened' = 'sent';
         let timestamp = metric.sent_at;
 
         if (metric.reported_at) {
@@ -291,6 +302,12 @@ const LiveMetricsDashboard: React.FC<LiveMetricsDashboardProps> = ({ maxEvents =
         } else if (metric.data_submitted_at) {
           eventType = 'submitted';
           timestamp = metric.data_submitted_at;
+        } else if ((metric as any).file_opened_at) {
+          eventType = 'file_opened';
+          timestamp = (metric as any).file_opened_at;
+        } else if ((metric as any).file_downloaded_at) {
+          eventType = 'file_downloaded';
+          timestamp = (metric as any).file_downloaded_at;
         } else if (metric.clicked_at) {
           eventType = 'clicked';
           timestamp = metric.clicked_at;
@@ -306,13 +323,18 @@ const LiveMetricsDashboard: React.FC<LiveMetricsDashboardProps> = ({ maxEvents =
           timestamp,
           campaignId: metric.campaign_id,
           campaignName: metric.campaigns?.name || 'Unknown Campaign',
+          simulationType: 'link', // Default to link for now
           userAgent: metric.user_agent,
           ipAddress: metric.ip_address,
           sentAt: metric.sent_at,
           openedAt: metric.opened_at,
           clickedAt: metric.clicked_at,
-          submittedAt: metric.data_submitted_at,
+          dataSubmittedAt: metric.data_submitted_at,
           reportedAt: metric.reported_at,
+          fileDownloadedAt: (metric as any).file_downloaded_at,
+          fileOpenedAt: (metric as any).file_opened_at,
+          fileName: undefined,
+          fileType: undefined,
           additionalData: metric.additional_data
         };
       }) || [];
@@ -333,65 +355,9 @@ const LiveMetricsDashboard: React.FC<LiveMetricsDashboardProps> = ({ maxEvents =
 
   return (
     <div className="space-y-6">
-      {/* Key Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Campaigns</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.totalCampaigns}</div>
-            <p className="text-xs text-muted-foreground">
-              {metrics.activeCampaigns} currently active
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Campaigns</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.activeCampaigns}</div>
-            <p className="text-xs text-muted-foreground">
-              Running simulations
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Targets</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.totalTargets}</div>
-            <p className="text-xs text-muted-foreground">
-              Across all lists
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Click-through Rate</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{metrics.clickThroughRate.toFixed(1)}%</div>
-            <p className="text-xs text-muted-foreground">
-              Overall effectiveness
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Tabs defaultValue="live-feed" className="space-y-6">
+      <Tabs defaultValue="live-feed" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="live-feed">Live Activity Feed</TabsTrigger>
-          <TabsTrigger value="recent-activity">Recent Activity</TabsTrigger>
+          <TabsTrigger value="live-feed">User based data </TabsTrigger>
         </TabsList>
 
         <TabsContent value="live-feed">
@@ -399,10 +365,7 @@ const LiveMetricsDashboard: React.FC<LiveMetricsDashboardProps> = ({ maxEvents =
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Zap className="h-5 w-5 text-primary animate-pulse" />
-                    Live Activity Feed
-                  </CardTitle>
+                  
                   <CardDescription>
                     Real-time notifications with risk analysis and device information
                   </CardDescription>
@@ -461,13 +424,6 @@ const LiveMetricsDashboard: React.FC<LiveMetricsDashboardProps> = ({ maxEvents =
               )}
             </CardContent>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="recent-activity">
-          <HistoricalTimelineView
-            activities={metrics.recentActivity}
-            onRefresh={fetchRecentActivity}
-          />
         </TabsContent>
       </Tabs>
     </div>
