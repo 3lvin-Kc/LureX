@@ -49,49 +49,73 @@ serve(async (req) => {
         let attachments: any[] = [];
 
         // Handle file-based campaigns
-        if (campaign.simulation_type === 'file') {
-          // Generate file download link
-          const fileResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/generate-file-link`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
-            },
-            body: JSON.stringify({
-              campaign_id: campaignId,
-              target_email: target.email,
-              file_name: campaign.file_name,
-              file_type: campaign.file_type
-            })
-          });
+        console.log(`🔍 Checking campaign type for ${target.email}:`, {
+          campaign_id: campaignId,
+          simulation_type: campaign.simulation_type,
+          file_name: campaign.file_name,
+          file_type: campaign.file_type,
+          has_file_fields: !!(campaign.file_name && campaign.file_type)
+        });
 
-          if (fileResponse.ok) {
-            const fileData = await fileResponse.json();
-            
-            // Create fake file attachment
-            attachments.push({
-              filename: campaign.file_name,
-              content: generateFakeFileContent(campaign.file_type),
-              contentType: getContentType(campaign.file_type),
-              // Add tracking URL as a hidden link in the content
-              trackingUrl: fileData.downloadUrl
+        if (campaign.simulation_type === 'file') {
+          console.log(`⚡ File campaign detected for ${target.email}`);
+          console.log(`📁 File details: ${campaign.file_name}.${campaign.file_type}`);
+
+          try {
+            // Generate file download link with service role key for inter-function auth
+            const fileResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/generate-file-link`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${Deno.env.get('SERVICE_ROLE_KEY')}`,
+              },
+              body: JSON.stringify({
+                campaign_id: campaignId,
+                target_email: target.email,
+                file_name: campaign.file_name,
+                file_type: campaign.file_type
+              })
             });
 
-            // Replace file placeholders in email content
-            const fileReplacements = {
-              '{{file_name}}': campaign.file_name || 'attachment',
-              '{{file_download_link}}': fileData.downloadUrl,
-            };
+            if (fileResponse.ok) {
+              const fileData = await fileResponse.json();
+              console.log(`✅ File download link generated for ${target.email}:`, fileData.downloadUrl);
 
-            for (const [placeholder, value] of Object.entries(fileReplacements)) {
-              htmlContent = htmlContent.split(placeholder).join(value);
-              textContent = textContent.split(placeholder).join(value);
+              // Create fake file attachment
+              attachments.push({
+                filename: campaign.file_name,
+                content: generateFakeFileContent(campaign.file_type),
+                contentType: getContentType(campaign.file_type),
+                // Add tracking URL as a hidden link in the content
+                trackingUrl: fileData.downloadUrl
+              });
+
+              // Replace file placeholders in email content
+              const fileReplacements = {
+                '{{file_name}}': campaign.file_name || 'attachment',
+                '{{file_download_link}}': fileData.downloadUrl,
+              };
+
+              for (const [placeholder, value] of Object.entries(fileReplacements)) {
+                htmlContent = htmlContent.split(placeholder).join(value);
+                textContent = textContent.split(placeholder).join(value);
+              }
+
+              console.log(`📎 File attachments prepared for ${target.email}:`, attachments.length);
+            } else {
+              const errorData = await fileResponse.text();
+              console.error(`❌ Failed to generate file download link for ${target.email}:`, errorData);
+              console.log(`⚠️ File campaign but no attachments generated for ${target.email}`);
             }
+          } catch (error) {
+            console.error(`❌ Error in file generation for ${target.email}:`, error);
+            console.log(`⚠️ File campaign but no attachments generated for ${target.email}`);
           }
         } else {
+          console.log(`🔗 Link-based campaign detected for ${target.email} (simulation_type: ${campaign.simulation_type})`);
           // Handle link-based campaigns (existing logic)
           const phishingLink = `${Deno.env.get('SUPABASE_URL')}/functions/v1/serve-phishing-page?t=${trackingId}`;
-          
+
           const replacements = {
             '{{phishing_link}}': phishingLink,
           };
@@ -160,6 +184,21 @@ serve(async (req) => {
             contentType: att.contentType,
           }));
         }
+
+        // Debug output for email payload
+        console.log(`📧 Sending email to ${target.email} with payload:`, {
+          from: emailPayload.from,
+          to: emailPayload.to,
+          subject: emailPayload.subject,
+          hasAttachments: !!(emailPayload.attachments && emailPayload.attachments.length > 0),
+          attachmentCount: emailPayload.attachments ? emailPayload.attachments.length : 0,
+          simulationType: campaign.simulation_type,
+          attachments: emailPayload.attachments ? emailPayload.attachments.map(att => ({
+            filename: att.filename,
+            contentType: att.contentType,
+            contentLength: att.content ? att.content.length : 0
+          })) : []
+        });
 
         const emailResponse = await resend.emails.send(emailPayload);
 

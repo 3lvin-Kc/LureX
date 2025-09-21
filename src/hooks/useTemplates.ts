@@ -61,7 +61,7 @@ export const useTemplates = () => {
         .insert([{
           ...template,
           user_id: user.id,
-          template_source: options?.source || 'manual',
+          template_source: options?.source || template.template_source || 'manual',
           source_template_id: options?.sourceTemplateId || null,
           template_history: [],
           effectiveness_score: 0,

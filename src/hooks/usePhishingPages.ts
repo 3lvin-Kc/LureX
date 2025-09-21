@@ -29,6 +29,7 @@ export const usePhishingPages = () => {
       return;
     }
 
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('phishing_pages')
@@ -168,10 +169,7 @@ export const usePhishingPages = () => {
   };
 
   useEffect(() => {
-    // Only fetch when user is defined (not null/undefined)
-    if (user !== undefined) {
-      fetchPhishingPages();
-    }
+    fetchPhishingPages();
   }, [user]);
 
   return {

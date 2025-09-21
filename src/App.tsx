@@ -21,14 +21,14 @@ import PhishingPagePreview from "./pages/PhishingPagePreview";
 import EditPhishingPage from "./pages/EditPhishingPage";
 import Reports from "./pages/Reports";
 import Features from "./pages/Features";
-import Help from "./pages/Help";
+
 import Settings from "./pages/Settings";
 import Documentation from "./pages/Documentation";
 import DomainManagement from "./pages/DomainManagement";
 import Auth from "./pages/Auth";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import TemplatePreview from "./pages/TemplatePreview";
-import AdvancedReports from "./pages/AdvancedReports";
+
 
 const queryClient = new QueryClient();
 
@@ -48,7 +48,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/features" element={<Features />} />
-            <Route path="/help" element={<Help />} />
+            
             <Route path="/docs" element={<Documentation />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -69,7 +69,7 @@ function App() {
             <Route path="/domain-management" element={<ProtectedRoute><DomainManagement /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-            <Route path="/advanced-reports" element={<ProtectedRoute><AdvancedReports /></ProtectedRoute>} />
+            
           </Routes>
         </Router>
         </AuthProvider>

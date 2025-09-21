@@ -58,18 +58,6 @@ const PhishingPages = () => {
     navigate(`/phishing-pages/${pageId}/edit`);
   };
 
-  if (loading) {
-    return (
-      <DashboardLayout>
-        <div className="container mx-auto p-4 max-w-7xl">
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
   return (
     <DashboardLayout>
       <div className="container mx-auto p-4 max-w-7xl">
@@ -105,7 +93,11 @@ const PhishingPages = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            {phishingPages?.length === 0 ? (
+            {loading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : phishingPages?.length === 0 ? (
               <div className="text-center py-12 px-6">
                 <div className="mx-auto w-16 h-16 bg-muted/30 rounded-full flex items-center justify-center mb-4">
                   <Globe className="w-8 h-8 text-muted-foreground/60" />

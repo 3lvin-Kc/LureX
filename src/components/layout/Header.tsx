@@ -57,9 +57,7 @@ const Header = () => {
         </nav>
 
         <div className="hidden md:flex items-center space-x-4">
-          <Button asChild variant="outline" size="sm">
-            <Link to="/help">Help</Link>
-          </Button>
+         
           
           <Button asChild size="sm">
             <Link to="/dashboard" onClick={handleGetStarted}>Dashboard</Link>
@@ -108,9 +106,7 @@ const Header = () => {
             </Link>
             
             <div className="flex flex-col space-y-2 pt-2">
-              <Button asChild variant="outline" size="sm" className="w-full">
-                <Link to="/help" onClick={() => setMobileMenuOpen(false)}>Help</Link>
-              </Button>
+             
               
               <Button asChild size="sm" className="w-full">
                 <Link to="/dashboard" onClick={() => { setMobileMenuOpen(false); handleGetStarted(); }}>

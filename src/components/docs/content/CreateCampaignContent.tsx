@@ -29,19 +29,15 @@ export const CreateCampaignContent: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="p-4 border rounded-lg hover:bg-accent/50 transition-colors">
               <Mail className="h-6 w-6 text-primary mb-2" />
-              <h4 className="font-medium mb-2">Email Phishing</h4>
+              <h4 className="font-medium mb-2">Link based Phishing</h4>
               <p className="text-sm text-muted-foreground">Traditional email-based phishing attacks targeting credentials or information</p>
             </div>
             <div className="p-4 border rounded-lg hover:bg-accent/50 transition-colors">
               <Target className="h-6 w-6 text-primary mb-2" />
-              <h4 className="font-medium mb-2">Spear Phishing</h4>
+              <h4 className="font-medium mb-2">File based Phishing</h4>
               <p className="text-sm text-muted-foreground">Targeted attacks using personalized information and social engineering</p>
             </div>
-            <div className="p-4 border rounded-lg hover:bg-accent/50 transition-colors">
-              <Settings className="h-6 w-6 text-primary mb-2" />
-              <h4 className="font-medium mb-2">Custom Campaign</h4>
-              <p className="text-sm text-muted-foreground">Build your own campaign with specific templates and targeting rules</p>
-            </div>
+            
           </div>
         </CardContent>
       </Card>

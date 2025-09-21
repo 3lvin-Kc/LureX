@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,26 +12,23 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    )
-
     const { campaign_id, target_email, file_name, file_type } = await req.json()
+
+    console.log(`🔗 Generating file link for campaign ${campaign_id}, target: ${target_email}, file: ${file_name}.${file_type}`)
 
     if (!campaign_id || !target_email || !file_name || !file_type) {
       return new Response(
         JSON.stringify({ error: 'Missing required parameters' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
 
     // Get the base URL for the file download endpoint
     const baseUrl = Deno.env.get('SUPABASE_URL')?.replace('/rest/v1', '') || 'https://your-project.supabase.co'
-    
+
     // Create tracking parameters
     const trackingParams = new URLSearchParams({
       c: campaign_id,
@@ -54,15 +50,17 @@ serve(async (req) => {
       trackingUrl: fileDownloadUrl.replace('action=download_attempt', 'action=file_open_attempt')
     }
 
+    console.log(`✅ File link generated successfully for ${target_email}: ${fileDownloadUrl}`)
+
     return new Response(
       JSON.stringify({
         success: true,
         fileMetadata,
         downloadUrl: fileDownloadUrl
       }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     )
 
@@ -70,9 +68,9 @@ serve(async (req) => {
     console.error('Error generating file link:', error)
     return new Response(
       JSON.stringify({ error: 'Internal server error' }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     )
   }

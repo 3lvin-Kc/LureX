@@ -35,7 +35,11 @@ export const useCampaigns = () => {
     try {
       const { data, error } = await supabase
         .from('campaigns')
-        .select('*')
+        .select(`
+          *,
+          template:email_templates(name),
+          target_list:target_lists(name)
+        `)
         .order('created_at', { ascending: false });
       if (error) throw error;
       setCampaigns(data || []);

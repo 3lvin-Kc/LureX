@@ -3,7 +3,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 
 const supabase = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_URL') ?? '',   
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 );
 
@@ -13,7 +13,7 @@ serve(async (req) => {
     const trackingId = url.searchParams.get('t');
     const targetUrl = url.searchParams.get('url');
 
-    if (!trackingId) {
+    if (!trackingId) {                 
       return new Response('Invalid tracking parameters', { status: 400 });
     }
 
