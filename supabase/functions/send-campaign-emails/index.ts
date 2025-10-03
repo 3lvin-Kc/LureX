@@ -162,9 +162,10 @@ serve(async (req) => {
 
         const resend = new Resend(resendApiKey);
 
-        const fromEmail = campaign.custom_domains
-          ? `security@${campaign.custom_domains.domain}`
-          : 'LureX Security <security@testplatform.shop>';
+        // Always use verified domain for sending emails
+        // Custom domains are ONLY for phishing simulation URLs, not email infrastructure
+        const fromEmail = 'LureX Security <security@testplatform.shop>';
+        console.log(`📧 Sending from verified domain: ${fromEmail}`);
 
         const emailPayload: any = {
           from: fromEmail,
