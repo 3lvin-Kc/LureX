@@ -22,10 +22,7 @@ serve(async (req) => {
 
     const { data: campaign } = await supabase
       .from('campaigns')
-      .select(`
-        *,
-        custom_domains!domain_id(domain)
-      `)
+      .select('*')
       .eq('id', campaignId)
       .single();
 
@@ -162,9 +159,7 @@ serve(async (req) => {
 
         const resend = new Resend(resendApiKey);
 
-        const fromEmail = campaign.custom_domains
-          ? `security@${campaign.custom_domains.domain}`
-          : 'LureX Security <security@testplatform.shop>';
+        const fromEmail = 'LureX Security <security@testplatform.shop>';
 
         const emailPayload: any = {
           from: fromEmail,
