@@ -4,23 +4,24 @@ import { DocsSidebar } from "@/components/docs/DocsSidebar";
 import { DocsSearch } from "@/components/docs/DocsSearch";
 import { OverviewContent } from "@/components/docs/content/OverviewContent";
 import { QuickStartContent } from "@/components/docs/content/QuickStartContent";
-import { SetupGuideContent } from "@/components/docs/content/SetupGuideContent";
+
 import { CreateCampaignContent } from "@/components/docs/content/CreateCampaignContent";
 import { EmailTemplatesContent } from "@/components/docs/content/EmailTemplatesContent";
 import { TargetManagementContent } from "@/components/docs/content/TargetManagementContent";
-import { LaunchCampaignContent } from "@/components/docs/content/LaunchCampaignContent";
+
 import { WebsiteCloneContent } from "@/components/docs/content/WebsiteCloneContent";
 import { CustomPagesContent } from "@/components/docs/content/CustomPagesContent";
-import { PageOptimizationContent } from "@/components/docs/content/PageOptimizationContent";
+
 import { LiveTrackingContent } from "@/components/docs/content/LiveTrackingContent";
 import { ReportsContent } from "@/components/docs/content/ReportsContent";
 import { MetricsContent } from "@/components/docs/content/MetricsContent";
 import { CustomDomainsContent } from "@/components/docs/content/CustomDomainsContent";
-import { AutomationContent } from "@/components/docs/content/AutomationContent";
-import { IntegrationsContent } from "@/components/docs/content/IntegrationsContent";
+
+
 import { TroubleshootingContent } from "@/components/docs/content/TroubleshootingContent";
 import { FeatureRequestContent } from "@/components/docs/content/FeatureRequestContent";
 import { SupportContent } from "@/components/docs/content/SupportContent";
+import { AIGeneratorContent } from "@/components/docs/content/AIGeneratorContent";
 
 const Documentation = () => {
   const [activeSection, setActiveSection] = useState("overview");
@@ -31,34 +32,29 @@ const Documentation = () => {
         return <OverviewContent />;
       case "quickstart":
         return <QuickStartContent />;
-      case "setup":
-        return <SetupGuideContent />;
+      
       case "create-campaign":
         return <CreateCampaignContent />;
       case "email-templates":
         return <EmailTemplatesContent />;
       case "target-management":
         return <TargetManagementContent />;
-      case "launch-campaign":
-        return <LaunchCampaignContent />;
+      
       case "website-clone":
         return <WebsiteCloneContent />;
       case "custom-pages":
         return <CustomPagesContent />;
-      case "page-optimization":
-        return <PageOptimizationContent />;
+      
       case "live-tracking":
         return <LiveTrackingContent />;
       case "reports":
         return <ReportsContent />;
       case "metrics":
         return <MetricsContent />;
-      case "custom-domains":
-        return <CustomDomainsContent />;
-      case "automation":
-        return <AutomationContent />;
-      case "integrations":
-        return <IntegrationsContent />;
+      case "AI Generator":
+        return <AIGeneratorContent />;
+      
+      
       case "troubleshooting":
         return <TroubleshootingContent />;
       case "feature-request":

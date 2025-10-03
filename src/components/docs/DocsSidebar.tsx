@@ -35,7 +35,7 @@ export const DocsSidebar: React.FC<DocsSidebarProps> = ({
       items: [
         { id: "overview", label: "Overview", icon: BookOpen },
         { id: "quickstart", label: "Quick Start", icon: Zap },
-        { id: "setup", label: "Setup Guide", icon: Settings },
+       
       ]
     },
     {
@@ -44,7 +44,7 @@ export const DocsSidebar: React.FC<DocsSidebarProps> = ({
         { id: "create-campaign", label: "Create Campaign", icon: Rocket },
         { id: "email-templates", label: "Email Templates", icon: Mail },
         { id: "target-management", label: "Target Management", icon: Users },
-        { id: "launch-campaign", label: "Launch Campaign", icon: TrendingUp },
+        
       ]
     },
     {
@@ -52,7 +52,7 @@ export const DocsSidebar: React.FC<DocsSidebarProps> = ({
       items: [
         { id: "website-clone", label: "Website Clone", icon: Globe },
         { id: "custom-pages", label: "Custom Pages", icon: Palette },
-        { id: "page-optimization", label: "Page Optimization", icon: Activity },
+       
       ]
     },
     {
@@ -67,8 +67,8 @@ export const DocsSidebar: React.FC<DocsSidebarProps> = ({
       title: "Advanced Features",
       items: [
         { id: "custom-domains", label: "Custom Domains", icon: Link },
-        { id: "automation", label: "Automation", icon: Repeat },
-        { id: "integrations", label: "Integrations", icon: Puzzle },
+        { id: "AI Generator", label: "AI Template Generator", icon: Repeat },
+       
       ]
     },
     {

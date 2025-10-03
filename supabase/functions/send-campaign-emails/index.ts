@@ -159,7 +159,8 @@ serve(async (req) => {
 
         const resend = new Resend(resendApiKey);
 
-        const fromEmail = 'LureX Security <security@testplatform.shop>';
+        // Always use verified domain for sender
+const fromEmail = 'LureX Security <security@testplatform.shop>';  // ✅ Always verified
 
         const emailPayload: any = {
           from: fromEmail,
