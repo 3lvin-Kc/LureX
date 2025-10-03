@@ -11,7 +11,6 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import HistoricalTimelineView from "@/components/analytics/HistoricalTimelineView";
 import SimulationKPICards from "@/components/analytics/SimulationKPICards";
 import SimulationSpiderChart from "@/components/analytics/SimulationSpiderChart";
-import TeamSecurityTrendChart from "@/components/analytics/TeamSecurityTrendChart";
 import { useSimulationMetrics, SimulationType } from "@/hooks/useSimulationMetrics";
 import { useSecurityTrends } from "@/hooks/useSecurityTrends";
 import { useHistoricalActivities } from "@/hooks/useHistoricalActivities";
@@ -67,7 +66,7 @@ const Reports = () => {
     loading: campaignSummaryLoading
   } = useCampaignSummary();
 
-  // All data now uses real hooks - no mock data needed
+  // All data now uses real hooks 
 
   const handleExportPDF = async () => {
     try {
@@ -78,14 +77,7 @@ const Reports = () => {
     }
   };
 
-  const handleExportCSV = async () => {
-    try {
-      // TODO: Implement CSV export functionality
-      console.log('Exporting CSV report...');
-    } catch (error) {
-      console.error('Failed to export CSV:', error);
-    }
-  };
+  
 
   const getRiskBadgeVariant = (risk: string) => {
     switch (risk.toLowerCase()) {
@@ -158,79 +150,8 @@ const Reports = () => {
           </div>
         ) : (
           <>
-            {/* Filters Bar */}
-            <Card className="mb-6">
-              <CardContent className="pt-6">
-                <div className="flex flex-wrap gap-4 items-end">
-                  <div className="min-w-48">
-                    <label className="text-sm font-medium mb-2 block">Campaign</label>
-                    <Select value={selectedCampaign} onValueChange={setSelectedCampaign}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="All Campaigns" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Campaigns</SelectItem>
-                        <SelectItem value="holiday">Holiday Phishing Test</SelectItem>
-                        <SelectItem value="qr">QR Code Security Test</SelectItem>
-                        <SelectItem value="sms">SMS Phishing Campaign</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="min-w-32">
-                    <label className="text-sm font-medium mb-2 block">Date Range</label>
-                    <Select value={dateRange} onValueChange={setDateRange}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="7">Last 7 days</SelectItem>
-                        <SelectItem value="30">Last 30 days</SelectItem>
-                        <SelectItem value="90">Last 3 months</SelectItem>
-                        <SelectItem value="365">Last year</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="min-w-32">
-                    <label className="text-sm font-medium mb-2 block">Risk Level</label>
-                    <Select value={riskLevel} onValueChange={setRiskLevel}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="All Levels" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Levels</SelectItem>
-                        <SelectItem value="high">High Risk</SelectItem>
-                        <SelectItem value="medium">Medium Risk</SelectItem>
-                        <SelectItem value="low">Low Risk</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="min-w-32">
-                    <label className="text-sm font-medium mb-2 block">File Type</label>
-                    <Select value={fileType} onValueChange={setFileType}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="All Types" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Types</SelectItem>
-                        <SelectItem value="email">Email</SelectItem>
-                        <SelectItem value="sms">SMS</SelectItem>
-                        <SelectItem value="qr">QR Code</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" className="flex items-center gap-2">
-                      <Filter className="h-4 w-4" />
-                      More Filters
-                    </Button>
-                    <Button variant="outline" className="flex items-center gap-2">
-                      <RotateCcw className="h-4 w-4" />
-                      Reset
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+           
+            
 
             {/* Simulation Type Analysis Section */}
             <Card className="mb-6">
@@ -359,13 +280,7 @@ const Reports = () => {
         />
 
         {/* Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <TeamSecurityTrendChart 
-            data={trendData}
-            loading={trendsLoading}
-          />
-
-
+        <div className="grid grid-cols-1 gap-6 mb-6">
           <DepartmentVulnerabilityCards 
             departments={departments}
             loading={departmentsLoading}

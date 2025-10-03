@@ -336,55 +336,9 @@ const Dashboard = () => {
               </CardContent>
             </Card>
 
-            {/* Bottom Grid - Campaign Overview and Device Analytics */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Campaign Overview Table */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Campaign Overview</CardTitle>
-                  <CardDescription>Recent campaign status and metrics</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {recentCampaigns.length > 0 ? recentCampaigns.map((campaign, index) => (
-                      <div key={campaign.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex-1">
-                          <div className="font-medium flex items-center gap-2">
-                            {campaign.simulationType === 'file' ? (
-                              <Paperclip className="h-4 w-4 text-blue-500" />
-                            ) : (
-                              <Link className="h-4 w-4 text-green-500" />
-                            )}
-                            {campaign.name}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {campaign.simulationType === 'file' ? 'File Drop' : 'Link Phishing'} • {campaign.created}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="text-right">
-                            <div className="font-medium">
-                              {campaign.simulationType === 'file' ? campaign.downloadRate : campaign.clickRate}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {campaign.simulationType === 'file' ? 'Download Rate' : 'Click Rate'}
-                            </div>
-                          </div>
-                          <Badge variant={campaign.status === 'active' ? 'default' : 'secondary'}>
-                            {campaign.status}
-                          </Badge>
-                        </div>
-                      </div>
-                    )) : (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p>No campaigns yet</p>
-                        <p className="text-sm">Create your first campaign to see metrics here</p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+            {/* Bottom Grid - Device Analytics */}
+            <div className="w-full">
+             
 
               {/* Enhanced Device Distribution */}
               <Card>

@@ -34,7 +34,7 @@ serve(async (req) => {
   try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      Deno.env.get('SERVICE_ROLE_KEY') ?? '',
     )
 
     const url = new URL(req.url);
@@ -102,7 +102,18 @@ serve(async (req) => {
       });
 
     if (metricsError) {
-      console.error('Error storing metrics:', metricsError);
+      console.error('❌ Error storing campaign metrics:', metricsError);
+      console.error('Metrics error details:', {
+        campaign_id: campaignId,
+        target_email: targetEmail,
+        error: metricsError.message
+      });
+    } else {
+      console.log('✅ Campaign metrics stored successfully:', {
+        campaign_id: campaignId,
+        target_email: targetEmail,
+        interaction_type: interactionType
+      });
     }
 
     // Store detailed file interaction log
@@ -122,7 +133,19 @@ serve(async (req) => {
       });
 
     if (logError) {
-      console.error('Error storing file interaction log:', logError);
+      console.error('❌ Error storing file interaction log:', logError);
+      console.error('Log error details:', {
+        campaign_id: campaignId,
+        target_email: targetEmail,
+        error: logError.message
+      });
+    } else {
+      console.log('✅ File interaction logged successfully:', {
+        campaign_id: campaignId,
+        target_email: targetEmail,
+        interaction_type: interactionType,
+        file_name: fileName
+      });
     }
 
     // Generate a fake file response based on file type
