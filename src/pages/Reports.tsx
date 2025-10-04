@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { BarChart3, Download, Filter, Calendar, Users, Mail, MousePointer, RotateCcw, AlertTriangle, Shield, TrendingUp, Building, ChevronDown, Clock, X } from "lucide-react";
+import { BarChart3, Download, Filter, Calendar, Users, Mail, MousePointer, RotateCcw, AlertTriangle, Shield, TrendingUp, Building, ChevronDown, Clock, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -16,9 +16,13 @@ import { useSecurityTrends } from "@/hooks/useSecurityTrends";
 import { useHistoricalActivities } from "@/hooks/useHistoricalActivities";
 import { useDepartmentVulnerability } from "@/hooks/useDepartmentVulnerability";
 import { useCampaignSummary } from "@/hooks/useCampaignSummary";
+import { useComprehensiveReportData } from "@/hooks/useComprehensiveReportData";
 import DepartmentVulnerabilityCards from "@/components/analytics/DepartmentVulnerabilityCards";
 import DepartmentDetailsSidebar from "@/components/analytics/DepartmentDetailsSidebar";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Area, AreaChart } from "recharts";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { securityLogger, SecurityEventType } from "@/utils/securityLogger";
 
 const Reports = () => {
   const navigate = useNavigate();
@@ -29,6 +33,7 @@ const Reports = () => {
   const [showRecentActivity, setShowRecentActivity] = useState(false);
   const [simulationType, setSimulationType] = useState<SimulationType>('combined');
   const [timePeriod, setTimePeriod] = useState(30);
+  const [exporting, setExporting] = useState(false);
 
   // Simulation metrics hook
   const { 
@@ -66,14 +71,113 @@ const Reports = () => {
     loading: campaignSummaryLoading
   } = useCampaignSummary();
 
-  // All data now uses real hooks 
+  // Comprehensive report data hook for PDF export
+  const {
+    reportData,
+    loading: reportDataLoading,
+  } = useComprehensiveReportData(simulationType, timePeriod);
+
+  // All data now uses real hooks
 
   const handleExportPDF = async () => {
     try {
-      // TODO: Implement PDF export functionality
-      console.log('Exporting PDF report...');
+      setExporting(true);
+      toast.info('Generating comprehensive PDF report...');
+
+      if (!reportData) {
+        toast.error('Report data is still loading. Please wait a moment.');
+        return;
+      }
+
+      // Call edge function to generate PDF
+      const { data, error } = await supabase.functions.invoke('export-report', {
+        body: { 
+          reportData, 
+          format: 'pdf',
+          timePeriod,
+          simulationType
+        }
+      });
+
+      if (error) {
+        if (error.status === 429) {
+          toast.error('Rate limit exceeded. Please wait before generating another report.');
+          return;
+        }
+        throw error;
+      }
+
+      // Download PDF (it's actually a text file formatted like a PDF)
+      const blob = new Blob([data], { type: 'text/plain' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `phishing-report-${new Date().toISOString().split('T')[0]}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success('PDF report downloaded successfully!');
+
+      // Log export event
+      securityLogger.info(
+        SecurityEventType.DATA_ACCESS,
+        'Exported PDF report',
+        {
+          timePeriod,
+          simulationType,
+          campaignCount: reportData.campaigns.length,
+          departmentCount: reportData.departments.length
+        }
+      );
+
     } catch (error) {
-      console.error('Failed to export PDF:', error);
+      console.error('PDF export error:', error);
+      toast.error('Failed to generate PDF. Please try again.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleExportCSV = async () => {
+    try {
+      setExporting(true);
+      toast.info('Generating CSV export...');
+
+      if (!reportData) {
+        toast.error('Report data is still loading. Please wait a moment.');
+        return;
+      }
+
+      // Call edge function to generate CSV
+      const { data, error } = await supabase.functions.invoke('export-report', {
+        body: { 
+          reportData, 
+          format: 'csv'
+        }
+      });
+
+      if (error) throw error;
+
+      // Download CSV
+      const blob = new Blob([data], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `phishing-report-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast.success('CSV export downloaded successfully!');
+
+    } catch (error) {
+      console.error('CSV export error:', error);
+      toast.error('Failed to generate CSV. Please try again.');
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -103,16 +207,29 @@ const Reports = () => {
           <div className="flex gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="flex items-center gap-2">
-                  <Download size={16} />
-                  Export
-                  <ChevronDown size={16} />
+                <Button variant="outline" className="flex items-center gap-2" disabled={exporting || reportDataLoading}>
+                  {exporting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Download size={16} />
+                      Export
+                      <ChevronDown size={16} />
+                    </>
+                  )}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuItem onClick={handleExportPDF}>
+                <DropdownMenuItem onClick={handleExportPDF} disabled={exporting || reportDataLoading}>
                   <Download className="mr-2 h-4 w-4" />
-                  PDF
+                  PDF Report
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportCSV} disabled={exporting || reportDataLoading}>
+                  <Download className="mr-2 h-4 w-4" />
+                  CSV Data
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

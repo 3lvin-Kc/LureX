@@ -10,7 +10,7 @@ interface Campaign {
   description?: string;
   status: string;
   schedule_time?: string;
-  simulation_type?: 'link' | 'file';
+  simulation_type?: 'link' | 'file' | 'mixed';
   file_type?: string;
   file_name?: string;
   template_id?: string;
@@ -42,7 +42,7 @@ export const useCampaigns = () => {
         `)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      setCampaigns(data || []);
+      setCampaigns((data || []) as Campaign[]);
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -80,7 +80,7 @@ export const useCampaigns = () => {
         .select()
         .single();
       if (error) throw error;
-      setCampaigns(prev => [newData, ...prev]);
+      setCampaigns(prev => [newData as Campaign, ...prev]);
       toast({
         title: 'Campaign created',
         description: 'Your campaign has been created successfully',
@@ -111,7 +111,7 @@ export const useCampaigns = () => {
         .select()
         .single();
       if (error) throw error;
-      setCampaigns(prev => prev.map(campaign => (campaign.id === id ? updated : campaign)));
+      setCampaigns(prev => prev.map(campaign => (campaign.id === id ? updated as Campaign : campaign)));
       toast({
         title: 'Campaign updated',
         description: 'Your campaign has been updated successfully',
@@ -137,7 +137,7 @@ export const useCampaigns = () => {
         .select()
         .single();
       if (error) throw error;
-      setCampaigns(prev => prev.map(campaign => (campaign.id === id ? updated : campaign)));
+      setCampaigns(prev => prev.map(campaign => (campaign.id === id ? updated as Campaign : campaign)));
       toast({
         title: 'Campaign status updated',
         description: `Campaign status changed to ${status}`,
