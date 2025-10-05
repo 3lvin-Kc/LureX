@@ -72,6 +72,10 @@ const HistoricalTimelineView: React.FC<HistoricalTimelineViewProps> = ({ activit
             return activity.reported_at;
           case 'submitted':
             return activity.data_submitted_at;
+          case 'file_opened':
+            return (activity as any).file_opened_at;
+          case 'file_downloaded':
+            return (activity as any).file_downloaded_at && !(activity as any).file_opened_at;
           case 'clicked':
             return activity.clicked_at && !activity.data_submitted_at;
           case 'opened':
@@ -116,7 +120,9 @@ const HistoricalTimelineView: React.FC<HistoricalTimelineViewProps> = ({ activit
           activity.opened_at, 
           activity.clicked_at,
           activity.data_submitted_at,
-          activity.reported_at
+          activity.reported_at,
+          (activity as any).file_downloaded_at,
+          (activity as any).file_opened_at
         ].filter(Boolean).map(t => new Date(t!).getTime());
         
         return Math.max(...timestamps);
@@ -131,6 +137,8 @@ const HistoricalTimelineView: React.FC<HistoricalTimelineViewProps> = ({ activit
   const getEventStatus = (activity: ActivityEvent) => {
     if (activity.reported_at) return 'reported';
     if (activity.data_submitted_at) return 'submitted';
+    if ((activity as any).file_opened_at) return 'file_opened';
+    if ((activity as any).file_downloaded_at) return 'file_downloaded';
     if (activity.clicked_at) return 'clicked';
     if (activity.opened_at) return 'opened';
     if (activity.sent_at) return 'sent';
@@ -143,6 +151,10 @@ const HistoricalTimelineView: React.FC<HistoricalTimelineViewProps> = ({ activit
         return <Badge className="bg-purple-100 text-purple-800 border-purple-200">Reported</Badge>;
       case 'submitted':
         return <Badge className="bg-red-100 text-red-800 border-red-200">Fell for Phish</Badge>;
+      case 'file_opened':
+        return <Badge className="bg-red-100 text-red-800 border-red-200">File Opened</Badge>;
+      case 'file_downloaded':
+        return <Badge className="bg-orange-100 text-orange-800 border-orange-200">File Downloaded</Badge>;
       case 'clicked':
         return <Badge className="bg-orange-100 text-orange-800 border-orange-200">Clicked</Badge>;
       case 'opened':
@@ -186,6 +198,8 @@ const HistoricalTimelineView: React.FC<HistoricalTimelineViewProps> = ({ activit
       switch (latestEventType) {
         case 'reported': return activity.reported_at!;
         case 'submitted': return activity.data_submitted_at!;
+        case 'file_opened': return (activity as any).file_opened_at!;
+        case 'file_downloaded': return (activity as any).file_downloaded_at!;
         case 'clicked': return activity.clicked_at!;
         case 'opened': return activity.opened_at!;
         case 'sent': return activity.sent_at!;
@@ -196,7 +210,7 @@ const HistoricalTimelineView: React.FC<HistoricalTimelineViewProps> = ({ activit
     return {
       id: activity.id,
       targetEmail: activity.target_email,
-      eventType: latestEventType as 'sent' | 'opened' | 'clicked' | 'submitted' | 'reported',
+      eventType: latestEventType as 'sent' | 'opened' | 'clicked' | 'submitted' | 'reported' | 'file_downloaded' | 'file_opened',
       timestamp: latestTimestamp,
       campaignId: activity.campaign_id,
       campaignName: activity.campaigns?.name,
@@ -206,8 +220,10 @@ const HistoricalTimelineView: React.FC<HistoricalTimelineViewProps> = ({ activit
       sentAt: activity.sent_at,
       openedAt: activity.opened_at,
       clickedAt: activity.clicked_at,
-      submittedAt: activity.data_submitted_at,
+      dataSubmittedAt: activity.data_submitted_at,
       reportedAt: activity.reported_at,
+      fileDownloadedAt: (activity as any).file_downloaded_at,
+      fileOpenedAt: (activity as any).file_opened_at,
       additionalData: activity.additional_data
     };
   };
@@ -255,6 +271,8 @@ const HistoricalTimelineView: React.FC<HistoricalTimelineViewProps> = ({ activit
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="reported">Reported</SelectItem>
                 <SelectItem value="submitted">Fell for Phish</SelectItem>
+                <SelectItem value="file_opened">File Opened</SelectItem>
+                <SelectItem value="file_downloaded">File Downloaded</SelectItem>
                 <SelectItem value="clicked">Clicked</SelectItem>
                 <SelectItem value="opened">Opened</SelectItem>
                 <SelectItem value="sent">Sent Only</SelectItem>

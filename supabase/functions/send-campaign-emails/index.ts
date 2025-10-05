@@ -81,14 +81,27 @@ serve(async (req) => {
               const fileData = await fileResponse.json();
               console.log(`✅ File download link generated for ${target.email}:`, fileData.downloadUrl);
 
-              // Create fake file attachment
-              attachments.push({
-                filename: campaign.file_name,
-                content: generateFakeFileContent(campaign.file_type),
-                contentType: getContentType(campaign.file_type),
-                // Add tracking URL as a hidden link in the content
-                trackingUrl: fileData.downloadUrl
-              });
+              // DON'T attach file - use download link only to enable tracking
+              // Add prominent download button to email HTML
+              const fileDownloadButton = `
+                <div style="margin: 20px 0; padding: 20px; background-color: #f5f5f5; border-radius: 8px; text-align: center;">
+                  <p style="margin-bottom: 15px; color: #333; font-size: 14px;">
+                    📎 <strong>${campaign.file_name}.${campaign.file_type}</strong>
+                  </p>
+                  <a href="${fileData.downloadUrl}" 
+                     style="display: inline-block; padding: 12px 30px; background-color: #0066cc; color: white; 
+                            text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 14px;">
+                    Download File
+                  </a>
+                </div>
+              `;
+              
+              // Inject download button into HTML content (before closing body tag)
+              if (htmlContent.includes('</body>')) {
+                htmlContent = htmlContent.replace('</body>', `${fileDownloadButton}</body>`);
+              } else {
+                htmlContent += fileDownloadButton;
+              }
 
               // Replace file placeholders in email content
               const fileReplacements = {
@@ -100,16 +113,19 @@ serve(async (req) => {
                 htmlContent = htmlContent.split(placeholder).join(value);
                 textContent = textContent.split(placeholder).join(value);
               }
+              
+              // Add download link to text content
+              textContent += `\n\nDownload file: ${fileData.downloadUrl}\n`;
 
-              console.log(`📎 File attachments prepared for ${target.email}:`, attachments.length);
+              console.log(`✅ File download link added to email (no attachment) for ${target.email}`);
             } else {
               const errorData = await fileResponse.text();
               console.error(`❌ Failed to generate file download link for ${target.email}:`, errorData);
-              console.log(`⚠️ File campaign but no attachments generated for ${target.email}`);
+              console.log(`⚠️ File campaign but no download link generated for ${target.email}`);
             }
           } catch (error) {
             console.error(`❌ Error in file generation for ${target.email}:`, error);
-            console.log(`⚠️ File campaign but no attachments generated for ${target.email}`);
+            console.log(`⚠️ File campaign but no download link generated for ${target.email}`);
           }
         } else {
           console.log(`🔗 Link-based campaign detected for ${target.email} (simulation_type: ${campaign.simulation_type})`);
