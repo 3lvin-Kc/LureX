@@ -57,11 +57,19 @@ serve(async (req) => {
       phishingPageContent = buildDefaultPhishingPage(trackingData);
     }
 
-    // Track page view
+    // Track page view - fetch existing data first to merge
+    const { data: existingMetric } = await supabase
+      .from('campaign_metrics')
+      .select('additional_data')
+      .eq('campaign_id', trackingData.campaignId)
+      .eq('target_email', trackingData.targetEmail)
+      .single();
+
     await supabase
       .from('campaign_metrics')
       .update({
         additional_data: {
+          ...(existingMetric?.additional_data || {}),
           page_viewed_at: new Date().toISOString(),
           page_id: pageId,
           user_agent: req.headers.get('user-agent'),

@@ -4,6 +4,21 @@
 # working directory name when running `supabase init`.
 project_id = "LureX-LureX-Dev"
 
+[functions.track-email-open]
+verify_jwt = false
+
+[functions.track-email-click]
+verify_jwt = false
+
+[functions.serve-phishing-page]
+verify_jwt = false
+
+[functions.track-form-submission]
+verify_jwt = false
+
+[functions.simulate-file-download]
+verify_jwt = false
+
 [api]
 enabled = true
 # Port to use for the API URL.

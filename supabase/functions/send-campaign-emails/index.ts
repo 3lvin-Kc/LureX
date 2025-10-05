@@ -113,8 +113,9 @@ serve(async (req) => {
           }
         } else {
           console.log(`🔗 Link-based campaign detected for ${target.email} (simulation_type: ${campaign.simulation_type})`);
-          // Handle link-based campaigns (existing logic)
-          const phishingLink = `${Deno.env.get('SUPABASE_URL')}/functions/v1/serve-phishing-page?t=${trackingId}`;
+          // Handle link-based campaigns - route through click tracker
+          const targetUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/serve-phishing-page?t=${trackingId}`;
+          const phishingLink = `${Deno.env.get('SUPABASE_URL')}/functions/v1/track-email-click?t=${trackingId}&url=${encodeURIComponent(targetUrl)}`;
 
           const replacements = {
             '{{phishing_link}}': phishingLink,

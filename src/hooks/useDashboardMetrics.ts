@@ -225,7 +225,7 @@ export const useDashboardMetrics = () => {
             monthlyData[monthKey].downloaded++;
           }
           
-          if (metric.submitted_at) {
+          if (metric.data_submitted_at) {
             monthlyData[monthKey].submitted++;
           }
         }
