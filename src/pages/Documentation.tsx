@@ -22,6 +22,7 @@ import { TroubleshootingContent } from "@/components/docs/content/Troubleshootin
 import { FeatureRequestContent } from "@/components/docs/content/FeatureRequestContent";
 import { SupportContent } from "@/components/docs/content/SupportContent";
 import { AIGeneratorContent } from "@/components/docs/content/AIGeneratorContent";
+import { MetricsExplanationContent } from "@/components/docs/content/MetricsExplanationContent";
 
 const Documentation = () => {
   const [activeSection, setActiveSection] = useState("overview");
@@ -32,6 +33,8 @@ const Documentation = () => {
         return <OverviewContent />;
       case "quickstart":
         return <QuickStartContent />;
+      case "metrics-explanation":
+        return <MetricsExplanationContent />;
       
       case "create-campaign":
         return <CreateCampaignContent />;

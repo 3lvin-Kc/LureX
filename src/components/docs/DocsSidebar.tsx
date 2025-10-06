@@ -17,7 +17,8 @@ import {
   Puzzle, 
   HelpCircle, 
   MessageSquarePlus, 
-  LifeBuoy 
+  LifeBuoy,
+  Home
 } from "lucide-react";
 
 interface DocsSidebarProps {
@@ -33,9 +34,9 @@ export const DocsSidebar: React.FC<DocsSidebarProps> = ({
     {
       title: "Getting Started",
       items: [
-        { id: "overview", label: "Overview", icon: BookOpen },
+        { id: "overview", label: "Overview", icon: Home },
         { id: "quickstart", label: "Quick Start", icon: Zap },
-       
+        { id: "metrics-explanation", label: "How Metrics Work", icon: Activity },
       ]
     },
     {
