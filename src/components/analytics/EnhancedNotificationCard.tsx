@@ -27,7 +27,7 @@ import { parseUserAgent, calculateTimeToClick, assessRisk, DeviceInfo, RiskIndic
 interface NotificationEvent {
   id: string;
   targetEmail: string;
-  eventType: 'sent' | 'opened' | 'clicked' | 'submitted' | 'reported' | 'file_downloaded' | 'file_opened';
+  eventType: 'sent' | 'opened' | 'clicked' | 'submitted' | 'reported' | 'file_downloaded';
   timestamp: string;
   campaignId?: string;
   campaignName?: string;
@@ -89,8 +89,6 @@ const EnhancedNotificationCard: React.FC<EnhancedNotificationCardProps> = ({ eve
         return <AlertTriangle className="h-4 w-4" />;
       case 'file_downloaded':
         return <Download className="h-4 w-4" />;
-      case 'file_opened':
-        return <FileText className="h-4 w-4" />;
       default:
         return <Mail className="h-4 w-4" />;
     }
@@ -133,8 +131,6 @@ const EnhancedNotificationCard: React.FC<EnhancedNotificationCardProps> = ({ eve
         return 'text-orange-600 bg-orange-50 border-orange-200';
       case 'file_downloaded':
         return 'text-purple-600 bg-purple-50 border-purple-200';
-      case 'file_opened':
-        return 'text-indigo-600 bg-indigo-50 border-indigo-200';
       case 'submitted':
         return 'text-red-600 bg-red-50 border-red-200';
       case 'reported':

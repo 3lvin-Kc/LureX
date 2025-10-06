@@ -6,7 +6,7 @@ export interface RealTimeEvent {
   id: string;
   campaignId: string;
   targetEmail: string;
-  eventType: 'sent' | 'delivered' | 'opened' | 'clicked' | 'submitted' | 'reported';
+  eventType: 'sent' | 'delivered' | 'opened' | 'clicked' | 'submitted' | 'reported' | 'file_downloaded';
   timestamp: string;
   ipAddress?: string;
   userAgent?: string;
@@ -95,6 +95,7 @@ export class RealTimeTrackingService {
   private determineEventType(newRecord: any, oldRecord?: any): RealTimeEvent['eventType'] {
     if (newRecord.reported_at && (!oldRecord || !oldRecord.reported_at)) return 'reported';
     if (newRecord.data_submitted_at && (!oldRecord || !oldRecord.data_submitted_at)) return 'submitted';
+    if (newRecord.file_downloaded_at && (!oldRecord || !oldRecord.file_downloaded_at)) return 'file_downloaded';
     if (newRecord.clicked_at && (!oldRecord || !oldRecord.clicked_at)) return 'clicked';
     if (newRecord.opened_at && (!oldRecord || !oldRecord.opened_at)) return 'opened';
     if (newRecord.delivered_at && (!oldRecord || !oldRecord.delivered_at)) return 'delivered';

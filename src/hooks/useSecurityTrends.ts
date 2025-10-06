@@ -47,7 +47,7 @@ export const useSecurityTrends = (days: number = 30) => {
       // Fetch all metrics for the date range
       const { data: metrics, error: metricsError } = await supabase
         .from('campaign_metrics')
-        .select('sent_at, clicked_at, data_submitted_at, reported_at, file_downloaded_at, file_opened_at')
+        .select('sent_at, clicked_at, data_submitted_at, reported_at, file_downloaded_at')
         .in('campaign_id', campaignIds)
         .gte('sent_at', startDate.toISOString())
         .lte('sent_at', endDate.toISOString())
@@ -105,7 +105,7 @@ export const useSecurityTrends = (days: number = 30) => {
 
       // Count negative interactions (clicked, downloaded, submitted, opened)
       if (metric.clicked_at || metric.data_submitted_at || 
-          metric.file_downloaded_at || metric.file_opened_at) {
+          metric.file_downloaded_at) {
         dayData.negativeInteractions++;
         dayData.totalInteractions++;
       }

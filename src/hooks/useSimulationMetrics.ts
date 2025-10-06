@@ -118,7 +118,7 @@ export const useSimulationMetrics = (simulationType: SimulationType, timePeriod:
       });
     } else {
       interactions = metrics?.filter(m => m.file_downloaded_at).length || 0;
-      submissions = metrics?.filter(m => m.file_opened_at).length || 0;
+      submissions = metrics?.filter(m => m.file_downloaded_at).length || 0;
       
       // Calculate average response time for downloads
       metrics?.forEach(m => {

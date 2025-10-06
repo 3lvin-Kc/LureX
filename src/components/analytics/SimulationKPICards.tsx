@@ -112,7 +112,7 @@ const SimulationKPICards: React.FC<SimulationKPICardsProps> = ({
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{totalSubmissions.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground">Data + File opens</p>
+              <p className="text-xs text-muted-foreground">Data submissions + File downloads</p>
             </CardContent>
           </Card>
 

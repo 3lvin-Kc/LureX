@@ -20,7 +20,7 @@ interface DashboardMetrics {
 interface NotificationEvent {
   id: string;
   targetEmail: string;
-  eventType: 'sent' | 'opened' | 'clicked' | 'submitted' | 'reported' | 'file_downloaded' | 'file_opened';
+  eventType: 'sent' | 'opened' | 'clicked' | 'submitted' | 'reported' | 'file_downloaded';
   timestamp: string;
   campaignId?: string;
   campaignName?: string;
@@ -116,7 +116,6 @@ const LiveMetricsDashboard: React.FC<LiveMetricsDashboardProps> = ({ maxEvents =
           dataSubmittedAt: newRecord.data_submitted_at,
           reportedAt: newRecord.reported_at,
           fileDownloadedAt: newRecord.file_downloaded_at,
-          fileOpenedAt: newRecord.file_opened_at,
           additionalData: newRecord.additional_data
         };
 
@@ -138,7 +137,6 @@ const LiveMetricsDashboard: React.FC<LiveMetricsDashboardProps> = ({ maxEvents =
   const determineLatestEventType = (newRecord: any, oldRecord?: any): NotificationEvent['eventType'] | null => {
     if (newRecord.reported_at && (!oldRecord || !oldRecord.reported_at)) return 'reported';
     if (newRecord.data_submitted_at && (!oldRecord || !oldRecord.data_submitted_at)) return 'submitted';
-    if (newRecord.file_opened_at && (!oldRecord || !oldRecord.file_opened_at)) return 'file_opened';
     if (newRecord.file_downloaded_at && (!oldRecord || !oldRecord.file_downloaded_at)) return 'file_downloaded';
     if (newRecord.clicked_at && (!oldRecord || !oldRecord.clicked_at)) return 'clicked';
     if (newRecord.opened_at && (!oldRecord || !oldRecord.opened_at)) return 'opened';
@@ -293,7 +291,7 @@ const LiveMetricsDashboard: React.FC<LiveMetricsDashboardProps> = ({ maxEvents =
       // Convert metrics to notification events
       const events: NotificationEvent[] = recentMetrics?.map(metric => {
         // Determine the latest event type for this metric
-        let eventType: 'sent' | 'opened' | 'clicked' | 'submitted' | 'reported' | 'file_downloaded' | 'file_opened' = 'sent';
+        let eventType: 'sent' | 'opened' | 'clicked' | 'submitted' | 'reported' | 'file_downloaded' = 'sent';
         let timestamp = metric.sent_at;
 
         if (metric.reported_at) {
@@ -302,9 +300,6 @@ const LiveMetricsDashboard: React.FC<LiveMetricsDashboardProps> = ({ maxEvents =
         } else if (metric.data_submitted_at) {
           eventType = 'submitted';
           timestamp = metric.data_submitted_at;
-        } else if ((metric as any).file_opened_at) {
-          eventType = 'file_opened';
-          timestamp = (metric as any).file_opened_at;
         } else if ((metric as any).file_downloaded_at) {
           eventType = 'file_downloaded';
           timestamp = (metric as any).file_downloaded_at;
@@ -332,7 +327,6 @@ const LiveMetricsDashboard: React.FC<LiveMetricsDashboardProps> = ({ maxEvents =
           dataSubmittedAt: metric.data_submitted_at,
           reportedAt: metric.reported_at,
           fileDownloadedAt: (metric as any).file_downloaded_at,
-          fileOpenedAt: (metric as any).file_opened_at,
           fileName: undefined,
           fileType: undefined,
           additionalData: metric.additional_data

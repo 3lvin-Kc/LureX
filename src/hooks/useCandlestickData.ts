@@ -65,7 +65,7 @@ export const useCandlestickData = () => {
       // Fetch campaign metrics for all campaigns
       const { data: metrics, error: metricsError } = await supabase
         .from('campaign_metrics')
-        .select('campaign_id, sent_at, clicked_at, data_submitted_at, file_downloaded_at, file_opened_at')
+        .select('campaign_id, sent_at, clicked_at, data_submitted_at, file_downloaded_at')
         .in('campaign_id', campaigns.map(c => c.id));
 
       if (metricsError) throw metricsError;
@@ -165,7 +165,7 @@ export const useCandlestickData = () => {
       } else {
         // For file campaigns: downloads + opens
         successfulInteractions = metrics.filter(m => 
-          m.file_downloaded_at || m.file_opened_at
+          m.file_downloaded_at
         ).length;
       }
 

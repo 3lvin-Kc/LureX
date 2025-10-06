@@ -228,42 +228,6 @@ const Dashboard = () => {
                   </CardContent>
                 </Card>
               </div>
-
-              {/* Bottom Row - Security Metrics */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Emails Sent</CardTitle>
-                    <Mail className="h-4 w-4 text-blue-500" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{(metrics?.totalEmailsSent || 0).toLocaleString()}</div>
-                    <p className="text-xs text-muted-foreground">Phishing emails delivered</p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Reports Received</CardTitle>
-                    <Shield className="h-4 w-4 text-green-500" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{(metrics?.totalReports || 0).toLocaleString()}</div>
-                    <p className="text-xs text-muted-foreground">Users who reported phishing</p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Data Submitted</CardTitle>
-                    <AlertTriangle className="h-4 w-4 text-red-500" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{(metrics?.totalSubmissions || 0).toLocaleString()}</div>
-                    <p className="text-xs text-muted-foreground">Users who fell for phishing</p>
-                  </CardContent>
-                </Card>
-              </div>
             </div>
 
             {/* Campaign Performance Chart - Full Width */}

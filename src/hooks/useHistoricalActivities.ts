@@ -10,6 +10,7 @@ export interface HistoricalActivity {
   clicked_at?: string;
   data_submitted_at?: string;
   reported_at?: string;
+  file_downloaded_at?: string;
   user_agent?: string;
   ip_address?: string;
   additional_data?: any;
@@ -36,76 +37,38 @@ export const useHistoricalActivities = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
-      // Try to fetch with simulation_type first, fallback if column doesn't exist
-      let activities;
-      let activitiesError;
-
-      try {
-        // Try with simulation_type column
-        const result = await supabase
-          .from('campaign_metrics')
-          .select(`
+      // Fetch activities including file download events
+      const { data: activities, error: activitiesError } = await supabase
+        .from('campaign_metrics')
+        .select(`
+          id,
+          target_email,
+          campaign_id,
+          sent_at,
+          opened_at,
+          clicked_at,
+          data_submitted_at,
+          reported_at,
+          file_downloaded_at,
+          user_agent,
+          ip_address,
+          additional_data,
+          campaigns!inner(
             id,
-            target_email,
-            campaign_id,
-            sent_at,
-            opened_at,
-            clicked_at,
-            data_submitted_at,
-            reported_at,
-            user_agent,
-            ip_address,
-            additional_data,
-            campaigns!inner(
-              id,
-              name,
-              status,
-              created_at,
-              simulation_type
-            )
-          `)
-          .eq('campaigns.user_id', user.id)
-          .not('sent_at', 'is', null)
-          .order('sent_at', { ascending: false })
-          .limit(100);
-
-        activities = result.data;
-        activitiesError = result.error;
-      } catch (err) {
-        // Fallback to basic query without simulation_type
-        const result = await supabase
-          .from('campaign_metrics')
-          .select(`
-            id,
-            target_email,
-            campaign_id,
-            sent_at,
-            opened_at,
-            clicked_at,
-            data_submitted_at,
-            reported_at,
-            user_agent,
-            ip_address,
-            additional_data,
-            campaigns!inner(
-              id,
-              name,
-              status,
-              created_at
-            )
-          `)
-          .eq('campaigns.user_id', user.id)
-          .not('sent_at', 'is', null)
-          .order('sent_at', { ascending: false })
-          .limit(100);
-
-        activities = result.data;
-        activitiesError = result.error;
-      }
+            name,
+            status,
+            created_at,
+            simulation_type
+          )
+        `)
+        .eq('campaigns.user_id', user.id)
+        .not('sent_at', 'is', null)
+        .order('sent_at', { ascending: false })
+        .limit(100);
 
       if (activitiesError) throw activitiesError;
 
-      setActivities(activities || []);
+      setActivities((activities || []) as HistoricalActivity[]);
 
     } catch (err: any) {
       console.error('Error fetching historical activities:', err);

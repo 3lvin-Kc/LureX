@@ -44,7 +44,7 @@ export const useCampaignSummary = () => {
       // Fetch campaign metrics for each campaign
       const { data: metricsData, error: metricsError } = await supabase
         .from('campaign_metrics')
-        .select('campaign_id, sent_at, clicked_at, data_submitted_at, file_downloaded_at, file_opened_at, target_email')
+        .select('campaign_id, sent_at, clicked_at, data_submitted_at, file_downloaded_at, target_email')
         .in('campaign_id', campaignsData.map(c => c.id));
 
       if (metricsError) throw metricsError;
@@ -55,7 +55,7 @@ export const useCampaignSummary = () => {
         
         const recipients = campaignMetrics.length;
         const interactions = campaignMetrics.filter(m => 
-          m.clicked_at || m.data_submitted_at || m.file_downloaded_at || m.file_opened_at
+          m.clicked_at || m.data_submitted_at || m.file_downloaded_at
         ).length;
         
         const clickRate = recipients > 0 ? (interactions / recipients) * 100 : 0;
