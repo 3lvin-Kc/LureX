@@ -20,7 +20,7 @@ interface DashboardMetrics {
 interface NotificationEvent {
   id: string;
   targetEmail: string;
-  eventType: 'sent' | 'opened' | 'clicked' | 'submitted' | 'reported' | 'file_downloaded';
+  eventType: 'opened' | 'clicked' | 'submitted' | 'reported' | 'file_downloaded';
   timestamp: string;
   campaignId?: string;
   campaignName?: string;
@@ -141,7 +141,7 @@ const LiveMetricsDashboard: React.FC<LiveMetricsDashboardProps> = ({ maxEvents =
     if (newRecord.clicked_at && (!oldRecord || !oldRecord.clicked_at)) return 'clicked';
     if (newRecord.opened_at && (!oldRecord || !oldRecord.opened_at)) return 'opened';
     if (newRecord.delivered_at && (!oldRecord || !oldRecord.delivered_at)) return null; // Don't show delivered events
-    if (newRecord.sent_at && (!oldRecord || !oldRecord.sent_at)) return 'sent';
+    if (newRecord.sent_at && (!oldRecord || !oldRecord.sent_at)) return null; // Don't show sent events as interactions
     return null;
   };
 
@@ -288,11 +288,18 @@ const LiveMetricsDashboard: React.FC<LiveMetricsDashboardProps> = ({ maxEvents =
 
       if (error) throw error;
 
-      // Convert metrics to notification events
-      const events: NotificationEvent[] = recentMetrics?.map(metric => {
+      // Convert metrics to notification events - only show actual user interactions
+      const events: NotificationEvent[] = recentMetrics?.filter(metric => {
+        // Only include records that have actual user interactions (not just sent)
+        return metric.reported_at || 
+               metric.data_submitted_at || 
+               (metric as any).file_downloaded_at || 
+               metric.clicked_at || 
+               metric.opened_at;
+      }).map(metric => {
         // Determine the latest event type for this metric
-        let eventType: 'sent' | 'opened' | 'clicked' | 'submitted' | 'reported' | 'file_downloaded' = 'sent';
-        let timestamp = metric.sent_at;
+        let eventType: 'opened' | 'clicked' | 'submitted' | 'reported' | 'file_downloaded' = 'opened';
+        let timestamp = metric.opened_at;
 
         if (metric.reported_at) {
           eventType = 'reported';

@@ -65,89 +65,59 @@ export const useDashboardMetrics = () => {
       const totalCampaigns = campaigns?.length || 0;
       const activeCampaigns = campaigns?.filter(c => c.status === 'active').length || 0;
 
-      // Fetch campaign metrics with basic columns that should exist
+      // Fetch campaign metrics with all interaction columns
       const { data: campaignMetrics, error: metricsError } = await supabase
         .from('campaign_metrics')
-        .select('campaign_id, sent_at')
+        .select('campaign_id, sent_at, opened_at, clicked_at, file_downloaded_at, data_submitted_at, reported_at')
         .in('campaign_id', campaigns?.map(c => c.id) || []);
 
       if (metricsError) throw metricsError;
 
-      const totalInteractions = campaignMetrics?.length || 0;
+      // Count only REAL user interactions (not email sends)
+      // Interactions = user opened, clicked, downloaded, submitted, or reported
+      const totalInteractions = campaignMetrics?.filter(metric => 
+        metric.opened_at || 
+        metric.clicked_at || 
+        metric.file_downloaded_at || 
+        metric.data_submitted_at || 
+        metric.reported_at
+      ).length || 0;
       
-      // Try to get additional metrics if columns exist
+      // Calculate metrics from the data we already fetched
       let clickedInteractions = 0;
       let submissions = 0;
       let fileInteractions = 0;
       let totalEmailsSent = 0;
       let totalReports = 0;
 
-      try {
-        const { data: clickMetrics } = await supabase
-          .from('campaign_metrics')
-          .select('campaign_id, clicked_at')
-          .in('campaign_id', campaigns?.map(c => c.id) || [])
-          .not('clicked_at', 'is', null);
+      // Process the metrics we already have
+      campaignMetrics?.forEach(metric => {
+        // Count emails sent (system action, not user interaction)
+        if (metric.sent_at) {
+          totalEmailsSent++;
+        }
         
-        clickedInteractions = clickMetrics?.length || 0;
-      } catch (err) {
-        // Column doesn't exist yet
-      }
-
-      try {
-        const { data: submitMetrics } = await supabase
-          .from('campaign_metrics')
-          .select('campaign_id, data_submitted_at')
-          .in('campaign_id', campaigns?.map(c => c.id) || [])
-          .not('data_submitted_at', 'is', null);
+        // Count actual user interactions
+        if (metric.clicked_at) {
+          clickedInteractions++;
+        }
         
-        submissions = submitMetrics?.length || 0;
-      } catch (err) {
-        // Column doesn't exist yet
-      }
-
-      try {
-        const { data: fileMetrics } = await supabase
-          .from('campaign_metrics')
-          .select('campaign_id, file_downloaded_at')
-          .in('campaign_id', campaigns?.map(c => c.id) || [])
-          .not('file_downloaded_at', 'is', null);
+        if (metric.data_submitted_at) {
+          submissions++;
+        }
         
-        fileInteractions = fileMetrics?.length || 0;
-      } catch (err) {
-        // Column doesn't exist yet
-      }
-
-      // New KPI Queries - Emails Sent
-      try {
-        const { data: sentMetrics } = await supabase
-          .from('campaign_metrics')
-          .select('campaign_id')
-          .in('campaign_id', campaigns?.map(c => c.id) || [])
-          .not('sent_at', 'is', null);
+        if (metric.file_downloaded_at) {
+          fileInteractions++;
+        }
         
-        totalEmailsSent = sentMetrics?.length || 0;
-      } catch (err) {
-        // Column doesn't exist yet
-        console.log('sent_at column not available:', err);
-      }
+        if (metric.reported_at) {
+          totalReports++;
+        }
+      });
 
-      // New KPI Queries - Reports Received
-      try {
-        const { data: reportMetrics } = await supabase
-          .from('campaign_metrics')
-          .select('campaign_id')
-          .in('campaign_id', campaigns?.map(c => c.id) || [])
-          .not('reported_at', 'is', null);
-        
-        totalReports = reportMetrics?.length || 0;
-      } catch (err) {
-        // Column doesn't exist yet
-        console.log('reported_at column not available:', err);
-      }
-
-      const overallClickRate = totalInteractions > 0 
-        ? ((clickedInteractions + fileInteractions) / totalInteractions * 100) 
+      // Calculate click rate based on emails sent, not total interactions
+      const overallClickRate = totalEmailsSent > 0 
+        ? ((clickedInteractions + fileInteractions) / totalEmailsSent * 100) 
         : 0;
 
       // Device and risk distribution are now handled by dedicated hooks
