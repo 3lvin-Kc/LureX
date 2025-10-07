@@ -80,7 +80,7 @@ const Index = () => {
       <section className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto text-center">
           <Badge variant="outline" className="mb-4 bg-card/50">
-            🚀 Advanced Phishing Simulation Platform
+            🛡️ Enterprise-Grade Security Awareness Training
           </Badge>
           <h1
             className="text-5xl md:text-7xl font-extrabold text-foreground mb-6 leading-tight tracking-tight drop-shadow-md transition-transform duration-300 hover:scale-[1.02]"
@@ -90,12 +90,12 @@ const Index = () => {
           >
             LureX
             <span className="text-primary block drop-shadow-sm transition-transform duration-300 hover:-translate-y-1">
-              Lure. Trigger. Learn.
+              Train Smarter. Defend Stronger.
             </span>
           </h1>
 
-          <p className="text-xl text-muted-foreground mb-10 max-w-3xl mx-auto leading-relaxed transition duration-300 hover:tracking-wider">
-            F*ck awareness posters — Run Real Phishing Ops
+          <p className="text-xl text-muted-foreground mb-10 max-w-3xl mx-auto leading-relaxed">
+            Real-world phishing simulations that transform your team into your strongest line of defense. Purpose-built for growing businesses.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
