@@ -94,7 +94,7 @@ const LiveMetricsDashboard: React.FC<LiveMetricsDashboardProps> = ({ maxEvents =
         // Fetch campaign details for the event
         const { data: campaign } = await supabase
           .from('campaigns')
-          .select('name')
+          .select('name, simulation_type')
           .eq('id', newRecord.campaign_id)
           .single();
 
@@ -105,7 +105,7 @@ const LiveMetricsDashboard: React.FC<LiveMetricsDashboardProps> = ({ maxEvents =
           timestamp: new Date().toISOString(),
           campaignId: newRecord.campaign_id,
           campaignName: campaign?.name || 'Unknown Campaign',
-          simulationType: 'link', // Default to link for now
+          simulationType: (campaign?.simulation_type as 'link' | 'file') || 'link',
           fileType: undefined,
           fileName: undefined,
           userAgent: newRecord.user_agent,
@@ -279,7 +279,8 @@ const LiveMetricsDashboard: React.FC<LiveMetricsDashboardProps> = ({ maxEvents =
           *,
           campaigns!inner (
             id,
-            name
+            name,
+            simulation_type
           )
         `)
         .gte('created_at', oneDayAgo.toISOString())
@@ -325,7 +326,7 @@ const LiveMetricsDashboard: React.FC<LiveMetricsDashboardProps> = ({ maxEvents =
           timestamp,
           campaignId: metric.campaign_id,
           campaignName: metric.campaigns?.name || 'Unknown Campaign',
-          simulationType: 'link', // Default to link for now
+          simulationType: (metric.campaigns?.simulation_type as 'link' | 'file') || 'link',
           userAgent: metric.user_agent,
           ipAddress: metric.ip_address,
           sentAt: metric.sent_at,
