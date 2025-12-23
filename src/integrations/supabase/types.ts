@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -414,7 +414,7 @@ export type Database = {
           geolocation: Json | null
           id: string
           interaction_type: string
-          ip_address: unknown | null
+          ip_address: unknown
           target_email: string
           updated_at: string | null
           user_agent: string | null
@@ -428,7 +428,7 @@ export type Database = {
           geolocation?: Json | null
           id?: string
           interaction_type: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           target_email: string
           updated_at?: string | null
           user_agent?: string | null
@@ -442,7 +442,7 @@ export type Database = {
           geolocation?: Json | null
           id?: string
           interaction_type?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           target_email?: string
           updated_at?: string | null
           user_agent?: string | null
