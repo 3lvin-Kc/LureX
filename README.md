@@ -176,6 +176,11 @@ RESEND_API_KEY=your-resend-key
 OPENAI_API_KEY=your-openai-key
 ```
 
+### try this out
+
+
+https://lurex-sec.vercel.app/
+  
 ### Deployment Steps
 1. Set up Supabase project and database
 2. Configure environment variables
