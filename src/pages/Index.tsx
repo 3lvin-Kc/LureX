@@ -20,7 +20,7 @@ const Index = () => {
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-2">
               <Shield className="h-6 w-6 text-primary" />
-              <span className="text-xl font-bold text-foreground">LureX</span>
+              <span className="text-xl font-bold text-foreground">LureXz</span>
             </div>
             <div className="hidden md:flex items-center space-x-8">
               <Button variant="ghost" onClick={() => navigate("/features")}>
