@@ -2,6 +2,8 @@ import { useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useEditorStore } from "@/stores/editor-store";
+import { useGenerationStore } from "@/stores/generation-store";
 
 interface AppData {
   projectName?: string;
@@ -47,6 +49,8 @@ export const useEffectsAndLogic = (
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
 
+        console.log(`[useEffectsAndLogic] Loading files for project ${projectId}...`);
+
         // Fetch artifacts for this project
         const response = await fetch(`/api/artifacts/${projectId}`, {
           headers: {
@@ -91,17 +95,30 @@ export const useEffectsAndLogic = (
           }
           
           if (Object.keys(newFiles).length > 0) {
+            // Update appData
             setAppData((prev: AppData) => ({
               ...prev,
               files: { ...prev.files, ...newFiles },
             }));
             
-            // Select the first file
-            const firstFile = Object.keys(newFiles)[0];
+            // =========================================================================
+            // Also populate the editor store so file tree shows correctly
+            // =========================================================================
+            const editorStore = useEditorStore.getState();
+            Object.entries(newFiles).forEach(([path, content]) => {
+              editorStore.addFile(path, 'complete');
+              editorStore.setFileComplete(path, content);
+            });
+            // =========================================================================
+            
+            // Prefer lib/main.dart as the first file, otherwise pick the first available
+            const firstFile = Object.keys(newFiles).find(f => f === 'lib/main.dart') 
+              || Object.keys(newFiles)[0];
             if (firstFile) {
               setSelectedFile(firstFile);
             }
             
+            console.log(`[useEffectsAndLogic] Loaded ${Object.keys(newFiles).length} files successfully`);
             toast.success(`Loaded ${Object.keys(newFiles).length} files from storage`);
           }
         }
@@ -112,6 +129,45 @@ export const useEffectsAndLogic = (
     
     loadProjectFiles();
   }, [searchParams, setAppData, setSelectedFile]);
+
+  // =========================================================================
+  // Load chat history on mount
+  // =========================================================================
+  const hasLoadedChatRef = useRef(false);
+  
+  useEffect(() => {
+    const loadChatHistory = async () => {
+      const projectId = searchParams.get("project");
+      if (!projectId || hasLoadedChatRef.current) return;
+      
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
+        console.log(`[useEffectsAndLogic] Loading chat history for project ${projectId}...`);
+
+        const response = await fetch(`/api/conversations/${projectId}`, {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'x-user-id': session.user.id
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.conversation?.messages?.length > 0) {
+            hasLoadedChatRef.current = true;
+            console.log(`[useEffectsAndLogic] Loading ${data.conversation.messages.length} chat messages`);
+            useGenerationStore.getState().loadChatHistory(data.conversation.messages);
+          }
+        }
+      } catch (e) {
+        console.error("[useEffectsAndLogic] Failed to load chat history:", e);
+      }
+    };
+
+    loadChatHistory();
+  }, [searchParams]);
 
   // Check project state when component mounts
   useEffect(() => {

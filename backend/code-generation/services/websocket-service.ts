@@ -245,6 +245,45 @@ export class WebSocketService {
       return;
     }
 
+    // =========================================================================
+    // ZERO_TO_ONE ENFORCEMENT - Strict gatekeeping before any generation
+    // =========================================================================
+    console.log(`[WS:Gatekeep] Checking gatekeeping for projectId=${projectId}`);
+    
+    const projectState = await this.projectStateService.getProjectStateById(projectId);
+    
+    if (projectState) {
+      console.log(`[WS:Gatekeep] Found project state: mode_locked=${projectState.mode_locked}, identity_id=${projectState.identity_id}`);
+      
+      // Check 1: If mode is already ONE_TO_N, reject
+      if (projectState.mode_locked === 'ONE_TO_N') {
+        console.log(`[WS:Gatekeep] REJECTED - Project already in ONE_TO_N mode`);
+        this.send(ws, {
+          type: "validation_error",
+          message: "Project has already been generated. Create a new project for a fresh start.",
+          data: { currentMode: projectState.mode_locked }
+        });
+        return;
+      }
+
+      // Check 2: If artifacts already exist, reject
+      const artifactCount = await this.artifactRepository.countByProjectStateId(projectId);
+      console.log(`[WS:Gatekeep] Artifact count for project: ${artifactCount}`);
+      
+      if (artifactCount > 0) {
+        console.log(`[WS:Gatekeep] REJECTED - Project already has ${artifactCount} artifacts`);
+        this.send(ws, {
+          type: "validation_error",
+          message: "Project already has generated files. Create a new project to start fresh.",
+          data: { artifactCount }
+        });
+        return;
+      }
+    }
+    
+    console.log(`[WS:Gatekeep] ALLOWED - Proceeding with generation`);
+    // =========================================================================
+
     // Validate prompt category
     const categoryValidation = validatePromptCategory(prompt);
     if (!categoryValidation.valid) {
@@ -357,6 +396,16 @@ export class WebSocketService {
         purpose: userPrompt,
       });
 
+      // =========================================================================
+      // CRITICAL: Link identity_id to project_states immediately after creation
+      // =========================================================================
+      console.log(`[WS:Identity] Created identity_id=${identity.identity_id}, linking to project_state...`);
+      await this.projectStateService.updateProjectStateById(projectId, {
+        identity_id: identity.identity_id
+      });
+      console.log(`[WS:Identity] Successfully linked identity to project state`);
+      // =========================================================================
+
       // Check for cancellation
       if (abortController.signal.aborted) {
         return;
@@ -381,6 +430,16 @@ export class WebSocketService {
           throw e;
         }
       }
+
+      // =========================================================================
+      // Update project_state with architecture flags
+      // =========================================================================
+      console.log(`[WS:Architecture] Updating project state with architecture flags`);
+      await this.projectStateService.updateProjectStateById(projectId, {
+        architecture_plan_established: true,
+        architecture_decisions_recorded: true
+      });
+      // =========================================================================
 
       if (!architecture) {
         throw new Error("Failed to create architecture plan");
@@ -796,20 +855,32 @@ export class WebSocketService {
       // Get project state to get identity_id and architecture_plan_id
       const projectState = await this.projectStateService.getProjectStateById(projectStateId);
       if (!projectState) {
-        console.error("[WebSocket] Project state not found for saving files");
+        console.error("[WS:Save] Project state not found for saving files");
+        this.send(ws, {
+          type: "error",
+          message: "Failed to save files: project state not found"
+        });
         return;
       }
 
       const identityId = projectState.identity_id;
       if (!identityId) {
-        console.error("[WebSocket] No identity_id found for project state");
+        console.error("[WS:Save] No identity_id found for project state - this should not happen");
+        this.send(ws, {
+          type: "error",
+          message: "Failed to save files: identity not linked to project state"
+        });
         return;
       }
 
       // Get architecture plan
       const architecture = await this.architectureService.getArchitecturePlan(identityId);
       if (!architecture) {
-        console.error("[WebSocket] No architecture plan found");
+        console.error("[WS:Save] No architecture plan found");
+        this.send(ws, {
+          type: "error",
+          message: "Failed to save files: architecture plan not found"
+        });
         return;
       }
 
@@ -828,9 +899,11 @@ export class WebSocketService {
       });
 
       if (parsedFiles.length === 0) {
-        console.log("[WebSocket] No files to save");
+        console.log("[WS:Save] No files to save");
         return;
       }
+
+      console.log(`[WS:Save] Uploading ${parsedFiles.length} files to storage for project ${projectStateId}`);
 
       // Upload files to storage
       const uploadResult = await this.storageService.uploadFilesWithRetry(
@@ -839,9 +912,15 @@ export class WebSocketService {
       );
 
       if (!uploadResult.success) {
-        console.error("[WebSocket] Failed to upload files:", uploadResult.errors);
+        console.error("[WS:Save] Failed to upload files:", uploadResult.errors);
+        this.send(ws, {
+          type: "error",
+          message: `Failed to upload files to storage: ${uploadResult.errors?.join(", ") || "unknown error"}`
+        });
         return;
       }
+
+      console.log(`[WS:Save] Successfully uploaded files to storage`);
 
       // Create artifact metadata records
       const artifactInputs = parsedFiles.map((file, index) =>
