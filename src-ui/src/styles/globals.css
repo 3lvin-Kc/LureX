@@ -1,0 +1,114 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles that can't be easily done with Tailwind */
+@layer components {
+  .sidebar {
+    @apply fixed top-0 left-0 h-screen z-50 transition-all duration-300 ease-in-out;
+    @apply bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700;
+    @apply shadow-lg border-r border-white/10 backdrop-blur-md;
+  }
+  
+  .sidebar.collapsed {
+    @apply w-20;
+  }
+  
+  .sidebar-header {
+    @apply p-6 pb-4 flex justify-between items-center relative overflow-hidden;
+    @apply bg-black/10;
+  }
+  
+  .sidebar-header::before {
+    content: '';
+    @apply absolute top-0 left-0 right-0 h-0.5;
+    @apply bg-gradient-to-r from-indigo-300 via-purple-300 to-indigo-300;
+    @apply bg-[length:200%_200%] animate-gradient;
+  }
+  
+  .sidebar-toggle {
+    @apply bg-white/15 text-white border border-white/20;
+    @apply w-9 h-9 rounded-lg cursor-pointer flex items-center justify-center;
+    @apply transition-all duration-200 flex-shrink-0 backdrop-blur-sm shadow-md;
+  }
+  
+  .sidebar-toggle:hover {
+    @apply bg-white/25 transform -translate-y-0.5 scale-105 shadow-lg;
+  }
+  
+  .sidebar-nav {
+    @apply p-4 flex-1 flex flex-col gap-3 overflow-y-auto;
+    @apply scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent;
+  }
+  
+  .nav-btn {
+    @apply flex items-center w-full p-3 rounded-xl cursor-pointer;
+    @apply transition-all duration-200 relative overflow-hidden;
+    @apply bg-white/10 text-white/90 border border-white/5;
+    @apply backdrop-blur-sm hover:bg-white/15 hover:translate-x-1.5;
+  }
+  
+  .nav-btn::before {
+    content: '';
+    @apply absolute top-0 left-0 w-1 h-full;
+    @apply bg-white transform scale-y-0 origin-bottom transition-transform duration-300;
+    @apply rounded-r;
+  }
+  
+  .nav-btn:hover::before {
+    @apply scale-y-100;
+  }
+  
+  .nav-btn.active {
+    @apply bg-white text-primary-600 font-semibold;
+    @apply border-white/20 shadow-md;
+    @apply hover:bg-white hover:text-primary-600;
+  }
+  
+  .nav-btn.active::before {
+    @apply bg-primary-600 scale-y-100;
+  }
+  
+  .nav-icon {
+    @apply text-xl w-6 h-6 flex items-center justify-center;
+    @apply transition-all duration-300;
+  }
+  
+  .nav-text {
+    @apply flex-1 text-left transition-all duration-300;
+    @apply whitespace-nowrap overflow-hidden text-ellipsis;
+    @apply font-medium tracking-wide;
+  }
+  
+  .sidebar.collapsed .nav-text {
+    @apply w-0 opacity-0 hidden;
+  }
+  
+  .sidebar.collapsed .nav-btn {
+    @apply justify-center p-4 w-12 mx-auto gap-0 rounded-xl;
+  }
+  
+  .app-main {
+    @apply flex-1 min-h-screen transition-all duration-300 ease-in-out;
+    @apply bg-gray-50 ml-72 p-8;
+  }
+  
+  .app-main.expanded {
+    @apply ml-20 p-6;
+  }
+  
+  .content-wrapper {
+    @apply max-w-6xl w-full mx-auto;
+  }
+  
+  @keyframes gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  
+  .animate-gradient {
+    animation: gradient 8s ease infinite;
+    background-size: 200% 200%;
+  }
+}

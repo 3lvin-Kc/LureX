@@ -1,0 +1,5 @@
+// Application services - dependency container
+
+pub mod app_container;
+
+pub use app_container::AppContainer;

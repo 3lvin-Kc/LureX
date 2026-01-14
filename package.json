@@ -1,0 +1,40 @@
+{
+  "name": "recalldesk",
+  "version": "0.1.0",
+  "description": "Local-first universal search for Gmail and local files",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "format": "prettier --write \"src-ui/**/*.{ts,tsx,json,css}\" && cargo fmt --manifest-path src-tauri/Cargo.toml",
+    "lint": "eslint src-ui/src --ext .ts,.tsx",
+    "test": "npm run test:rust && npm run test:ui",
+    "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml",
+    "test:ui": "vitest run",
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@tauri-apps/api": "^2.0.0",
+    "@tauri-apps/cli": "^2.0.0",
+    "@testing-library/react": "^14.0.0",
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "@vitejs/plugin-react": "^4.0.0",
+    "autoprefixer": "^10.4.23",
+    "eslint": "^8.0.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "postcss": "^8.5.6",
+    "prettier": "^3.0.0",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5.0.0",
+    "vite": "^4.4.0",
+    "vitest": "^0.34.0"
+  },
+  "workspaces": [
+    "src-ui"
+  ]
+}

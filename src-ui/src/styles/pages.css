@@ -1,0 +1,370 @@
+/* Pages Container - Converted to Tailwind */
+.search-page,
+.status-page,
+.settings-page {
+  @apply animate-fade-in;
+}
+
+/* Page Headers */
+.search-page-header,
+.status-page-header,
+.settings-page-header {
+  @apply mb-7;
+}
+
+.search-page-header h1,
+.status-page-header h1,
+.settings-page-header h1 {
+  @apply m-0 mb-2 text-3xl text-gray-900;
+}
+
+.page-description {
+  @apply m-0 text-sm text-gray-600;
+}
+
+/* Search Page Specific */
+.search-page {
+  @apply max-w-3xl mx-auto;
+}
+
+.search-results-container {
+  @apply mt-7 animate-slide-in-up;
+}
+
+.results-header {
+  @apply flex justify-between items-center mb-5 pb-4 border-b-2 border-gray-300;
+}
+
+.results-header h2 {
+  @apply m-0 text-xl text-gray-900;
+}
+
+.results-subtitle {
+  @apply m-0 text-xs text-gray-600;
+}
+
+.results-actions {
+  @apply flex gap-2;
+}
+
+.action-btn {
+  @apply px-3 py-1.5 bg-gray-100 border border-gray-300 rounded-lg cursor-pointer text-xs font-medium transition-all duration-150;
+}
+
+.action-btn:hover {
+  @apply bg-gray-300 text-blue-500;
+}
+
+.results-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4;
+}
+
+.result-card {
+  @apply p-4 bg-white border border-gray-300 rounded-xl cursor-pointer transition-all duration-200;
+}
+
+.result-card:hover {
+  @apply border-blue-500 shadow-xl transform -translate-y-1;
+}
+
+.result-header {
+  @apply flex items-start gap-3 mb-3;
+}
+
+.result-source {
+  @apply text-2xl flex-shrink-0 mt-0.5;
+}
+
+.result-title-section {
+  @apply flex-1 min-w-0;
+}
+
+.result-title {
+  @apply m-0 mb-1 text-sm font-semibold text-gray-900 break-words;
+}
+
+.result-type {
+  @apply text-xs text-gray-500 uppercase tracking-wide font-semibold bg-gray-100 px-1.5 py-0.5 rounded-sm inline-block;
+}
+
+.result-snippet {
+  @apply my-3 text-xs text-gray-600 leading-relaxed line-clamp-3;
+}
+
+.result-footer {
+  @apply flex justify-between items-center pt-3 border-t border-gray-200 text-xs text-gray-500;
+}
+
+.result-date {
+  @apply text-xs;
+}
+
+.result-actions {
+  @apply flex gap-1;
+}
+
+.action-btn {
+  @apply bg-none border-none cursor-pointer p-0.5 text-sm transition-all duration-150 rounded-sm;
+}
+
+.action-btn:hover {
+  @apply bg-gray-100 transform scale-110;
+}
+
+.empty-state {
+  @apply text-center p-15 text-gray-500;
+}
+
+.empty-icon {
+  @apply text-5xl mb-4;
+}
+
+.empty-state h3 {
+  @apply m-0 mb-2 text-lg text-gray-900;
+}
+
+.empty-state p {
+  @apply m-0 text-sm;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  @apply fixed inset-0 bg-black/50 flex items-center justify-center z-[1000] animate-fade-in;
+}
+
+.modal-content {
+  @apply bg-white rounded-xl max-w-2xl w-11/12 max-h-80vh overflow-y-auto shadow-2xl animate-slide-in-up;
+}
+
+.modal-header {
+  @apply flex justify-between items-center p-5 border-b border-gray-300;
+}
+
+.modal-header h2 {
+  @apply m-0 text-xl text-gray-900;
+}
+
+.modal-close {
+  @apply bg-none border-none text-xl text-gray-500 cursor-pointer p-0 w-8 h-8 flex items-center justify-center transition-colors duration-150;
+}
+
+.modal-close:hover {
+  @apply text-gray-900;
+}
+
+.modal-body {
+  @apply p-5;
+}
+
+.preview-metadata {
+  @apply grid grid-cols-2 gap-3 mb-5 p-3 bg-gray-100 rounded-lg;
+}
+
+.metadata-item {
+  @apply flex flex-col gap-1;
+}
+
+.metadata-label {
+  @apply text-xs text-gray-500 font-medium uppercase;
+}
+
+.metadata-value {
+  @apply text-xs text-gray-900 font-semibold break-words;
+}
+
+.preview-content {
+  @apply mb-5;
+}
+
+.preview-content h3 {
+  @apply m-0 mb-3 text-sm font-semibold text-gray-900;
+}
+
+.preview-content p {
+  @apply m-0 text-xs leading-relaxed text-gray-600;
+}
+
+.preview-metadata-section {
+  @apply mb-5;
+}
+
+.preview-metadata-section h3 {
+  @apply m-0 mb-3 text-sm font-semibold text-gray-900;
+}
+
+.metadata-list {
+  @apply grid gap-2;
+}
+
+.metadata-pair {
+  @apply flex gap-2 p-2 bg-gray-100 rounded-sm text-xs;
+}
+
+.metadata-pair .key {
+  @apply font-semibold text-gray-600 flex-shrink-0;
+}
+
+.metadata-pair .value {
+  @apply text-gray-900 break-words flex-1;
+}
+
+.modal-footer {
+  @apply flex gap-2 p-4 border-t border-gray-300 bg-gray-100;
+}
+
+.modal-footer .btn-secondary,
+.modal-footer .btn-primary {
+  @apply flex-1;
+}
+
+/* Status Page Specific */
+.status-page {
+  @apply max-w-5xl mx-auto;
+}
+
+.status-info-section {
+  @apply mt-10 p-5 bg-white rounded-xl border border-gray-300;
+}
+
+.status-info-section h2,
+.status-tips h2 {
+  @apply m-0 mb-5 text-lg text-gray-900;
+}
+
+.info-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4;
+}
+
+.info-card {
+  @apply p-4 bg-gray-100 rounded-lg border border-gray-200;
+}
+
+.info-card h3 {
+  @apply m-0 mb-2 text-sm text-gray-900 font-semibold;
+}
+
+.info-card p {
+  @apply m-0 text-xs text-gray-600 leading-relaxed;
+}
+
+.status-tips {
+  @apply mt-10 p-5 bg-yellow-50 border border-yellow-300 rounded-xl;
+}
+
+.status-tips ul {
+  @apply m-0 pl-5;
+}
+
+.status-tips li {
+  @apply mb-2 text-xs text-gray-900 leading-relaxed;
+}
+
+.status-tips li:last-child {
+  @apply mb-0;
+}
+
+/* Settings Page Specific */
+.settings-page {
+  @apply max-w-3xl mx-auto;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .search-page-header h1,
+  .status-page-header h1,
+  .settings-page-header h1 {
+    @apply text-xl;
+  }
+
+  .results-header {
+    @apply flex-col items-start gap-3;
+  }
+
+  .results-grid {
+    @apply grid-cols-1;
+  }
+
+  .result-card {
+    @apply p-3;
+  }
+
+  .result-title {
+    @apply text-xs;
+  }
+
+  .result-snippet {
+    @apply line-clamp-2;
+  }
+
+  .modal-content {
+    @apply w-11/12 max-h-90vh;
+  }
+
+  .modal-header {
+    @apply p-4;
+  }
+
+  .modal-body {
+    @apply p-4;
+  }
+
+  .modal-footer {
+    @apply p-3 flex-col;
+  }
+
+  .preview-metadata {
+    @apply grid-cols-1;
+  }
+
+  .info-grid {
+    @apply grid-cols-1;
+  }
+
+  .status-tips {
+    @apply mt-5;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-page-header h1,
+  .status-page-header h1,
+  .settings-page-header h1 {
+    @apply text-lg;
+  }
+
+  .page-description {
+    @apply text-xs;
+  }
+
+  .results-grid {
+    @apply grid-cols-1;
+  }
+
+  .result-card {
+    @apply p-3;
+  }
+
+  .result-title {
+    @apply text-xs;
+  }
+
+  .modal-content {
+    @apply w-11/12;
+  }
+
+  .modal-header {
+    @apply p-3 gap-2;
+  }
+
+  .modal-header h2 {
+    @apply text-base;
+  }
+
+  .modal-body {
+    @apply p-3;
+  }
+
+  .modal-footer {
+    @apply p-2;
+  }
+}

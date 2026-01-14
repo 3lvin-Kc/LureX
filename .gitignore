@@ -1,0 +1,67 @@
+# Dependencies
+node_modules/
+/src-ui/node_modules/
+/src-tauri/target/
+
+# Build outputs
+/src-ui/dist/
+/src-tauri/target/
+*.dmg
+*.msi
+*.exe
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+oauth-credentials.json
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# App data (local index)
+~/.recalldesk/
+.recalldesk/
+
+# Rust
+Cargo.lock
+target/
+**/*.rs.bk
+*.pdb
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Misc
+.turbo/
+dist/
+*.tsbuildinfo

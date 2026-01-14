@@ -1,0 +1,34 @@
+{
+  "productName": "RecallDesk",
+  "version": "0.1.0",
+  "identifier": "com.recalldesk.app",
+  "build": {
+    "beforeBuildCommand": "",
+    "beforeDevCommand": "npm run dev --prefix ./src-ui",
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../src-ui/dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "fullscreen": false,
+        "height": 900,
+        "resizable": true,
+        "title": "RecallDesk",
+        "width": 1400
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "plugins": {
+    "dialog": null,
+    "shell": null
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all"
+  }
+}
